@@ -84,6 +84,15 @@ main{max-width:1240px;margin:0 auto;padding:20px 18px 90px}
 .savedot.on{background:var(--rb);box-shadow:0 0 7px var(--rb)}
 .savedot.busy{background:var(--gold);box-shadow:0 0 7px var(--gold)}
 .savedot.err{background:var(--qb)}
+.info-btn{background:none;border:none;color:var(--dim);font-size:14px;cursor:pointer;padding:2px 4px;line-height:1;flex:none}
+.info-btn:hover{color:var(--gold)}
+.cell{position:relative}
+.cell[data-info]{cursor:pointer}
+.cell[data-info]:hover{border-color:var(--line2);background:#16233a}
+.cell-x{position:absolute;top:1px;right:1px;background:rgba(11,18,32,.85);border:none;color:var(--dim);font-size:9px;line-height:1;padding:2px 3px;border-radius:0 4px 0 4px;cursor:pointer;opacity:0}
+.cell:hover .cell-x{opacity:1}
+.cell-x:hover{color:var(--qb)}
+.m-taken{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--mut);align-self:center;padding-right:4px}
 .custom-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 14px;margin-bottom:14px;border:1px solid var(--gold-dim);background:rgba(232,196,104,.07);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gold)}
 .custom-bar .btn{margin-left:auto;padding:5px 10px;font-size:10px}
 .pcard{position:relative;display:flex;align-items:center;gap:11px;background:var(--panel);padding:11px 12px 11px 15px;cursor:pointer;transition:background .12s}
@@ -226,8 +235,6 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 .cell.empty.placeable{border:1.5px dashed var(--gold-dim);background:rgba(232,196,104,.06);animation:placePulse 1.4s ease-in-out infinite}
 .cell.empty.placeable:hover{border-color:var(--gold);background:rgba(232,196,104,.14)}
 @keyframes placePulse{0%,100%{border-color:var(--gold-dim)}50%{border-color:var(--gold)}}
-.cell.rm{cursor:pointer}
-.cell.rm:hover{box-shadow:inset 0 0 0 1.5px var(--qb);opacity:.85}
 .ba-row[data-adp]{cursor:pointer}
 .ba-row.sel{background:rgba(232,196,104,.10);box-shadow:inset 2.5px 0 0 var(--gold)}
 .ba-row.sel .ba-n{color:var(--gold)}
@@ -973,6 +980,16 @@ function depthHtml(p){
   if(gapAfter<0&&grp.length>CAP) rows+='<div class="dp-gap">+'+(grp.length-CAP)+' more on the roster</div>';
   return '<div class="dp"><div class="dp-head"><span class="stat-lab">'+p.team+' '+p.pos+' Depth Chart</span><span class="dp-src">official · '+DEPTH_DATE+'</span></div>'+rows+'</div>';
 }
+function mockActionHtml(p){
+  if(view!=="mock"||!mock||!mock.started||mock.done) return "";
+  if(!mock.avail.has(p.adp)){
+    const pk=mock.picks.find(x=>x.p.adp===p.adp);
+    return pk?'<span class="m-taken">Taken '+pk.label+' by '+mock.names[pk.team]+'</span>':"";
+  }
+  if(!isUserTurn()) return '<span class="m-taken">Available · not your pick yet</span>';
+  const who=mock.mode==="track"?mock.names[curTeam()]:"your team";
+  return '<button class="btn gold" id="mMockDraft">Draft to '+who+'</button>';
+}
 function openModal(p){
   const st=status[p.adp]||"";
   const m=document.getElementById("modal");
@@ -986,6 +1003,7 @@ function openModal(p){
     +'<div class="m-tags"><span class="m-tag">Tier '+p.tier+' · '+TIERS.find(t=>t.n===p.tier).name+'</span><span class="m-tag">'+scoring.toUpperCase()+' scoring</span>'+(p.pts25===0&&!gamesOf(p)?'<span class="m-tag" style="color:var(--gold);border-color:var(--gold-dim)">'+(p.adp<=250&&p.s25.indexOf("Rookie")>=0?"ROOKIE":"NO 2025 DATA")+'</span>':'')+'</div>'
     +'</div>'
     +'<div class="m-actions">'
+    +mockActionHtml(p)
     +'<button class="btn" id="mDraft">'+(st==="drafted"?"Undo drafted":"Mark drafted")+'</button>'
     +'<button class="btn gold" id="mMine">'+(st==="mine"?"Remove from my team":"★ Draft to my team")+'</button>'
     +'</div><div class="note">Season-total points shown for the selected scoring format. 2025 lines are approximate.</div>';
@@ -993,6 +1011,8 @@ function openModal(p){
   document.getElementById("mClose").onclick=closeModal;
   document.getElementById("mDraft").onclick=()=>{ status[p.adp]=(st==="drafted")?"":"drafted"; closeModal(); refresh(); };
   document.getElementById("mMine").onclick=()=>{ status[p.adp]=(st==="mine")?"":"mine"; closeModal(); refresh(); };
+  const md=document.getElementById("mMockDraft");
+  if(md) md.onclick=()=>{ closeModal(); userDraft(p.adp); };
   m.querySelectorAll(".dp-row.link").forEach(r=>r.onclick=()=>{
     const t=P.find(x=>x.adp===+r.dataset.adp); if(t) openModal(t);
   });
@@ -1227,7 +1247,7 @@ function renderRoom(host){
       const pk=mock.picks.find(x=>x.round===r+1&&x.team===team);
       const isClockCell=!mock.done&&!pk&&mock.order[curPickIdx()]===team&&Math.floor(curPickIdx()/mock.teams)===r;
       const trk=mock.mode==="track";
-      if(pk) html+='<td><div class="cell '+(team===mock.slot-1?'mine-cell':'')+(trk?' rm':'')+'" style="--pc:'+POSC[pk.p.pos]+'" '+(trk?'data-rm="'+(r+1)+'-'+team+'" title="Click to remove"':'')+'>'+avatarHtml(pk.p,"cava")+'<div class="cell-txt"><div class="c-n">'+pk.p.name+'</div><div class="c-m">'+pk.p.pos+' · '+pk.p.team+' · '+pk.label+'</div></div></div></td>';
+      if(pk) html+='<td><div class="cell '+(team===mock.slot-1?'mine-cell':'')+'" style="--pc:'+POSC[pk.p.pos]+'" data-info="'+pk.p.adp+'" title="'+pk.p.name+' — click for stats">'+avatarHtml(pk.p,"cava")+'<div class="cell-txt"><div class="c-n">'+pk.p.name+'</div><div class="c-m">'+pk.p.pos+' · '+pk.p.team+' · '+pk.label+'</div></div>'+(trk?'<button class="cell-x" data-rm="'+(r+1)+'-'+team+'" title="Undo this pick">✕</button>':'')+'</div></td>';
       else html+='<td><div class="cell empty '+(isClockCell?'on-clock':'')+(trk&&mock.selAdp?' placeable':'')+'" '+(trk?'data-drop="'+(r+1)+'-'+team+'"':'')+'></div></td>';
     }
     html+='</tr>';
@@ -1265,11 +1285,20 @@ function renderRoom(host){
   const q=host.querySelector("#baQ"); if(q){ q.oninput=e=>{ mock.baQ=e.target.value; host.querySelector("#baList").innerHTML=baRows(); wireDraftBtns(host); }; }
   const ps=host.querySelector("#baPos"); if(ps){ ps.onchange=e=>{ mock.baPos=e.target.value; host.querySelector("#baList").innerHTML=baRows(); wireDraftBtns(host); }; }
   wireDraftBtns(host);
+  // Player profiles work everywhere in the mock room
+  host.querySelectorAll("[data-info]").forEach(el=>{
+    el.addEventListener("click",e=>{
+      if(e.target.closest(".draft-btn")||e.target.closest(".cell-x")) return;
+      e.stopPropagation();
+      const p=P.find(x=>x.adp===+el.dataset.info);
+      if(p) openModal(p);
+    });
+  });
   if(mock.mode==="track"){
-    // click a player to select, then click any empty cell to place them
-    host.querySelectorAll(".ba-row[data-adp]").forEach(row=>{
+    // click a player row to select, then click any empty cell to place them
+    host.querySelectorAll(".ba-row[data-pick]").forEach(row=>{
       row.addEventListener("click",e=>{
-        if(e.target.closest(".draft-btn")) return;
+        if(e.target.closest(".draft-btn")||e.target.closest(".info-btn")) return;
         mock.selAdp=(mock.selAdp===+row.dataset.adp)?null:+row.dataset.adp;
         renderRoom(host);
       });
@@ -1282,9 +1311,10 @@ function renderRoom(host){
         userDraft(adp,r,t);
       });
     });
-    host.querySelectorAll("[data-rm]").forEach(cell=>{
-      cell.addEventListener("click",()=>{
-        const [r,t]=cell.dataset.rm.split("-").map(Number);
+    host.querySelectorAll(".cell-x[data-rm]").forEach(btn=>{
+      btn.addEventListener("click",e=>{
+        e.stopPropagation();
+        const [r,t]=btn.dataset.rm.split("-").map(Number);
         removePick(r,t);
         renderRoom(host);
       });
@@ -1303,9 +1333,10 @@ function baRows(limit,readOnly){
     if(mock.baQ){ const q=mock.baQ.toLowerCase(); list=list.filter(p=>p.name.toLowerCase().includes(q)||p.team.toLowerCase().includes(q)); }
   }
   list=list.slice(0,limit||24);
-  return list.map(p=>'<div class="ba-row'+(mock.mode==="track"&&!readOnly&&mock.selAdp===p.adp?' sel':'')+'"'+(mock.mode==="track"&&!readOnly?' data-adp="'+p.adp+'"':'')+'>'+avatarHtml(p)
+  return list.map(p=>'<div class="ba-row'+(mock.mode==="track"&&!readOnly&&mock.selAdp===p.adp?' sel':'')+'" data-adp="'+p.adp+'"'+(mock.mode==="track"&&!readOnly?' data-pick="1"':'')+'>'+avatarHtml(p)
     +'<div class="ba-info"><div class="ba-n">'+p.name+'</div><div class="ba-m"><span class="pos-b" style="--pc:'+POSC[p.pos]+'">'+p.pos+p.posRank+'</span> '+p.team+' · <span class="ba-adp">ADP '+p.adp+'</span></div></div>'
     +'<div class="ba-pts">'+fmtPpg(p)+'<div class="ba-adp">ppg ’25</div></div>'
+    +'<button class="info-btn" data-info="'+p.adp+'" title="View stats">ⓘ</button>'
     +(readOnly?'':'<button class="draft-btn" data-draft="'+p.adp+'">Draft</button>')+'</div>').join('');
 }
 function rosterRows(){
