@@ -64,6 +64,19 @@ main{max-width:1240px;margin:0 auto;padding:20px 18px 90px}
 .tier-count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim)}
 .tier-ghost{position:absolute;right:-6px;top:-38px;font-weight:900;font-size:128px;line-height:1;color:rgba(140,161,192,.06);pointer-events:none;user-select:none;font-family:'Archivo',sans-serif}
 .tier-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(252px,1fr));gap:1px;background:var(--line)}
+.pcard{position:relative}
+.pcard .grip{position:absolute;left:3px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:12px;cursor:grab;padding:6px 2px;line-height:1;opacity:.45;user-select:none}
+.pcard:hover .grip{opacity:1;color:var(--gold)}
+.pcard .grip:active{cursor:grabbing}
+.pcard.dragging{opacity:.35}
+.pcard.drop-before{box-shadow:inset 0 3px 0 var(--gold)}
+.pcard.picked{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-dim),0 0 14px rgba(232,196,104,.18)}
+.pcard.picked .grip{opacity:1;color:var(--gold)}
+.tier-grid.tier-hot{outline:1.5px dashed var(--gold-dim);outline-offset:4px;border-radius:8px}
+.tier-empty{grid-column:1/-1;padding:14px;text-align:center;font-size:11px;color:var(--dim);font-style:italic;border:1px dashed var(--line);border-radius:8px}
+.moved-dot{color:var(--gold);font-size:8px;vertical-align:middle}
+.custom-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 14px;margin-bottom:14px;border:1px solid var(--gold-dim);background:rgba(232,196,104,.07);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gold)}
+.custom-bar .btn{margin-left:auto;padding:5px 10px;font-size:10px}
 .pcard{position:relative;display:flex;align-items:center;gap:11px;background:var(--panel);padding:11px 12px 11px 15px;cursor:pointer;transition:background .12s}
 .pcard:hover{background:var(--panel2)}
 .pcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--pc)}
@@ -696,24 +709,88 @@ function matches(p){
 function rd12(adp){ const r=Math.ceil(adp/12), pk=((adp-1)%12)+1; return r+"."+String(pk).padStart(2,"0"); }
 
 /* ================= Board view ================= */
+/* Custom board ordering: user can drag players between/within tiers */
+const sel={adp:null};   // tap-to-move selection (touch fallback)
+let userTier={};                                  // adp -> tier number override
+let boardOrder=P.map(p=>p.adp);                   // display order across the whole board
+function effTier(p){ return userTier[p.adp]||p.tier; }
+function customized(){ return Object.keys(userTier).length>0 || boardOrder.some((a,i)=>a!==P[i].adp); }
+function orderedTier(n){
+  return boardOrder.map(a=>P.find(p=>p.adp===a)).filter(p=>effTier(p)===n);
+}
+function moveCard(adp,tierN,beforeAdp){
+  const from=boardOrder.indexOf(adp);
+  if(from<0) return;
+  boardOrder.splice(from,1);
+  const p=P.find(x=>x.adp===adp);
+  if(tierN===p.tier) delete userTier[adp]; else userTier[adp]=tierN;
+  let at = beforeAdp!=null ? boardOrder.indexOf(beforeAdp) : -1;
+  if(at<0){
+    // append to the end of the target tier
+    const inTier=boardOrder.map(a=>P.find(x=>x.adp===a)).filter(x=>effTier(x)===tierN);
+    at = inTier.length ? boardOrder.indexOf(inTier[inTier.length-1].adp)+1 : boardOrder.length;
+  }
+  boardOrder.splice(at,0,adp);
+  refresh();
+}
 function renderBoard(){
   const host=document.getElementById("view-board");
   let html="";
+  if(customized()) html+='<div class="custom-bar">★ Custom board — your rankings, not ADP <button class="btn" id="resetOrder">Reset to ADP order</button></div>';
   for(const t of TIERS){
-    const players=P.filter(p=>p.tier===t.n && matches(p));
-    if(!players.length) continue;
-    html+='<section class="tier"><div class="tier-head"><span class="tier-num">Tier '+t.n+'</span><span class="tier-name">'+t.name+'</span><span class="tier-count">'+players.length+' players</span><span class="tier-ghost">'+(t.n<10?t.n:'K/D')+'</span></div><div class="tier-grid">';
+    const all=orderedTier(t.n);
+    const players=all.filter(matches);
+    if(!all.length) continue;
+    html+='<section class="tier" data-tier="'+t.n+'"><div class="tier-head"><span class="tier-num">Tier '+t.n+'</span><span class="tier-name">'+t.name+'</span><span class="tier-count">'+players.length+' players</span><span class="tier-ghost">'+(t.n<10?t.n:'K/D')+'</span></div><div class="tier-grid" data-drop-tier="'+t.n+'">';
     for(const p of players){
       const st=status[p.adp]||"";
-      html+='<div class="pcard '+(st==="drafted"?"drafted":"")+' '+(st==="mine"?"mine":"")+'" style="--pc:'+POSC[p.pos]+'" data-adp="'+p.adp+'">'
+      const moved=userTier[p.adp]&&userTier[p.adp]!==p.tier;
+      html+='<div class="pcard '+(st==="drafted"?"drafted":"")+' '+(st==="mine"?"mine":"")+' '+(sel.adp===p.adp?"picked":"")+'" draggable="true" style="--pc:'+POSC[p.pos]+'" data-adp="'+p.adp+'">'
+        +'<span class="grip" title="Drag to re-rank">⠿</span>'
         +avatarHtml(p)
-        +'<div class="p-main"><div class="p-name">'+p.name+'</div><div class="p-meta"><span class="pos-b">'+p.pos+p.posRank+'</span><span>'+p.team+'</span></div></div>'
+        +'<div class="p-main"><div class="p-name">'+p.name+(moved?' <span class="moved-dot" title="Moved from tier '+p.tier+'">●</span>':'')+'</div><div class="p-meta"><span class="pos-b">'+p.pos+p.posRank+'</span><span>'+p.team+'</span></div></div>'
         +'<div class="p-side"><div class="p-proj">'+fmtPpg(p)+'</div><div class="p-adp">PPG · ADP '+p.adp+'</div></div>'
         +'<button class="p-x" data-x="'+p.adp+'" title="Toggle drafted">✕</button></div>';
     }
+    if(!players.length) html+='<div class="tier-empty">No players match filters — drop here to add.</div>';
     html+='</div></section>';
   }
   host.innerHTML = html || '<div class="empty-msg">No players match those filters.</div>';
+  const rb=document.getElementById("resetOrder");
+  if(rb) rb.onclick=()=>{ userTier={}; boardOrder=P.map(p=>p.adp); sel.adp=null; refresh(); };
+  wireBoardDnD(host);
+}
+function wireBoardDnD(host){
+  let dragAdp=null;
+  host.querySelectorAll(".pcard").forEach(card=>{
+    card.addEventListener("dragstart",e=>{
+      dragAdp=+card.dataset.adp;
+      e.dataTransfer.effectAllowed="move";
+      e.dataTransfer.setData("text/plain",String(dragAdp));
+      setTimeout(()=>card.classList.add("dragging"),0);
+    });
+    card.addEventListener("dragend",()=>{ dragAdp=null; host.querySelectorAll(".drop-before,.dragging").forEach(x=>x.classList.remove("drop-before","dragging")); });
+    card.addEventListener("dragover",e=>{
+      e.preventDefault();
+      host.querySelectorAll(".drop-before").forEach(x=>x.classList.remove("drop-before"));
+      if(+card.dataset.adp!==dragAdp) card.classList.add("drop-before");
+    });
+    card.addEventListener("drop",e=>{
+      e.preventDefault(); e.stopPropagation();
+      const adp=+e.dataTransfer.getData("text/plain");
+      const tierN=+card.closest("[data-drop-tier]").dataset.dropTier;
+      if(adp!==+card.dataset.adp) moveCard(adp,tierN,+card.dataset.adp);
+    });
+  });
+  host.querySelectorAll("[data-drop-tier]").forEach(grid=>{
+    grid.addEventListener("dragover",e=>{ e.preventDefault(); grid.classList.add("tier-hot"); });
+    grid.addEventListener("dragleave",()=>grid.classList.remove("tier-hot"));
+    grid.addEventListener("drop",e=>{
+      e.preventDefault(); grid.classList.remove("tier-hot");
+      const adp=+e.dataTransfer.getData("text/plain");
+      if(adp) moveCard(adp,+grid.dataset.dropTier,null);
+    });
+  });
 }
 
 /* ================= Rankings view ================= */
@@ -828,8 +905,18 @@ function refresh(){
 document.getElementById("view-board").addEventListener("click",e=>{
   const x=e.target.closest(".p-x");
   if(x){ const a=+x.dataset.x; status[a]=(status[a]==="drafted")?"":"drafted"; refresh(); e.stopPropagation(); return; }
+  const g=e.target.closest(".grip");
+  if(g){ const a=+g.closest(".pcard").dataset.adp; sel.adp=(sel.adp===a)?null:a; refresh(); e.stopPropagation(); return; }
+  const head=e.target.closest(".tier-head");
+  if(head&&sel.adp!=null){ const t=+head.closest(".tier").dataset.tier; const a=sel.adp; sel.adp=null; moveCard(a,t,null); return; }
   const c=e.target.closest(".pcard");
-  if(c) openModal(P.find(p=>p.adp===+c.dataset.adp));
+  if(!c) return;
+  const a=+c.dataset.adp;
+  if(sel.adp!=null&&sel.adp!==a){
+    const t=+c.closest("[data-drop-tier]").dataset.dropTier;
+    const from=sel.adp; sel.adp=null; moveCard(from,t,a); return;
+  }
+  openModal(P.find(p=>p.adp===a));
 });
 document.getElementById("view-rank").addEventListener("click",e=>{
   const r=e.target.closest("tr[data-adp]");
