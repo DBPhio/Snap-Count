@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>War Room '26 — Fantasy Football Draft Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B1220; --panel:#111B2D; --panel2:#16223A; --line:#243554; --line2:#2E4267;
+  --text:#E9EFF9; --mut:#8CA1C0; --dim:#5E7297;
+  --gold:#E8C468; --gold-dim:#8a7433;
+  --qb:#F2545B; --rb:#35C29A; --wr:#4EA1F7; --te:#F5A524; --k:#B48CF2; --dst:#95A3B8;
+  --danger:#F2545B;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scrollbar-color:#2E4267 #0B1220}
+body{background:var(--bg);color:var(--text);font-family:'Archivo',sans-serif;font-size:14px;
+  background-image:radial-gradient(1100px 500px at 80% -10%, rgba(78,161,247,.07), transparent 60%),
+                   radial-gradient(900px 420px at 10% -10%, rgba(232,196,104,.05), transparent 55%);}
+.mono{font-family:'IBM Plex Mono',monospace}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit;color:var(--text)}
+::placeholder{color:var(--dim)}
+
+/* ---------- Header ---------- */
+header{position:sticky;top:0;z-index:60;background:rgba(11,18,32,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.hd-top{display:flex;align-items:center;gap:18px;padding:12px 18px 8px;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;line-height:1}
+.brand .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.28em;color:var(--gold);text-transform:uppercase}
+.brand h1{font-weight:900;font-size:26px;letter-spacing:-.01em;text-transform:uppercase}
+.brand h1 span{color:var(--gold)}
+.hd-spacer{flex:1}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{padding:8px 14px;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--mut);text-transform:uppercase}
+.seg button.on{background:var(--panel2);color:var(--text);box-shadow:inset 0 -2px 0 var(--gold)}
+.seg.tabs button.on{box-shadow:inset 0 -2px 0 var(--wr)}
+.hd-tools{display:flex;align-items:center;gap:10px;padding:0 18px 12px;flex-wrap:wrap}
+.search{flex:1;min-width:180px;max-width:340px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:13px;outline:none}
+.search:focus{border-color:var(--line2)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--mut)}
+.chip.on{color:var(--text);border-color:currentColor}
+.chip.on.c-QB{color:var(--qb)} .chip.on.c-RB{color:var(--rb)} .chip.on.c-WR{color:var(--wr)}
+.chip.on.c-TE{color:var(--te)} .chip.on.c-K{color:var(--k)} .chip.on.c-DST{color:var(--dst)}
+.chip.on.c-ALL{color:var(--gold)}
+.tgl{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--mut);cursor:pointer;user-select:none}
+.tgl input{accent-color:var(--gold)}
+.btn{padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:var(--panel);font-size:12px;font-weight:700;color:var(--mut)}
+.btn:hover{color:var(--text);border-color:var(--line2)}
+.btn.gold{background:var(--gold);color:#1a1405;border-color:var(--gold);font-weight:800}
+.btn.gold:hover{filter:brightness(1.07);color:#1a1405}
+.myteam-chip{display:flex;align-items:center;gap:8px;padding:8px 13px;border-radius:9px;border:1px solid var(--gold-dim);background:rgba(232,196,104,.08);font-size:12px;font-weight:700;color:var(--gold)}
+
+main{max-width:1240px;margin:0 auto;padding:20px 18px 90px}
+
+/* ---------- Tier board ---------- */
+.tier{position:relative;margin-bottom:26px;border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden}
+.tier-head{display:flex;align-items:baseline;gap:14px;padding:13px 18px 11px;border-bottom:1px solid var(--line);position:relative}
+.tier-num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12px;letter-spacing:.2em;color:var(--gold);text-transform:uppercase}
+.tier-name{font-weight:800;font-size:16px;text-transform:uppercase;letter-spacing:.03em}
+.tier-count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim)}
+.tier-ghost{position:absolute;right:-6px;top:-38px;font-weight:900;font-size:128px;line-height:1;color:rgba(140,161,192,.06);pointer-events:none;user-select:none;font-family:'Archivo',sans-serif}
+.tier-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(252px,1fr));gap:1px;background:var(--line)}
+.pcard{position:relative;display:flex;align-items:center;gap:11px;background:var(--panel);padding:11px 12px 11px 15px;cursor:pointer;transition:background .12s}
+.pcard:hover{background:var(--panel2)}
+.pcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--pc)}
+.pcard.drafted{opacity:.32}
+.pcard.drafted .p-name{text-decoration:line-through;text-decoration-color:#b06fd8;text-decoration-thickness:2px}
+.pcard.mine{background:rgba(232,196,104,.07)}
+.pcard.mine::after{content:"MY PICK";position:absolute;right:8px;bottom:6px;font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.15em;color:var(--gold)}
+.ava{width:44px;height:44px;border-radius:50%;background:var(--av,#22314e);flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid var(--line2)}
+.ava img{width:100%;height:100%;object-fit:cover;object-position:top}
+.ava.logo img{width:72%;height:72%;object-fit:contain}
+.ava .ini{font-weight:800;font-size:14px;color:#fff;letter-spacing:.02em}
+.p-main{flex:1;min-width:0}
+.p-name{font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-meta{display:flex;gap:7px;align-items:center;margin-top:3px;font-size:11px;color:var(--mut)}
+.pos-b{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:10px;color:var(--pc)}
+.p-side{text-align:right;flex:none}
+.p-proj{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:15px}
+.p-adp{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px}
+.p-x{position:absolute;top:6px;right:7px;width:18px;height:18px;border-radius:50%;font-size:10px;line-height:18px;text-align:center;color:var(--dim);background:transparent;opacity:0;transition:opacity .12s}
+.pcard:hover .p-x{opacity:1}
+.p-x:hover{color:var(--danger);background:rgba(242,84,91,.12)}
+.rk{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);position:absolute;left:6px;top:5px;writing-mode:vertical-rl;display:none}
+
+/* ---------- Rankings table ---------- */
+.rtable{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.rtable-wrap{border:1px solid var(--line);border-radius:14px;overflow:auto}
+.rtable th{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);background:var(--panel2);position:sticky;top:0}
+.rtable td{padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.rtable tr{cursor:pointer;background:var(--panel)}
+.rtable tr:hover td{background:var(--panel2)}
+.rtable tr.drafted td{opacity:.32}
+.rtable .num{font-family:'IBM Plex Mono',monospace}
+.rt-name{display:flex;align-items:center;gap:9px;font-weight:700;white-space:nowrap}
+.rt-name .ava{width:30px;height:30px}
+.tier-pill{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--line2);color:var(--mut)}
+
+/* ---------- Modal ---------- */
+.overlay{position:fixed;inset:0;background:rgba(4,8,16,.72);z-index:100;display:none;align-items:center;justify-content:center;padding:18px}
+.overlay.show{display:flex}
+.modal{width:100%;max-width:480px;background:var(--panel);border:1px solid var(--line2);border-radius:16px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.m-head{display:flex;gap:14px;align-items:center;padding:18px;border-bottom:1px solid var(--line);position:relative}
+.m-head::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--pc)}
+.m-head .ava{width:64px;height:64px}
+.m-name{font-weight:900;font-size:20px;text-transform:uppercase;letter-spacing:.01em}
+.m-sub{color:var(--mut);font-size:12px;margin-top:3px;display:flex;gap:9px;align-items:center}
+.m-close{position:absolute;top:10px;right:12px;color:var(--dim);font-size:18px;padding:4px 8px}
+.m-close:hover{color:var(--text)}
+.m-body{padding:16px 18px}
+.stat-row{display:grid;grid-template-columns:92px 1fr auto;gap:10px;align-items:baseline;padding:10px 0;border-bottom:1px dashed var(--line)}
+.stat-lab{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+.stat-line{font-size:13px;color:var(--text)}
+.stat-pts{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:16px;color:var(--gold)}
+
+.dp{padding:12px 2px 2px;border-top:1px solid var(--line);margin-top:12px}
+.dp-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.dp-src{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.dp-row{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px;font-size:12px;border:1px solid transparent}
+.dp-row+.dp-row{margin-top:3px}
+.dp-rank{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);width:16px;flex:none;text-align:center}
+.dp-name{flex:1;min-width:0;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dp-adp{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--dim)}
+.dp-row.me{background:rgba(232,196,104,.10);border-color:var(--gold-dim)}
+.dp-row.me .dp-name{color:var(--txt);font-weight:700}
+.dp-row.me .dp-rank{color:var(--gold)}
+.dp-you{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--gold);font-weight:400}
+.dp-gap{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--dim);text-align:center;padding:4px 0;letter-spacing:.05em}
+.dp-row.link{cursor:pointer}
+.dp-row.link:hover{background:var(--panel2);border-color:var(--line2)}
+.dp-row.link:hover .dp-name{color:var(--txt)}
+.glog{padding:12px 2px 4px}
+.glog-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.glog-kpis{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--mut)}
+.glog-kpis b{color:var(--txt)} .glog-kpis .gd{color:var(--rb)} .glog-kpis .rd{color:var(--qb)}
+.gchart{display:flex;align-items:flex-end;gap:3px;overflow-x:auto;padding-bottom:2px}
+.gcol{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:20px;flex:1}
+.gbar{width:100%;max-width:22px;background:linear-gradient(180deg,var(--gold) 0%,#8a6f2e 100%);border-radius:3px 3px 0 0;min-height:4px}
+.gbar.best{background:linear-gradient(180deg,var(--rb) 0%,#1d7a5f 100%)}
+.gbar.low{background:linear-gradient(180deg,var(--qb) 0%,#8a2f35 100%)}
+.gbar.ghost{height:4px;background:var(--line)}
+.gwk{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--dim)}
+.gv{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--mut)}
+.gcol.dnp .gv{color:var(--dim)}
+.glog-empty{padding:12px 2px;font-size:12px;color:var(--mut);font-style:italic}
+.m-tags{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}
+.m-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:4px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:var(--mut)}
+a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.m-actions{display:flex;gap:9px;padding:14px 18px 18px}
+.m-actions .btn{flex:1;text-align:center;padding:11px}
+.note{font-size:11px;color:var(--dim);padding:0 18px 14px;line-height:1.5}
+
+/* ---------- Mock draft ---------- */
+.setup{max-width:560px;margin:30px auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px}
+.setup h2{font-weight:900;text-transform:uppercase;font-size:22px;margin-bottom:4px}
+.setup .sub{color:var(--mut);font-size:13px;margin-bottom:20px;line-height:1.5}
+.f-row{margin-bottom:16px}
+.f-lab{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:8px}
+.opt-row{display:flex;gap:7px;flex-wrap:wrap}
+.opt{padding:9px 15px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);font-size:13px;font-weight:700;color:var(--mut)}
+.opt.on{color:#1a1405;background:var(--gold);border-color:var(--gold)}
+.slot-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.slot-grid .opt{padding:9px 0;text-align:center}
+
+.ticker{display:flex;gap:8px;align-items:stretch;overflow-x:auto;padding:10px 2px 14px;scrollbar-width:thin}
+.tick{flex:none;display:flex;flex-direction:column;justify-content:center;min-width:118px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--pc,#333);border-radius:9px;padding:7px 10px}
+.tick .t-pick{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:.1em}
+.tick .t-name{font-weight:700;font-size:12px;white-space:nowrap;margin-top:2px}
+.tick .t-team{font-size:10px;color:var(--mut);margin-top:1px}
+.tick.user-pick{border-color:var(--gold-dim);background:rgba(232,196,104,.07)}
+.tick.clock{background:var(--gold);border-color:var(--gold);color:#1a1405;justify-content:center;align-items:center;min-width:150px}
+.tick.clock .t-clock{font-weight:900;font-size:12px;letter-spacing:.12em;text-transform:uppercase;animation:pulse 1.1s ease-in-out infinite}
+.tick.clock .t-who{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;margin-top:2px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+@media (prefers-reduced-motion: reduce){.tick.clock .t-clock{animation:none}}
+
+.room{display:grid;grid-template-columns:1fr 380px;gap:16px;align-items:start}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.panel-h{display:flex;align-items:center;gap:10px;padding:12px 15px;border-bottom:1px solid var(--line);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.panel-h .mini{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);font-weight:400;letter-spacing:0;text-transform:none}
+.dboard{overflow:visible}
+.dboard table{border-collapse:collapse;width:100%;table-layout:fixed}
+.dboard th{font-family:'IBM Plex Mono',monospace;font-size:clamp(7px,0.85vw,9.5px);color:var(--dim);padding:6px 2px;border-bottom:1px solid var(--line);background:var(--panel2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.03em}
+.dboard th.you{color:var(--gold)}
+.dboard th .tname{cursor:text;border-bottom:1px dashed transparent;padding:0 1px}
+.dboard th .tname:hover{border-bottom-color:var(--gold-dim)}
+.dboard th .tname:focus{outline:none;border-bottom-color:var(--gold);color:var(--txt)}
+.dboard td{padding:2px}
+.dboard td.rlab{width:26px}
+.cell{width:100%;height:40px;border-radius:5px;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--pc,transparent);padding:3px 4px;font-size:clamp(7.5px,0.95vw,10.5px);line-height:1.25;overflow:hidden;display:flex;align-items:center;gap:4px}
+.cell .ava.cava{width:26px;height:26px;min-width:26px;border-width:1px}
+.cell .ava.cava .ini{font-size:9px}
+.cell-txt{flex:1;min-width:0}
+@media(max-width:760px){.cell .ava.cava{display:none}}
+.cell .c-n{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell .c-m{color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:clamp(6.5px,0.75vw,9px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell.empty{border-style:dashed;border-left:1px dashed var(--line);background:transparent}
+
+.cell.empty[data-drop]{cursor:pointer}
+.cell.empty.placeable{border:1.5px dashed var(--gold-dim);background:rgba(232,196,104,.06);animation:placePulse 1.4s ease-in-out infinite}
+.cell.empty.placeable:hover{border-color:var(--gold);background:rgba(232,196,104,.14)}
+@keyframes placePulse{0%,100%{border-color:var(--gold-dim)}50%{border-color:var(--gold)}}
+.cell.rm{cursor:pointer}
+.cell.rm:hover{box-shadow:inset 0 0 0 1.5px var(--qb);opacity:.85}
+.ba-row[data-adp]{cursor:pointer}
+.ba-row.sel{background:rgba(232,196,104,.10);box-shadow:inset 2.5px 0 0 var(--gold)}
+.ba-row.sel .ba-n{color:var(--gold)}
+.cell.on-clock{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.cell.mine-cell{background:rgba(232,196,104,.09)}
+.ba-list{max-height:46vh;overflow:auto}
+.ba-row{display:flex;align-items:center;gap:10px;padding:8px 13px;border-bottom:1px solid var(--line)}
+.ba-row .ava{width:32px;height:32px}
+.ba-info{flex:1;min-width:0}
+.ba-n{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ba-m{font-size:10.5px;color:var(--mut);margin-top:1px}
+.ba-pts{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;text-align:right}
+.ba-adp{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim)}
+.draft-btn{padding:7px 13px;border-radius:8px;background:var(--gold);color:#1a1405;font-weight:800;font-size:11px;letter-spacing:.05em}
+.draft-btn:hover{filter:brightness(1.08)}
+.sim-note{padding:20px 15px;text-align:center;color:var(--mut);font-size:13px;line-height:1.6}
+.roster-row{display:flex;gap:10px;align-items:center;padding:7px 14px;border-bottom:1px solid var(--line);font-size:12.5px}
+.roster-slot{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;width:38px;color:var(--pc,var(--dim))}
+.roster-row .nm{font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.roster-row .pt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mut)}
+.roster-row.emptyslot{color:var(--dim)}
+.total-row{display:flex;justify-content:space-between;padding:11px 15px;font-weight:800;border-top:1px solid var(--line2)}
+.total-row .mono{color:var(--gold)}
+.mock-bar{display:flex;gap:9px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.mock-bar .status{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mut)}
+.mock-bar .status b{color:var(--gold)}
+.results-banner{background:linear-gradient(90deg, rgba(232,196,104,.14), transparent);border:1px solid var(--gold-dim);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+.results-banner h3{font-weight:900;text-transform:uppercase;font-size:18px;color:var(--gold)}
+.results-banner p{color:var(--mut);font-size:13px;margin-top:5px}
+
+footer{max-width:1240px;margin:0 auto;padding:0 18px 40px;color:var(--dim);font-size:11px;line-height:1.6}
+.empty-msg{text-align:center;color:var(--dim);padding:60px 0;font-size:14px}
+
+@media(max-width:960px){
+  .room{grid-template-columns:1fr}
+  .tier-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  .brand h1{font-size:20px}
+  .slot-grid{grid-template-columns:repeat(5,1fr)}
+}
+@media(max-width:560px){
+  .tier-grid{grid-template-columns:1fr}
+  .hd-top{gap:10px}
+  .rtable th:nth-child(6),.rtable td:nth-child(6){display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd-top">
+    <div class="brand">
+      <span class="eyebrow">2026–27 Season · Draft HQ</span>
+      <h1>War&nbsp;Room&nbsp;<span>'26</span></h1>
+    </div>
+    <div class="hd-spacer"></div>
+    <div class="seg" id="scoringSeg">
+      <button data-s="std">Std</button>
+      <button data-s="half">Half</button>
+      <button data-s="ppr" class="on">PPR</button>
+    </div>
+    <div class="seg tabs" id="viewSeg">
+      <button data-v="board" class="on">Draft Board</button>
+      <button data-v="rank">Rankings</button>
+      <button data-v="mock">Mock Draft</button>
+    </div>
+  </div>
+  <div class="hd-tools" id="boardTools">
+    <input class="search" id="q" type="text" placeholder="Search players or teams…">
+    <div class="chips" id="posChips">
+      <button class="chip c-ALL on" data-p="ALL">ALL</button>
+      <button class="chip c-QB" data-p="QB">QB</button>
+      <button class="chip c-RB" data-p="RB">RB</button>
+      <button class="chip c-WR" data-p="WR">WR</button>
+      <button class="chip c-TE" data-p="TE">TE</button>
+      <button class="chip c-K" data-p="K">K</button>
+      <button class="chip c-DST" data-p="DST">D/ST</button>
+    </div>
+    <label class="tgl"><input type="checkbox" id="hideDrafted"> Hide drafted</label>
+    <div class="myteam-chip" id="myTeamChip" title="Players you've marked as your picks">★ My Team: <span class="mono" id="myCount">0</span></div>
+    <button class="btn" id="resetBoard">Reset board</button>
+  </div>
+</header>
+
+<main>
+  <div id="view-board"></div>
+  <div id="view-rank" style="display:none"></div>
+  <div id="view-mock" style="display:none"></div>
+</main>
+
+<footer>
+  WAR ROOM '26 · Rankings &amp; tiers seeded from consensus ADP (Aug 2026, PPR) across ESPN, Yahoo, Sleeper, Underdog, NFL &amp; CBS.
+  2025 stat lines are approximations and 2026 projections are estimates — edit the <span class="mono">PLAYERS</span> array in this file to tune them.
+  Click any player for details; use ✕ to mark drafted, or add them to your team from the player card.
+</footer>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+
+<script>
+/* =====================================================================
+   DATA
+   Row: [adp, name, team, pos, espnId, pts2025(PPR), rec2025, "2025 line",
+         proj2026(PPR), projRec, "2026 projection line"]
+   - espnId 0 = show team logo instead of a headshot. To add a headshot,
+     put the player's ESPN id (the number in their espn.com player URL).
+   - Points are PPR season totals; Std/Half are derived from receptions.
+===================================================================== */
+const PLAYERS=[
+[1,"Jahmyr Gibbs","DET","RB",4429795,367,77,"1,438 rush yds · 55 rec, 470 yds · 19 total TD",330,54,"1,950 total yds · 16 TD · 55 rec"],
+[2,"Bijan Robinson","ATL","RB",4430807,371,79,"1,390 rush yds · 58 rec, 495 yds · 15 total TD",325,60,"1,900 total yds · 14 TD · 60 rec"],
+[3,"Ja'Marr Chase","CIN","WR",4362628,314,125,"108 rec · 1,344 yds · 11 TD",330,115,"115 rec · 1,450 yds · 12 TD"],
+[4,"Puka Nacua","LAR","WR",4426515,375,129,"112 rec · 1,486 yds · 8 TD",320,110,"110 rec · 1,420 yds · 9 TD"],
+[5,"Jaxon Smith-Njigba","SEA","WR",4430878,360,119,"116 rec · 1,612 yds · 10 TD — overall WR1",315,108,"108 rec · 1,390 yds · 9 TD"],
+[6,"Christian McCaffrey","SF","RB",3117251,417,102,"1,015 rush yds · 68 rec, 550 yds · 11 total TD",295,65,"1,650 total yds · 12 TD · 65 rec"],
+[7,"Amon-Ra St. Brown","DET","WR",4374302,324,117,"110 rec · 1,260 yds · 11 TD",310,108,"108 rec · 1,250 yds · 10 TD"],
+[8,"Jonathan Taylor","IND","RB",4242335,362,46,"1,612 rush yds · 32 rec · 17 total TD",300,30,"1,550 rush yds · 15 TD · 30 rec"],
+[9,"Ashton Jeanty","LV","RB",4890973,245,55,"1,120 rush yds · 40 rec, 320 yds · 9 TD (rookie yr)",290,46,"1,500 total yds · 12 TD · 46 rec"],
+[10,"CeeDee Lamb","DAL","WR",4241389,201,75,"100 rec · 1,205 yds · 7 TD",300,105,"105 rec · 1,320 yds · 9 TD"],
+[11,"Justin Jefferson","MIN","WR",4262921,202,84,"97 rec · 1,388 yds · 9 TD",295,100,"100 rec · 1,400 yds · 8 TD"],
+[12,"James Cook","BUF","RB",4379399,302,33,"1,285 rush yds · 35 rec · 14 total TD",275,36,"1,400 total yds · 13 TD"],
+[13,"Saquon Barkley","PHI","RB",3929630,232,37,"1,240 rush yds · 33 rec · 11 total TD",272,35,"1,450 total yds · 12 TD"],
+[14,"Omarion Hampton","LAC","RB",4685382,136,32,"1,050 rush yds · 42 rec · 8 TD (rookie yr)",268,48,"1,400 total yds · 11 TD · 48 rec"],
+[15,"De'Von Achane","MIA","RB",4429160,323,67,"980 rush yds · 62 rec, 540 yds · 13 total TD",265,60,"1,450 total yds · 11 TD · 60 rec"],
+[16,"Chase Brown","CIN","RB",4362238,283,69,"1,180 rush yds · 45 rec · 10 total TD",258,45,"1,350 total yds · 10 TD"],
+[17,"Kenneth Walker III","KC","RB",4567048,192,31,"905 rush yds · 38 rec · 9 total TD (with SEA)",255,40,"1,300 total yds · 11 TD — new team: KC"],
+[18,"Brock Bowers","LV","TE",4432665,176,64,"102 rec · 1,106 yds · 7 TD",265,105,"105 rec · 1,180 yds · 8 TD"],
+[19,"Drake London","ATL","WR",4426502,202,68,"105 rec · 1,390 yds · 9 TD",290,102,"102 rec · 1,350 yds · 9 TD"],
+[20,"Derrick Henry","BAL","RB",3043078,280,15,"1,545 rush yds · 15 rush TD · 20 rec",250,18,"1,350 rush yds · 13 TD"],
+[21,"A.J. Brown","NE","WR",4047646,220,78,"84 rec · 1,079 yds · 7 TD (with PHI)",268,95,"95 rec · 1,250 yds · 9 TD — new team: NE"],
+[22,"Trey McBride","ARI","TE",4361307,316,126,"110 rec · 1,146 yds · 6 TD",245,105,"105 rec · 1,100 yds · 7 TD"],
+[23,"Nico Collins","HOU","WR",4258173,226,71,"90 rec · 1,310 yds · 8 TD",262,88,"88 rec · 1,280 yds · 8 TD"],
+[24,"Rashee Rice","KC","WR",4428331,150,53,"102 rec · 1,180 yds · 9 TD",258,100,"100 rec · 1,150 yds · 9 TD"],
+[25,"George Pickens","DAL","WR",4426354,292,93,"88 rec · 1,362 yds · 10 TD — career year",252,84,"84 rec · 1,250 yds · 9 TD"],
+[26,"Jeremiyah Love","ARI","RB",4870808,0,0,"Rookie — Notre Dame: 1,510 rush yds, 19 TD, CFP star",245,38,"1,250 total yds · 10 TD · 38 rec"],
+[27,"DeVonta Smith","PHI","WR",4241478,202,77,"82 rec · 1,120 yds · 8 TD",248,85,"85 rec · 1,150 yds · 8 TD"],
+[28,"Chris Olave","NO","WR",4361370,268,100,"92 rec · 1,150 yds · 6 TD",245,90,"90 rec · 1,120 yds · 7 TD"],
+[29,"Josh Allen","BUF","QB",3918298,364,0,"3,668 pass yds · 25 pass TD · 580 rush yds, 12 rush TD — QB1",400,0,"4,000 pass yds · 30 TD · 550 rush yds, 10 TD"],
+[30,"Breece Hall","NYJ","RB",4427366,208,36,"890 rush yds · 48 rec, 400 yds · 8 total TD",240,50,"1,300 total yds · 9 TD · 50 rec"],
+[31,"Kyren Williams","LAR","RB",4430737,263,36,"1,205 rush yds · 30 rec · 13 total TD",238,30,"1,250 total yds · 12 TD"],
+[32,"Zay Flowers","BAL","WR",4429615,243,86,"85 rec · 1,090 yds · 7 TD",240,85,"85 rec · 1,100 yds · 7 TD"],
+[33,"Javonte Williams","DAL","RB",4361579,243,35,"1,150 rush yds · 40 rec · 12 total TD — career year",235,40,"1,250 total yds · 10 TD"],
+[34,"Malik Nabers","NYG","WR",4595348,57,18,"4 games (ACL) — 24 rec, 310 yds, 2 TD before injury",250,95,"95 rec · 1,250 yds · 8 TD if healthy"],
+[35,"Emeka Egbuka","TB","WR",4567750,196,63,"78 rec · 1,065 yds · 9 TD (rookie breakout)",245,82,"82 rec · 1,120 yds · 8 TD"],
+[36,"Josh Jacobs","GB","RB",4047365,237,36,"1,290 rush yds · 36 rec · 14 total TD",232,34,"1,250 total yds · 11 TD"],
+[37,"Garrett Wilson","NYJ","WR",4569618,100,36,"95 rec · 1,104 yds · 7 TD",240,92,"92 rec · 1,150 yds · 7 TD"],
+[38,"Tee Higgins","CIN","WR",4239993,212,59,"72 rec · 1,038 yds · 9 TD",235,75,"75 rec · 1,050 yds · 9 TD"],
+[39,"Tetairoa McMillan","CAR","WR",4685472,213,70,"80 rec · 1,215 yds · 8 TD (rookie breakout)",232,78,"78 rec · 1,150 yds · 7 TD"],
+[40,"Colston Loveland","CHI","TE",4723086,165,58,"58 rec · 640 yds · 5 TD (rookie yr)",210,78,"78 rec · 850 yds · 7 TD"],
+[41,"Travis Etienne","NO","RB",4239996,254,36,"1,080 rush yds · 40 rec · 8 total TD (with JAX)",228,42,"1,250 total yds · 8 TD — new team: NO"],
+[42,"Ladd McConkey","LAC","WR",4612826,181,66,"88 rec · 1,072 yds · 6 TD",235,90,"90 rec · 1,100 yds · 7 TD"],
+[43,"Cam Skattebo","NYG","RB",4696981,128,24,"980 rush yds · 42 rec · 10 total TD (rookie yr)",225,45,"1,200 total yds · 10 TD"],
+[44,"Jaylen Waddle","DEN","WR",4372016,194,64,"76 rec · 1,010 yds · 6 TD (with MIA)",232,80,"80 rec · 1,100 yds · 7 TD — new team: DEN"],
+[45,"Terry McLaurin","WAS","WR",3121422,114,38,"62 rec · 810 yds · 5 TD — down year",228,78,"78 rec · 1,050 yds · 8 TD bounce-back"],
+[46,"Davante Adams","LAR","WR",16800,223,60,"85 rec · 1,105 yds · 10 TD",225,80,"80 rec · 1,000 yds · 9 TD"],
+[47,"Luther Burden III","CHI","WR",4685278,128,47,"55 rec · 620 yds · 4 TD (rookie yr)",225,85,"85 rec · 950 yds · 7 TD"],
+[48,"D'Andre Swift","CHI","RB",4259545,229,34,"1,020 rush yds · 42 rec · 8 total TD",215,42,"1,150 total yds · 8 TD"],
+[49,"David Montgomery","HOU","RB",4035538,167,24,"930 rush yds · 28 rec · 10 total TD (with DET)",212,28,"1,100 total yds · 10 TD — new team: HOU"],
+[50,"Lamar Jackson","BAL","QB",3916387,215,0,"3,550 pass yds · 28 TD · 720 rush yds, 5 TD",390,0,"3,800 pass yds · 32 TD · 800 rush yds, 6 TD"],
+[51,"Quinshon Judkins","CLE","RB",4685702,170,26,"1,060 rush yds · 32 rec · 9 TD (rookie yr)",222,34,"1,200 total yds · 10 TD"],
+[52,"Tyler Warren","IND","TE",4431459,188,76,"70 rec · 805 yds · 6 TD (rookie yr)",205,75,"75 rec · 850 yds · 7 TD"],
+[53,"Jameson Williams","DET","WR",4426388,220,65,"62 rec · 1,150 yds · 8 TD",220,65,"65 rec · 1,100 yds · 8 TD"],
+[54,"TreVeyon Henderson","NE","RB",4432710,206,35,"780 rush yds · 45 rec, 420 yds · 7 TD (rookie yr)",218,50,"1,150 total yds · 9 TD · 50 rec"],
+[55,"D.J. Moore","BUF","WR",3915416,172,50,"80 rec · 920 yds · 6 TD (with CHI)",218,82,"82 rec · 1,000 yds · 7 TD — new team: BUF"],
+[56,"Mike Evans","SF","WR",16737,85,30,"60 rec · 880 yds · 8 TD (with TB, missed time)",215,70,"70 rec · 950 yds · 9 TD — new team: SF"],
+[57,"Bhayshul Tuten","JAX","RB",4882093,89,10,"720 rush yds · 30 rec · 7 TD (rookie yr)",210,35,"1,100 total yds · 9 TD"],
+[58,"Bucky Irving","TB","RB",4596448,138,30,"1,050 rush yds · 50 rec · 8 TD",215,48,"1,150 total yds · 8 TD"],
+[59,"Drake Maye","NE","QB",4431452,352,1,"3,950 pass yds · 28 TD · 480 rush yds",355,0,"4,200 pass yds · 30 TD · 450 rush yds"],
+[60,"Rome Odunze","CHI","WR",4431299,146,44,"78 rec · 1,005 yds · 7 TD",215,76,"76 rec · 1,000 yds · 7 TD"],
+[61,"Christian Watson","GB","WR",4248528,132,35,"42 rec · 720 yds · 6 TD",210,60,"60 rec · 950 yds · 8 TD"],
+[62,"Joe Burrow","CIN","QB",3915511,134,0,"9 games (injury) — 2,410 pass yds, 18 TD",355,0,"4,600 pass yds · 36 TD"],
+[63,"Carnell Tate","TEN","WR",4871023,0,0,"Rookie — Ohio State: 62 rec, 1,045 yds, 9 TD",205,68,"68 rec · 900 yds · 6 TD"],
+[64,"Jayden Daniels","WAS","QB",4426348,114,0,"3,540 pass yds · 24 TD · 690 rush yds, 7 TD (missed 3)",350,0,"3,800 pass yds · 27 TD · 750 rush yds, 7 TD"],
+[65,"Jadarian Price","SEA","RB",4685512,0,0,"Rookie — Notre Dame: 845 rush yds, 11 TD, explosive returner",200,32,"1,050 total yds · 9 TD"],
+[66,"Marvin Harrison Jr.","ARI","WR",4432708,128,41,"72 rec · 1,024 yds · 8 TD",218,75,"75 rec · 1,050 yds · 8 TD"],
+[67,"Jalen Hurts","PHI","QB",4040715,301,0,"3,290 pass yds · 21 TD · 630 rush yds, 12 rush TD",340,0,"3,500 pass yds · 24 TD · 600 rush yds, 11 TD"],
+[68,"Brian Thomas Jr.","JAX","WR",4432773,139,48,"70 rec · 1,010 yds · 6 TD",215,74,"74 rec · 1,080 yds · 7 TD"],
+[69,"Parker Washington","JAX","WR",4432620,185,58,"72 rec · 890 yds · 7 TD (breakout)",205,70,"70 rec · 900 yds · 6 TD"],
+[70,"Jaylen Warren","PIT","RB",4569987,217,40,"820 rush yds · 42 rec · 6 TD",200,44,"1,050 total yds · 7 TD"],
+[71,"Caleb Williams","CHI","QB",4431611,318,2,"3,880 pass yds · 26 TD · 420 rush yds",335,0,"4,100 pass yds · 29 TD · 400 rush yds"],
+[72,"Tony Pollard","TEN","RB",3916148,186,33,"1,010 rush yds · 38 rec · 7 TD",198,38,"1,050 total yds · 7 TD"],
+[73,"Jordyn Tyson","NO","WR",4880281,0,0,"Rookie — Arizona State: 75 rec, 1,100 yds, 10 TD",200,68,"68 rec · 880 yds · 6 TD"],
+[74,"DK Metcalf","PIT","WR",4047650,187,59,"62 rec · 992 yds · 8 TD",205,64,"64 rec · 980 yds · 8 TD"],
+[75,"Tucker Kraft","GB","TE",4572680,117,32,"58 rec · 750 yds · 7 TD",190,62,"62 rec · 780 yds · 7 TD"],
+[76,"Sam LaPorta","DET","TE",4430027,107,40,"62 rec · 726 yds · 6 TD",188,66,"66 rec · 760 yds · 7 TD"],
+[77,"Rhamondre Stevenson","NE","RB",4569173,179,32,"820 rush yds · 36 rec · 7 TD",190,38,"1,000 total yds · 8 TD"],
+[78,"Courtland Sutton","DEN","WR",3128429,220,74,"70 rec · 1,081 yds · 8 TD",200,66,"66 rec · 950 yds · 7 TD"],
+[79,"Kyle Pitts","ATL","TE",4360248,211,88,"64 rec · 810 yds · 5 TD",182,62,"62 rec · 800 yds · 6 TD"],
+[80,"Justin Herbert","LAC","QB",4038941,287,0,"3,870 pass yds · 27 TD · 390 rush yds",330,0,"4,100 pass yds · 29 TD"],
+[81,"Alec Pierce","IND","WR",4360078,183,47,"48 rec · 960 yds · 7 TD — big-play breakout",195,52,"52 rec · 950 yds · 7 TD"],
+[82,"Harold Fannin Jr.","CLE","TE",5083076,186,72,"68 rec · 720 yds · 5 TD (rookie yr)",178,66,"66 rec · 720 yds · 5 TD"],
+[83,"Dak Prescott","DAL","QB",2577417,314,0,"4,180 pass yds · 30 TD, 11 INT",320,0,"4,300 pass yds · 31 TD"],
+[84,"Trevor Lawrence","JAX","QB",4360310,338,0,"3,920 pass yds · 26 TD · 380 rush yds",318,0,"4,100 pass yds · 28 TD · 350 rush yds"],
+[85,"Chuba Hubbard","CAR","RB",4241416,125,30,"1,010 rush yds · 34 rec · 8 TD",195,32,"1,050 total yds · 8 TD"],
+[86,"Quentin Johnston","LAC","WR",4429025,171,51,"55 rec · 850 yds · 8 TD",190,56,"56 rec · 850 yds · 7 TD"],
+[87,"Rico Dowdle","PIT","RB",4038815,216,39,"1,090 rush yds · 38 rec · 7 TD (with CAR)",192,36,"1,050 total yds · 7 TD — new team: PIT"],
+[88,"RJ Harvey","DEN","RB",4568490,207,47,"760 rush yds · 35 rec · 8 TD (rookie yr)",190,38,"1,000 total yds · 8 TD"],
+[89,"Makai Lemon","PHI","WR",4870795,0,0,"Rookie — USC: 78 rec, 1,120 yds, 9 TD",185,62,"62 rec · 820 yds · 5 TD"],
+[90,"Michael Pittman Jr.","PIT","WR",4035687,202,80,"68 rec · 870 yds · 5 TD (with IND)",188,66,"66 rec · 850 yds · 6 TD — new team: PIT"],
+[91,"Jonathon Brooks","CAR","RB",4678008,0,0,"No 2025 regular-season game data",185,32,"950 total yds · 7 TD upside"],
+[92,"Jaxson Dart","NYG","QB",4689114,242,0,"12 starts (rookie yr) — 2,880 pass yds, 19 TD · 420 rush yds",310,0,"3,700 pass yds · 24 TD · 500 rush yds, 6 TD"],
+[93,"Brock Purdy","SF","QB",4361741,177,0,"3,960 pass yds · 26 TD",308,0,"4,150 pass yds · 28 TD"],
+[94,"Chris Godwin","TB","WR",3116165,83,33,"70 rec · 780 yds · 4 TD",185,70,"70 rec · 800 yds · 5 TD"],
+[95,"Matthew Stafford","LAR","QB",12483,350,0,"4,120 pass yds · 32 TD",305,0,"4,000 pass yds · 30 TD"],
+[96,"Michael Wilson","ARI","WR",4360761,221,78,"58 rec · 760 yds · 6 TD",182,60,"60 rec · 800 yds · 6 TD"],
+[97,"Rachaad White","WAS","RB",4697815,143,40,"760 rush yds · 48 rec · 7 TD (with TB)",180,50,"950 total yds · 7 TD — new team: WAS"],
+[98,"Kenneth Gainwell","TB","RB",4371733,221,73,"580 rush yds · 42 rec · 5 TD (with PIT)",175,46,"900 total yds · 6 TD — new team: TB"],
+[99,"Kyle Monangai","CHI","RB",4608686,147,18,"790 rush yds · 28 rec · 6 TD (rookie yr)",178,30,"950 total yds · 7 TD"],
+[100,"Josh Downs","IND","WR",4688813,138,58,"74 rec · 820 yds · 4 TD",185,72,"72 rec · 820 yds · 5 TD"],
+[101,"George Kittle","SF","TE",3040151,162,57,"62 rec · 850 yds · 7 TD (missed 3)",175,58,"58 rec · 780 yds · 6 TD"],
+[102,"Patrick Mahomes","KC","QB",3139477,286,1,"3,890 pass yds · 27 TD · 320 rush yds",305,0,"4,100 pass yds · 29 TD"],
+[103,"J.K. Dobbins","DEN","RB",4241985,116,11,"905 rush yds · 25 rec · 9 TD",172,24,"900 total yds · 8 TD"],
+[104,"Blake Corum","LAR","RB",4429096,122,8,"620 rush yds · 26 rec · 6 TD",168,28,"850 total yds · 7 TD"],
+[105,"Jordan Addison","MIN","WR",4429205,135,42,"64 rec · 875 yds · 8 TD",180,62,"62 rec · 850 yds · 7 TD"],
+[106,"Jayden Reed","GB","WR",4362249,48,19,"52 rec · 720 yds · 5 TD (missed time)",178,58,"58 rec · 800 yds · 6 TD"],
+[107,"Bo Nix","DEN","QB",4426338,305,0,"3,780 pass yds · 26 TD · 410 rush yds, 5 TD",300,0,"3,900 pass yds · 27 TD · 400 rush yds"],
+[108,"Wan'Dale Robinson","TEN","WR",4569587,218,92,"82 rec · 780 yds · 4 TD (with NYG)",178,76,"76 rec · 760 yds · 4 TD — new team: TEN"],
+[109,"Jakobi Meyers","JAX","WR",3916433,176,75,"72 rec · 850 yds · 4 TD",175,68,"68 rec · 780 yds · 4 TD"],
+[110,"Travis Kelce","KC","TE",15847,193,76,"74 rec · 760 yds · 4 TD",165,68,"68 rec · 700 yds · 5 TD"],
+[111,"Jared Goff","DET","QB",3046779,297,0,"4,250 pass yds · 30 TD",298,0,"4,200 pass yds · 30 TD"],
+[112,"Matthew Golden","GB","WR",4701936,70,29,"56 rec · 810 yds · 5 TD (rookie yr)",180,60,"60 rec · 880 yds · 6 TD"],
+[113,"Xavier Worthy","KC","WR",4683062,110,42,"62 rec · 780 yds · 6 TD · 120 rush yds",178,62,"62 rec · 820 yds · 6 TD"],
+[114,"Dallas Goedert","PHI","TE",3121023,185,60,"56 rec · 640 yds · 5 TD",160,55,"55 rec · 640 yds · 5 TD"],
+[115,"Jordan Mason","MIN","RB",4360569,129,14,"850 rush yds · 24 rec · 7 TD",165,24,"850 total yds · 7 TD"],
+[116,"Dalton Kincaid","BUF","TE",4385690,126,39,"60 rec · 690 yds · 5 TD",162,60,"60 rec · 680 yds · 5 TD"],
+[117,"Isaiah Likely","NYG","TE",4361050,62,27,"48 rec · 560 yds · 5 TD (with BAL)",160,56,"56 rec · 650 yds · 5 TD — new team: NYG"],
+[118,"Jake Ferguson","DAL","TE",4242355,188,82,"66 rec · 620 yds · 3 TD",158,62,"62 rec · 620 yds · 4 TD"],
+[119,"Kyler Murray","MIN","QB",3917315,78,0,"3,120 pass yds · 20 TD · 480 rush yds (with ARI)",295,0,"3,600 pass yds · 24 TD · 450 rush yds — new team: MIN"],
+[120,"Aaron Jones","MIN","RB",3042519,119,28,"620 rush yds · 40 rec · 5 TD (missed time)",158,40,"800 total yds · 6 TD"],
+[121,"Jacory Croskey-Merritt","WAS","RB",4575131,140,9,"890 rush yds · 20 rec · 9 TD (rookie yr)",162,20,"850 total yds · 8 TD"],
+[122,"Mark Andrews","BAL","TE",3116365,131,48,"52 rec · 640 yds · 7 TD",155,50,"50 rec · 600 yds · 6 TD"],
+[123,"Romeo Doubs","NE","WR",4361432,165,55,"54 rec · 690 yds · 6 TD (with GB)",165,58,"58 rec · 720 yds · 6 TD — new team: NE"],
+[124,"Baker Mayfield","TB","QB",3052587,272,0,"3,910 pass yds · 28 TD · 310 rush yds",292,0,"3,900 pass yds · 27 TD"],
+[125,"KC Concepcion","CLE","WR",4870653,0,0,"Rookie — Texas A&M: 68 rec, 950 yds, 8 TD · elite PR",160,60,"60 rec · 750 yds · 5 TD"],
+[126,"Jordan Love","GB","QB",4036378,235,0,"3,760 pass yds · 26 TD",290,0,"3,900 pass yds · 28 TD"],
+[127,"Tyler Shough","NO","QB",4360689,158,0,"11 starts (rookie yr) — 2,650 pass yds, 17 TD",285,0,"3,700 pass yds · 24 TD"],
+[128,"Khalil Shakir","BUF","WR",4373678,166,72,"68 rec · 780 yds · 4 TD",165,64,"64 rec · 720 yds · 4 TD"],
+[129,"Jayden Higgins","HOU","WR",4877706,130,41,"52 rec · 690 yds · 5 TD (rookie yr)",162,56,"56 rec · 740 yds · 5 TD"],
+[130,"Jalen Coker","CAR","WR",4695883,90,33,"50 rec · 650 yds · 6 TD",158,54,"54 rec · 700 yds · 5 TD"],
+[131,"Rashid Shaheed","SEA","WR",4032473,157,59,"48 rec · 720 yds · 5 TD (NO → SEA)",155,48,"48 rec · 720 yds · 5 TD — new team: SEA"],
+[132,"Tyrone Tracy Jr.","NYG","RB",4360516,161,36,"640 rush yds · 36 rec · 5 TD",150,36,"800 total yds · 5 TD"],
+[133,"Stefon Diggs","FA","WR",2976212,210,85,"66 rec · 740 yds · 5 TD (with NE)",150,58,"58 rec · 650 yds · 4 TD — free agent"],
+[134,"Chris Rodriguez Jr.","JAX","RB",4362619,92,3,"680 rush yds · 12 rec · 7 TD (with WAS)",148,14,"750 rush yds · 7 TD — new team: JAX"],
+[135,"Woody Marks","HOU","RB",4429059,145,24,"520 rush yds · 40 rec · 5 TD (rookie yr)",150,44,"800 total yds · 6 TD"],
+[136,"Malik Willis","MIA","QB",4242512,51,0,"Spot starts — 980 pass yds, 7 TD · 380 rush yds (with GB)",280,0,"3,200 pass yds · 20 TD · 550 rush yds, 6 TD — new team: MIA"],
+[137,"Chigoziem Okonkwo","WAS","TE",4360635,124,56,"45 rec · 520 yds · 4 TD (with TEN)",145,50,"50 rec · 560 yds · 4 TD — new team: WAS"],
+[138,"Brenton Strange","JAX","TE",4430539,118,46,"48 rec · 550 yds · 4 TD",142,48,"48 rec · 550 yds · 4 TD"],
+[139,"Ricky Pearsall","SF","WR",4428209,89,36,"48 rec · 720 yds · 4 TD (injury-shortened)",152,50,"50 rec · 750 yds · 5 TD"],
+[140,"Juwan Johnson","NO","TE",3929645,180,77,"55 rec · 580 yds · 4 TD",140,50,"50 rec · 540 yds · 4 TD"],
+[141,"Zach Charbonnet","SEA","RB",4426385,181,20,"720 rush yds · 30 rec · 7 TD",145,28,"750 total yds · 7 TD"],
+[142,"Jalen McMillan","TB","WR",4430834,30,12,"40 rec · 520 yds · 5 TD (missed early season)",148,48,"48 rec · 640 yds · 5 TD"],
+[143,"Isiah Pacheco","DET","RB",4361529,87,19,"560 rush yds · 26 rec · 5 TD (with KC)",142,26,"700 total yds · 6 TD — new team: DET"],
+[144,"Oronde Gadsden II","LAC","TE",4595342,131,49,"54 rec · 700 yds · 4 TD (rookie yr)",145,52,"52 rec · 650 yds · 4 TD"],
+[145,"Tyjae Spears","TEN","RB",4428557,112,45,"480 rush yds · 34 rec · 4 TD (injuries)",140,36,"750 total yds · 6 TD"],
+[146,"Alvin Kamara","NO","RB",3054850,101,33,"620 rush yds · 52 rec · 5 TD",138,46,"700 total yds · 5 TD"],
+[147,"Hunter Henry","NE","TE",3046439,179,60,"50 rec · 590 yds · 5 TD",135,46,"46 rec · 520 yds · 4 TD"],
+[148,"Tyler Allgeier","ARI","RB",4373626,123,14,"640 rush yds · 22 rec · 6 TD (with ATL)",138,22,"700 rush yds · 6 TD — new team: ARI"],
+[149,"Daniel Jones","IND","QB",3917792,226,0,"4,050 pass yds · 26 TD · 420 rush yds, 6 TD — career year",280,0,"3,700 pass yds · 22 TD · 380 rush yds"],
+[150,"Deebo Samuel","SF","WR",3126486,188,72,"58 rec · 680 yds · 4 TD · 240 rush yds (with WAS)",145,50,"50 rec · 600 yds · 4 TD — back to SF"],
+[151,"Jalen Nailor","LV","WR",4382466,101,29,"42 rec · 580 yds · 5 TD (with MIN)",140,46,"46 rec · 620 yds · 5 TD — new team: LV"],
+[152,"Kenyon Sadiq","NYJ","TE",5083315,0,0,"Rookie — Oregon: 45 rec, 620 yds, 7 TD",132,46,"46 rec · 520 yds · 5 TD"],
+[153,"T.J. Hockenson","MIN","TE",4036133,113,51,"56 rec · 590 yds · 3 TD",130,48,"48 rec · 520 yds · 4 TD"],
+[154,"C.J. Stroud","HOU","QB",4432577,209,0,"3,620 pass yds · 22 TD",278,0,"3,800 pass yds · 24 TD"],
+[155,"Tre Tucker","LV","WR",4428718,162,57,"48 rec · 670 yds · 6 TD",138,46,"46 rec · 640 yds · 5 TD"],
+[156,"Cam Ward","TEN","QB",4688380,187,0,"3,120 pass yds · 18 TD · 280 rush yds (rookie yr)",275,0,"3,700 pass yds · 23 TD · 300 rush yds"],
+[157,"Tank Bigsby","PHI","RB",4429013,54,3,"560 rush yds · 6 TD (JAX → PHI)",132,12,"650 rush yds · 6 TD"],
+[158,"Denzel Boston","CLE","WR",4832800,0,0,"Rookie — Washington: 70 rec, 980 yds, 10 TD",130,46,"46 rec · 600 yds · 5 TD"],
+[159,"Omar Cooper Jr.","NYJ","WR",4723820,0,0,"Rookie — Indiana: 62 rec, 890 yds, 8 TD",126,44,"44 rec · 560 yds · 4 TD"],
+[160,"Travis Hunter","JAX","WR",4685415,64,28,"46 rec · 580 yds · 4 TD + CB snaps (rookie yr)",135,48,"48 rec · 620 yds · 5 TD"],
+[161,"Jauan Jennings","MIN","WR",3886598,173,55,"46 rec · 620 yds · 5 TD (with SF)",128,42,"42 rec · 540 yds · 4 TD — new team: MIN"],
+[162,"Sam Darnold","SEA","QB",3912547,235,0,"3,680 pass yds · 24 TD",265,0,"3,600 pass yds · 23 TD"],
+[163,"Brian Robinson Jr.","ATL","RB",4241474,62,8,"580 rush yds · 24 rec · 5 TD (with WAS)",128,22,"650 total yds · 5 TD — new team: ATL"],
+[164,"De'Zhaun Stribling","SF","WR",4710714,0,0,"Rookie — Oklahoma State: 65 rec, 900 yds, 7 TD",120,40,"40 rec · 520 yds · 4 TD"],
+[165,"Dalton Schultz","HOU","TE",3117256,178,82,"48 rec · 530 yds · 3 TD",122,44,"44 rec · 480 yds · 3 TD"],
+[166,"Jerry Jeudy","CLE","WR",4241463,121,50,"55 rec · 750 yds · 3 TD",130,48,"48 rec · 640 yds · 4 TD"],
+[167,"Bryce Young","CAR","QB",4685720,218,0,"3,450 pass yds · 22 TD · 260 rush yds",260,0,"3,600 pass yds · 23 TD"],
+[168,"Adonai Mitchell","NYJ","WR",4597500,88,33,"38 rec · 540 yds · 3 TD (IND → NYJ)",122,40,"40 rec · 560 yds · 4 TD"],
+[169,"AJ Barner","SEA","TE",4576297,147,52,"40 rec · 420 yds · 5 TD",118,38,"38 rec · 400 yds · 4 TD"],
+[170,"Antonio Williams","WAS","WR",5081432,0,0,"Rookie — Clemson: 75 rec, 1,030 yds, 9 TD",118,40,"40 rec · 540 yds · 4 TD"],
+[171,"Calvin Ridley","TEN","WR",3925357,47,17,"52 rec · 760 yds · 4 TD",125,42,"42 rec · 580 yds · 4 TD"],
+[172,"Terrance Ferguson","LAR","TE",4570037,52,11,"32 rec · 340 yds · 3 TD (rookie yr)",115,40,"40 rec · 440 yds · 4 TD"],
+[173,"Braelon Allen","NYJ","RB",4685247,15,2,"480 rush yds · 15 rec · 5 TD",115,14,"550 rush yds · 5 TD"],
+[174,"Fernando Mendoza","LV","QB",4837248,0,0,"Rookie — Indiana: 3,420 pass yds, 30 TD · Heisman finalist",255,0,"3,400 pass yds · 22 TD · 250 rush yds"],
+[175,"James Conner","ARI","RB",3045147,33,8,"9 games (injury) — 520 rush yds, 5 TD",112,24,"600 total yds · 5 TD"],
+[176,"Gunnar Helm","TEN","TE",4686728,92,44,"38 rec · 380 yds · 3 TD (rookie yr)",112,40,"40 rec · 420 yds · 3 TD"],
+[177,"Keaton Mitchell","LAC","RB",4596334,55,9,"420 rush yds · 18 rec · 3 TD (with BAL)",110,20,"550 total yds · 4 TD — new team: LAC"],
+[178,"Dylan Sampson","CLE","RB",5081397,88,33,"440 rush yds · 32 rec · 4 TD (rookie yr)",112,30,"600 total yds · 5 TD"],
+[179,"Jonah Coleman","DEN","RB",4702555,0,0,"Rookie — Washington: 1,120 rush yds, 12 TD",110,22,"600 total yds · 5 TD"],
+[180,"Ryan Flournoy","DAL","WR",5083754,114,40,"30 rec · 420 yds · 2 TD",108,36,"36 rec · 480 yds · 3 TD"],
+[181,"Tre' Harris","LAC","WR",4686612,69,30,"36 rec · 480 yds · 3 TD (rookie yr)",110,38,"38 rec · 520 yds · 3 TD"],
+[182,"Isaac TeSlaa","DET","WR",5123663,76,16,"26 rec · 380 yds · 3 TD (rookie yr)",105,32,"32 rec · 440 yds · 3 TD"],
+[183,"Greg Dulcich","MIA","TE",4367209,63,26,"28 rec · 310 yds · 2 TD",100,34,"34 rec · 380 yds · 3 TD"],
+[184,"Ray Davis","BUF","RB",4429501,64,10,"440 rush yds · 20 rec · 4 TD",105,20,"550 total yds · 4 TD"],
+[185,"Malik Washington","MIA","WR",4569603,117,46,"44 rec · 520 yds · 2 TD",108,40,"40 rec · 480 yds · 3 TD"],
+[186,"Jaydon Blue","DAL","RB",4685279,20,1,"320 rush yds · 24 rec · 3 TD (rookie yr)",102,26,"550 total yds · 4 TD"],
+[187,"Pat Freiermuth","PIT","TE",4361411,114,41,"42 rec · 460 yds · 4 TD",105,38,"38 rec · 420 yds · 3 TD"],
+[188,"MarShawn Lloyd","GB","RB",4429023,0,0,"No 2025 regular-season game data",98,18,"500 total yds · 4 TD"],
+[189,"Aaron Rodgers","PIT","QB",8439,227,1,"3,420 pass yds · 24 TD",240,0,"3,300 pass yds · 22 TD"],
+[190,"Jacoby Brissett","ARI","QB",2578570,227,0,"8 starts — 2,120 pass yds, 13 TD",235,0,"3,200 pass yds · 19 TD if starter"],
+[191,"Kaytron Allen","WAS","RB",4685246,0,0,"Rookie — Penn State: 1,050 rush yds, 11 TD",95,18,"500 total yds · 4 TD"],
+[192,"Emmett Johnson","KC","RB",4832955,0,0,"Rookie — Nebraska: 1,110 rush yds · 40 rec",95,24,"500 total yds · 4 TD"],
+[193,"Tank Dell","HOU","WR",4366031,0,0,"No 2025 regular-season game data",100,36,"36 rec · 480 yds · 4 TD"],
+[194,"Sean Tucker","TB","RB",4430871,91,8,"410 rush yds · 16 rec · 4 TD",92,16,"450 total yds · 4 TD"],
+[195,"Kimani Vidal","LAC","RB",4430968,118,16,"380 rush yds · 18 rec · 3 TD",90,18,"450 total yds · 3 TD"],
+[196,"Zachariah Branch","ATL","WR",4870612,0,0,"Rookie — Georgia: 55 rec, 720 yds · elite returner",92,34,"34 rec · 440 yds · 3 TD"],
+[197,"Kayshon Boutte","NE","WR",4429022,124,33,"40 rec · 620 yds · 5 TD",100,34,"34 rec · 500 yds · 4 TD"],
+[198,"Jordan James","SF","RB",4685397,0,0,"No 2025 regular-season game data",90,18,"480 total yds · 4 TD"],
+[199,"Mike Washington Jr.","LV","RB",4686658,0,0,"Rookie — big-bodied power back",88,12,"450 rush yds · 4 TD"],
+[200,"Darnell Mooney","NYG","WR",4040655,82,32,"36 rec · 540 yds · 3 TD (with ATL)",95,34,"34 rec · 480 yds · 3 TD — new team: NYG"],
+[201,"Nicholas Singleton","TEN","RB",4685555,0,0,"Rookie — Penn State: 1,010 rush yds, 12 TD",85,16,"450 total yds · 4 TD"],
+[202,"Justice Hill","BAL","RB",4038441,65,21,"260 rush yds · 30 rec · 2 TD",82,28,"400 total yds · 3 TD"],
+[203,"Cooper Kupp","SEA","WR",2977187,116,47,"50 rec · 610 yds · 3 TD",90,36,"36 rec · 440 yds · 3 TD"],
+[204,"George Holani","SEA","RB",4429835,21,2,"280 rush yds · 3 TD",78,12,"380 total yds · 3 TD"],
+[205,"Rashod Bateman","BAL","WR",4360939,55,19,"40 rec · 640 yds · 5 TD",95,34,"34 rec · 500 yds · 4 TD"],
+[206,"Kaelon Black","SF","RB",4696044,0,0,"Rookie — depth back with pass-game chops",75,16,"380 total yds · 3 TD"],
+[207,"Demond Claiborne","MIN","RB",4832846,0,0,"Rookie — Wake Forest: 1,050 rush yds, 10 TD",75,14,"400 total yds · 3 TD"],
+[208,"Shedeur Sanders","CLE","QB",4432762,85,0,"7 starts (rookie yr) — 1,720 pass yds, 11 TD",230,0,"3,100 pass yds · 19 TD if starter"],
+[209,"Emanuel Wilson","SEA","RB",4887558,94,15,"360 rush yds · 16 rec · 4 TD (with GB)",72,14,"380 total yds · 3 TD"],
+[210,"Jaylin Noel","HOU","WR",4586312,68,26,"34 rec · 460 yds · 3 TD (rookie yr)",88,32,"32 rec · 440 yds · 3 TD"],
+[211,"Brandon Aiyuk","SF","WR",4360438,0,0,"No 2025 regular-season game data",90,32,"32 rec · 460 yds · 3 TD"],
+[212,"Jaylen Wright","MIA","RB",4682745,48,5,"340 rush yds · 14 rec · 2 TD",78,14,"420 total yds · 3 TD"],
+[213,"Tyreek Hill","FA","WR",3116406,54,21,"Knee injury — 20 rec, 265 yds, 1 TD",95,36,"36 rec · 500 yds · 4 TD — free agent"],
+[214,"Keon Coleman","BUF","WR",4635008,102,38,"42 rec · 640 yds · 6 TD",98,36,"36 rec · 520 yds · 5 TD"],
+[215,"Jack Bech","LV","WR",4603186,42,20,"30 rec · 420 yds · 3 TD (rookie yr)",85,30,"30 rec · 420 yds · 3 TD"],
+[216,"Texans D/ST","HOU","DST",0,140,0,"48 sacks · 26 takeaways · 4 def TD",135,0,"Top-3 pass rush returns intact"],
+[217,"Isaiah Davis","NYJ","RB",4695404,71,21,"340 rush yds · 18 rec · 3 TD",80,18,"450 total yds · 3 TD"],
+[218,"Malachi Fields","NYG","WR",4682648,0,0,"Rookie — Virginia: 60 rec, 850 yds",78,28,"28 rec · 400 yds · 3 TD"],
+[219,"Rams D/ST","LAR","DST",0,132,0,"45 sacks · 24 takeaways",130,0,"Young front seven keeps ascending"],
+[220,"DJ Giddens","IND","RB",4874509,10,0,"320 rush yds · 16 rec · 2 TD (rookie yr)",78,18,"420 total yds · 3 TD"],
+[221,"Broncos D/ST","DEN","DST",0,138,0,"52 sacks · 25 takeaways",128,0,"Elite pressure rate again"],
+[222,"Cyrus Allen","KC","WR",4912218,0,0,"Rookie — 4.3 speed deep threat",70,26,"26 rec · 380 yds · 3 TD"],
+[223,"Seahawks D/ST","SEA","DST",0,130,0,"46 sacks · 24 takeaways",126,0,"Ball-hawking secondary"],
+[224,"Mason Taylor","NYJ","TE",4808766,89,44,"40 rec · 440 yds · 3 TD (rookie yr)",95,36,"36 rec · 420 yds · 3 TD"],
+[225,"Darnell Washington","PIT","TE",4430802,73,31,"28 rec · 340 yds · 3 TD",80,26,"26 rec · 320 yds · 3 TD"],
+[226,"Skyler Bell","BUF","WR",4683153,0,0,"Rookie — UConn: 65 rec, 880 yds",68,26,"26 rec · 360 yds · 2 TD"],
+[227,"J.J. McCarthy","MIN","QB",4433970,125,0,"10 starts — 2,180 pass yds, 14 TD · lost job late",150,0,"Backup risk behind Murray"],
+[228,"Devontez Walker","BAL","WR",4696882,38,6,"22 rec · 380 yds · 3 TD",72,24,"24 rec · 380 yds · 3 TD"],
+[229,"Eagles D/ST","PHI","DST",0,128,0,"44 sacks · 22 takeaways",124,0,"Loaded front four"],
+[230,"Carson Beck","ARI","QB",4430841,0,0,"Rookie — Miami: 3,150 pass yds, 26 TD",140,0,"Developmental year likely"],
+[231,"Patriots D/ST","NE","DST",0,126,0,"43 sacks · 23 takeaways",122,0,"Vrabel defense, year two leap"],
+[232,"Hollywood Brown","PHI","WR",4241372,138,49,"34 rec · 480 yds · 3 TD (with KC)",85,30,"30 rec · 440 yds · 3 TD — new team: PHI"],
+[233,"Steelers D/ST","PIT","DST",0,125,0,"48 sacks · 21 takeaways",120,0,"Watt-led pass rush"],
+[234,"Ravens D/ST","BAL","DST",0,122,0,"42 sacks · 20 takeaways",119,0,"Stout as ever"],
+[235,"Jaguars D/ST","JAX","DST",0,120,0,"40 sacks · 24 takeaways",118,0,"Hines-Allen + turnover luck"],
+[236,"Cade Otton","TB","TE",4243331,122,59,"38 rec · 400 yds · 3 TD",82,30,"30 rec · 340 yds · 3 TD"],
+[237,"Vikings D/ST","MIN","DST",0,118,0,"45 sacks · 20 takeaways",116,0,"Flores blitz machine"],
+[238,"Chargers D/ST","LAC","DST",0,116,0,"41 sacks · 19 takeaways",114,0,"Solid across the board"],
+[239,"Dontayvion Wicks","PHI","WR",4428850,76,30,"28 rec · 400 yds · 3 TD (with GB)",70,24,"24 rec · 340 yds · 3 TD — new team: PHI"],
+[240,"Geno Smith","NYJ","QB",15864,174,0,"3,540 pass yds · 21 TD (with LV)",200,0,"3,300 pass yds · 19 TD — new team: NYJ"],
+[241,"Colby Parkinson","LAR","TE",4242557,130,43,"26 rec · 300 yds · 2 TD",68,24,"24 rec · 280 yds · 2 TD"],
+[242,"Lions D/ST","DET","DST",0,115,0,"40 sacks · 21 takeaways",112,0,"Healthy Hutchinson"],
+[243,"Germie Bernard","PIT","WR",4685261,0,0,"Rookie — Alabama: 58 rec, 800 yds",65,24,"24 rec · 340 yds · 2 TD"],
+[244,"Tua Tagovailoa","ATL","QB",4241479,161,0,"3,620 pass yds · 24 TD (with MIA)",160,0,"QB competition in Atlanta"],
+[245,"Packers D/ST","GB","DST",0,113,0,"39 sacks · 19 takeaways",110,0,"Deep rotation"],
+[246,"Troy Franklin","DEN","WR",4431280,177,65,"38 rec · 520 yds · 4 TD",90,32,"32 rec · 460 yds · 3 TD"],
+[247,"David Njoku","LAC","TE",3123076,86,33,"42 rec · 460 yds · 4 TD (with CLE)",85,32,"32 rec · 380 yds · 3 TD — new team: LAC"],
+[248,"Chiefs D/ST","KC","DST",0,112,0,"38 sacks · 20 takeaways",108,0,"Spagnuolo scheme edge"],
+[249,"Evan Engram","DEN","TE",3051876,103,50,"36 rec · 380 yds · 2 TD",75,28,"28 rec · 320 yds · 2 TD"],
+[250,"Jake Tonges","SF","TE",4259147,93,34,"22 rec · 240 yds · 3 TD",60,22,"22 rec · 260 yds · 2 TD"],
+[251,"Ted Hurst","TB","WR",5220680,0,0,"Rookie — Georgia State: 70 rec, 1,000 yds",60,22,"22 rec · 320 yds · 2 TD"],
+[252,"Mike Gesicki","CIN","TE",3116164,71,28,"34 rec · 380 yds · 2 TD",68,26,"26 rec · 300 yds · 2 TD"],
+[253,"Christian Kirk","SF","WR",3895856,58,28,"40 rec · 480 yds · 2 TD (with HOU)",70,26,"26 rec · 340 yds · 2 TD — new team: SF"],
+[254,"Eli Stowers","PHI","TE",4431574,0,0,"Rookie — Vanderbilt: 50 rec, 640 yds, 6 TD",58,22,"22 rec · 260 yds · 2 TD"],
+[255,"Bills D/ST","BUF","DST",0,110,0,"37 sacks · 19 takeaways",106,0,"Bend-don't-break"],
+[256,"Kirk Cousins","LV","QB",14880,104,0,"6 starts — 1,480 pass yds, 9 TD (with ATL)",150,0,"Bridge starter until Mendoza is ready"],
+[257,"Keenan Allen","FA","WR",15818,183,81,"62 rec · 680 yds · 4 TD (with LAC)",80,34,"34 rec · 380 yds · 3 TD — free agent"],
+[258,"49ers D/ST","SF","DST",0,108,0,"36 sacks · 18 takeaways",105,0,"Healthier front"],
+[259,"Pat Bryant","DEN","WR",4600981,75,31,"24 rec · 340 yds · 3 TD (rookie yr)",62,22,"22 rec · 320 yds · 2 TD"],
+[260,"Tyquan Thornton","KC","WR",4362921,81,19,"28 rec · 480 yds · 4 TD",65,24,"24 rec · 360 yds · 2 TD"],
+[261,"Cowboys D/ST","DAL","DST",0,105,0,"38 sacks · 17 takeaways",103,0,"Boom-bust unit"],
+[262,"Chris Bell","MIA","WR",4869961,0,0,"Rookie — Louisville: 62 rec, 900 yds",58,22,"22 rec · 300 yds · 2 TD"],
+[263,"Samaje Perine","CIN","RB",3116389,78,17,"180 rush yds · 30 rec · 2 TD",60,24,"Passing-down role"],
+[264,"Deshaun Watson","CLE","QB",3122840,0,0,"No 2025 regular-season game data",90,0,"Depth chart uncertainty"],
+[265,"Emari Demercado","KC","RB",4362478,58,13,"240 rush yds · 22 rec · 3 TD (with ARI)",58,20,"Change-of-pace role — new team: KC"],
+[266,"Tory Horton","SEA","WR",4597703,65,13,"28 rec · 420 yds · 4 TD (rookie yr)",62,24,"24 rec · 360 yds · 3 TD"],
+[267,"Michael Penix Jr.","ATL","QB",4360423,120,0,"3,340 pass yds · 20 TD",145,0,"QB competition in Atlanta"],
+[268,"Ty Johnson","BUF","RB",3915411,100,24,"180 rush yds · 24 rec · 2 TD",55,22,"Passing-down role"],
+[269,"LeQuint Allen","JAX","RB",4911851,25,10,"220 rush yds · 30 rec · 2 TD (rookie yr)",58,24,"Third-down role"],
+[270,"Giants D/ST","NYG","DST",0,102,0,"35 sacks · 17 takeaways",100,0,"Improving front"],
+[271,"Theo Johnson","NYG","TE",4429148,128,45,"34 rec · 380 yds · 4 TD",68,26,"26 rec · 300 yds · 3 TD"],
+[272,"Jalen Tolbert","MIA","WR",4249417,46,18,"34 rec · 480 yds · 4 TD (with DAL)",62,24,"24 rec · 340 yds · 2 TD — new team: MIA"],
+[273,"Chris Brooks","GB","RB",3149687,33,13,"260 rush yds · 2 TD",50,12,"Depth back"],
+[274,"Dawson Knox","BUF","TE",3930086,104,36,"24 rec · 280 yds · 2 TD",50,20,"TE2 role"],
+[275,"Ollie Gordon II","MIA","RB",4711533,54,7,"380 rush yds · 18 rec · 5 TD (rookie yr)",62,16,"Goal-line role"],
+[276,"Elijah Sarratt","BAL","WR",5088338,0,0,"Rookie — Indiana: 66 rec, 940 yds, 8 TD",55,20,"20 rec · 300 yds · 2 TD"],
+[277,"Eli Raridon","NE","TE",4831959,0,0,"Rookie — Notre Dame TE",48,18,"18 rec · 220 yds · 2 TD"],
+[278,"Devaughn Vele","NO","WR",4569559,66,25,"30 rec · 400 yds · 3 TD (with DEN)",58,22,"22 rec · 320 yds · 2 TD — new team: NO"],
+[279,"Chimere Dike","TEN","WR",4431268,128,48,"22 rec · 320 yds · 2 TD + returns (rookie yr)",52,20,"Return-game value"],
+[280,"Zavion Thomas","CHI","WR",4869748,0,0,"Rookie — LSU: returner / gadget weapon",45,18,"Gadget + return role"],
+[281,"Andrei Iosivas","CIN","WR",4368003,90,33,"30 rec · 420 yds · 4 TD",60,22,"WR3 in a top offense"],
+[282,"Najee Harris","FA","RB",4241457,12,3,"Injury-shortened — 480 rush yds, 3 TD (with LAC)",70,18,"Free agent — landing spot TBD"],
+[283,"Erick All","CIN","TE",4427834,0,0,"No 2025 regular-season game data",45,18,"Health permitting"],
+[284,"Jahan Dotson","ATL","WR",4361409,50,18,"24 rec · 320 yds · 2 TD (with PHI)",50,20,"Depth role — new team: ATL"],
+[285,"Elic Ayomanor","TEN","WR",4883647,116,41,"28 rec · 410 yds · 3 TD (rookie yr)",58,22,"22 rec · 340 yds · 2 TD"],
+[286,"Mac Jones","SF","QB",4241464,130,0,"7 starts (Purdy injury) — 1,880 yds, 12 TD",85,0,"High-end backup"],
+[287,"Justin Fields","KC","QB",4362887,143,0,"Benched with NYJ — 1,650 pass yds · 520 rush yds",80,0,"Backup — new team: KC"],
+[288,"Brandon Aubrey","DAL","K",3953687,187,0,"38/41 FG · 12 makes from 50+",160,0,"Best leg in football"],
+[289,"Cameron Dicker","LAC","K",4362081,170,0,"34/37 FG",148,0,"High-volume offense"],
+[290,"Ka'imi Fairbairn","HOU","K",2971573,194,0,"33/36 FG",145,0,"Reliable + big leg"],
+[291,"Jason Myers","SEA","K",2473037,202,0,"32/36 FG",142,0,"Steady volume"],
+[292,"Cam Little","JAX","K",4686361,164,0,"31/34 FG · 59-yd long",140,0,"Range for days"],
+[293,"Eddy Pineiro","SF","K",4034949,140,0,"30/32 FG",138,0,"Accurate in a scoring offense"],
+[294,"Tyler Loop","BAL","K",4697745,144,0,"30/34 FG (rookie yr)",136,0,"Elite offense attached"],
+[295,"Jake Bates","DET","K",4689936,152,0,"31/35 FG",135,0,"Detroit scores a lot"],
+[296,"Harrison Mevis","LAR","K",4574716,82,0,"Rookie — the 'Thiccer Kicker'",132,0,"Strong leg, good offense"],
+[297,"Evan McPherson","CIN","K",4360234,136,0,"28/32 FG",130,0,"Bounce-back spot"],
+[298,"Browns D/ST","CLE","DST",0,100,0,"34 sacks · 16 takeaways",98,0,"Garrett wrecking games"],
+[299,"Cairo Santos","CHI","K",17427,132,0,"27/30 FG",128,0,"Improved offense helps"],
+[300,"Harrison Butker","KC","K",3055899,149,0,"28/31 FG",126,0,"Volume steady"]
+];
+
+const GLOG={"1":[[1,5.0,15.0],[2,16.4,19.4],[3,21.9,26.9],[4,15.7,17.7],[5,14.7,16.7],[6,6.5,7.5],[7,33.8,36.8],[9,2.8,5.8],[10,35.2,38.2],[11,14.6,19.6],[12,44.4,55.4],[13,8.6,11.6],[14,30.0,37.0],[15,5.8,9.8],[16,12.8,22.8],[17,4.4,6.4],[18,17.3,20.3]],"2":[[1,18.4,24.4],[2,16.8,19.8],[3,11.1,16.1],[4,24.1,28.1],[6,29.8,35.8],[7,15.2,21.2],[8,2.8,5.8],[9,9.6,17.6],[10,8.8,10.8],[11,26.3,30.3],[12,12.7,14.7],[13,25.3,30.3],[14,7.4,9.4],[15,21.5,29.5],[16,22.8,29.8],[17,34.9,39.9],[18,4.3,7.3]],"3":[[1,2.6,4.6],[2,22.5,36.5],[3,3.9,8.9],[4,2.3,7.3],[5,23.0,29.0],[6,15.1,25.1],[7,22.1,38.1],[8,9.1,21.1],[9,11.1,17.1],[11,3.0,6.0],[13,11.0,18.0],[14,5.2,10.2],[15,13.2,23.2],[16,10.9,19.9],[17,18.0,25.0],[18,15.6,23.6]],"4":[[1,13.1,23.1],[2,19.6,27.6],[3,11.8,22.8],[4,23.0,36.0],[5,14.5,24.5],[6,2.8,4.8],[9,15.8,22.8],[10,12.4,17.4],[11,7.3,14.3],[12,9.7,16.7],[13,7.2,13.2],[14,28.7,35.7],[15,18.9,27.9],[16,34.5,46.5],[17,10.7,15.7],[18,16.0,26.0]],"5":[[1,10.4,19.4],[2,10.3,18.3],[3,15.6,20.6],[4,9.0,13.0],[5,19.2,27.2],[6,22.2,30.2],[7,18.3,26.3],[9,14.0,22.0],[10,15.3,20.3],[11,11.6,20.6],[12,29.1,37.1],[13,2.3,4.3],[14,21.1,28.1],[15,11.3,18.3],[16,15.6,23.6],[17,7.2,16.2],[18,8.4,14.4]],"6":[[1,14.2,23.2],[2,16.7,22.7],[3,14.0,24.0],[4,20.1,26.1],[5,19.9,27.9],[6,17.1,24.1],[7,32.1,39.1],[8,6.8,9.8],[9,29.3,34.3],[10,9.6,17.6],[11,30.1,35.1],[12,20.2,27.2],[13,13.4,17.4],[15,14.7,15.7],[16,26.6,32.6],[17,24.1,28.1],[18,5.7,11.7]],"7":[[1,4.5,8.5],[2,30.2,39.2],[3,13.7,20.7],[4,19.0,26.0],[5,10.0,18.0],[6,4.7,13.7],[7,14.6,20.6],[9,9.7,18.7],[10,11.8,16.8],[11,4.2,6.2],[12,20.9,29.9],[13,0.0,0.0],[14,9.2,15.2],[15,28.4,41.4],[16,5.4,9.4],[17,6.8,14.8],[18,13.9,24.9]],"8":[[1,9.8,12.8],[2,27.5,29.5],[3,29.8,32.8],[4,9.6,14.6],[5,28.6,31.6],[6,19.7,23.7],[7,31.2,34.2],[8,35.4,37.4],[9,5.7,7.7],[10,46.6,49.6],[12,6.6,8.6],[13,12.1,15.1],[14,11.4,11.4],[15,10.1,13.1],[16,13.9,16.9],[17,14.4,17.4],[18,3.9,5.9]],"9":[[1,10.0,12.0],[2,4.4,7.4],[3,6.3,6.3],[4,31.5,33.5],[5,10.9,15.9],[6,14.6,16.6],[7,3.4,4.4],[9,14.9,19.9],[10,12.3,15.3],[11,3.4,9.4],[12,16.8,24.8],[13,6.1,12.1],[14,3.8,5.8],[15,4.2,8.2],[16,30.8,31.8],[17,7.3,9.3],[18,9.4,12.4]],"10":[[1,11.0,18.0],[2,11.2,20.2],[7,17.0,22.0],[8,7.6,14.6],[9,8.5,15.5],[11,12.6,17.6],[12,7.5,11.5],[13,17.2,24.2],[14,12.1,18.1],[15,11.1,17.1],[16,5.1,11.1],[17,4.6,9.6],[18,0.4,1.4]],"11":[[1,10.8,14.8],[2,8.1,11.1],[3,7.5,12.5],[4,12.6,22.6],[5,12.3,19.3],[7,7.9,12.9],[8,7.4,14.4],[9,10.7,16.7],[10,3.7,7.7],[11,6.1,11.1],[12,4.8,8.8],[13,0.4,2.4],[14,1.1,3.1],[15,2.2,4.2],[16,8.5,14.5],[17,3.0,7.0],[18,10.4,18.4]],"12":[[1,16.2,21.2],[2,25.5,26.5],[3,17.8,20.8],[4,19.5,22.5],[5,4.9,4.9],[6,8.7,8.7],[8,33.6,33.6],[9,12.5,13.5],[10,5.7,10.7],[11,17.4,20.4],[12,18.9,21.9],[13,15.7,18.7],[14,9.1,11.1],[15,29.1,31.1],[16,25.4,26.4],[17,7.7,8.7],[18,1.5,1.5]],"13":[[1,14.4,18.4],[2,15.4,17.4],[3,5.5,9.5],[4,13.4,17.4],[5,14.8,17.8],[6,6.7,8.7],[7,4.2,5.2],[8,29.4,33.4],[10,10.1,13.1],[11,9.0,10.0],[12,5.4,12.4],[13,5.6,5.6],[14,18.2,18.2],[15,15.2,17.2],[16,21.2,21.2],[17,6.8,6.8]],"14":[[1,6.1,8.1],[2,2.5,3.5],[3,18.9,24.9],[4,22.5,27.5],[5,7.0,13.0],[14,12.7,14.7],[15,6.5,7.5],[16,15.5,16.5],[17,12.0,20.0]],"15":[[1,13.5,16.5],[2,18.2,26.2],[3,9.1,16.1],[4,16.1,17.1],[5,10.6,16.6],[6,27.0,31.0],[7,9.8,12.8],[8,15.1,20.1],[9,10.6,16.6],[10,34.5,40.5],[11,16.5,21.5],[13,19.4,19.4],[14,16.5,17.5],[15,12.7,18.7],[16,15.0,18.0],[17,11.2,14.2]],"16":[[1,11.1,13.1],[2,6.5,8.5],[3,2.0,6.0],[4,7.1,10.1],[5,4.8,11.8],[6,6.9,8.9],[7,10.0,12.0],[8,22.5,25.5],[9,11.2,19.2],[11,12.7,18.7],[12,13.0,15.0],[13,11.3,18.3],[14,15.5,18.5],[15,9.0,16.0],[16,28.9,32.9],[17,26.1,29.1],[18,15.0,19.0]],"17":[[1,2.4,5.4],[2,17.8,18.8],[3,17.0,18.0],[4,11.0,12.0],[5,8.6,9.6],[6,3.7,4.7],[7,6.6,6.6],[9,6.1,8.1],[10,7.0,8.0],[11,17.1,20.1],[12,10.1,13.1],[13,7.4,10.4],[14,2.8,3.8],[15,1.9,2.9],[16,22.4,25.4],[17,5.7,7.7],[18,13.3,17.3]],"18":[[1,10.3,15.3],[2,3.8,8.8],[3,5.8,9.8],[4,4.6,9.6],[9,31.3,43.3],[10,2.7,3.7],[11,7.2,14.2],[12,5.5,11.5],[13,18.3,22.3],[14,10.6,14.6],[15,2.8,8.8],[16,9.3,14.3]],"19":[[1,5.5,13.5],[2,2.9,5.9],[3,5.5,10.5],[4,17.0,25.0],[6,21.8,31.8],[7,4.2,8.2],[9,29.8,38.8],[10,18.4,24.4],[11,11.9,18.9],[16,2.7,5.7],[17,0.4,1.4],[18,13.8,17.8]],"20":[[1,28.2,29.2],[2,2.3,2.3],[3,9.7,10.7],[4,5.8,7.8],[5,9.3,9.3],[6,13.0,14.0],[8,19.1,19.1],[9,12.1,13.1],[10,8.4,11.4],[11,18.2,20.2],[12,20.8,22.8],[13,16.4,17.4],[14,10.2,11.2],[15,10.0,10.0],[16,22.8,22.8],[17,45.6,45.6],[18,12.6,12.6]],"21":[[1,0.8,1.8],[2,2.7,7.7],[3,16.9,22.9],[4,0.7,2.7],[5,4.3,9.3],[6,8.0,14.0],[7,24.1,28.1],[10,1.3,3.3],[11,4.9,11.9],[12,17.0,25.0],[13,25.2,35.2],[14,10.0,16.0],[15,10.1,12.1],[16,9.5,18.5],[17,6.8,11.8]],"22":[[1,6.1,12.1],[2,7.8,13.8],[3,10.3,15.3],[4,5.2,12.2],[5,4.1,9.1],[6,13.2,21.2],[7,19.4,29.4],[9,11.5,16.5],[10,18.7,27.7],[11,17.5,27.5],[12,7.9,16.9],[13,14.2,22.2],[14,5.8,10.8],[15,25.4,37.4],[16,2.7,6.7],[17,13.6,23.6],[18,6.5,13.5]],"23":[[1,2.5,5.5],[2,11.2,14.2],[3,14.4,22.4],[4,7.9,11.9],[5,12.0,16.0],[7,2.7,6.7],[9,7.5,14.5],[10,15.6,22.6],[11,15.2,24.2],[12,5.5,8.5],[13,16.5,21.5],[14,12.1,16.1],[15,20.5,23.5],[16,5.9,9.9],[17,5.7,8.7]],"24":[[7,16.2,23.2],[8,16.5,25.5],[9,14.6,18.6],[11,3.8,9.8],[12,16.1,24.1],[13,21.4,29.4],[14,3.4,7.4],[15,5.1,12.1]],"25":[[1,3.0,6.0],[2,12.8,17.8],[3,12.8,17.8],[4,25.4,33.4],[5,11.7,13.7],[6,22.8,31.8],[7,8.2,12.2],[8,7.8,14.8],[9,7.9,13.9],[11,20.4,29.4],[12,20.6,29.6],[13,10.8,16.8],[14,3.7,8.7],[15,3.3,6.3],[16,19.0,26.0],[17,7.8,11.8],[18,0.9,1.9]],"27":[[1,1.6,4.6],[2,5.3,9.3],[3,12.0,20.0],[4,2.9,4.9],[5,11.4,19.4],[6,4.9,8.9],[7,24.3,33.3],[8,8.4,14.4],[10,12.9,16.9],[11,0.8,1.8],[12,8.9,14.9],[13,4.8,9.8],[14,3.7,7.7],[15,5.0,7.0],[16,10.2,16.2],[17,2.5,4.5],[18,5.2,8.2]],"28":[[1,5.4,12.4],[2,5.4,11.4],[3,5.7,15.7],[4,6.0,9.0],[5,5.9,12.9],[6,9.8,15.8],[7,21.8,26.8],[8,6.0,14.0],[9,5.7,8.7],[10,16.4,21.4],[12,7.0,16.0],[13,10.7,14.7],[14,3.0,6.0],[15,14.5,20.5],[16,26.8,36.8],[17,17.9,25.9]],"29":[[1,38.8,38.8],[2,11.8,11.8],[3,23.0,23.0],[4,24.9,24.9],[5,19.4,19.4],[6,15.4,15.4],[8,23.2,23.2],[9,28.8,28.8],[10,19.3,19.3],[11,42.7,42.7],[12,8.1,8.1],[13,16.7,16.7],[14,37.8,37.8],[15,24.5,24.5],[16,6.9,6.9],[17,23.2,23.2]],"30":[[1,14.5,16.5],[2,3.8,5.8],[3,5.2,9.2],[4,11.1,16.1],[5,13.5,17.5],[6,5.9,5.9],[7,5.2,7.2],[8,30.9,32.9],[10,18.5,19.5],[11,6.4,8.4],[12,9.9,13.9],[13,13.6,15.6],[14,4.3,4.3],[15,3.7,5.7],[16,6.3,8.3],[17,18.9,20.9]],"31":[[1,12.9,13.9],[2,8.0,10.0],[3,17.2,19.2],[4,7.4,10.4],[5,23.1,31.1],[6,14.7,16.7],[7,6.5,8.5],[9,17.4,17.4],[10,20.4,22.4],[11,15.6,16.6],[12,4.8,5.8],[13,13.2,13.2],[14,15.7,17.7],[15,20.8,21.8],[16,8.5,11.5],[17,13.0,16.0],[18,8.1,11.1]],"32":[[1,21.1,28.1],[2,7.9,14.9],[3,1.3,3.3],[4,7.4,14.4],[5,7.2,12.2],[6,2.6,8.6],[8,7.1,14.1],[9,6.4,11.4],[10,8.1,12.1],[11,8.3,11.3],[12,6.9,11.9],[13,-1.4,0.6],[14,12.6,20.6],[15,12.8,15.8],[16,14.2,21.2],[17,9.0,13.0],[18,25.8,29.8]],"33":[[1,18.4,20.4],[2,19.0,25.0],[3,7.2,12.2],[4,16.0,19.0],[5,25.9,26.9],[6,3.4,8.4],[7,17.8,18.8],[8,16.9,17.9],[9,6.3,7.3],[11,9.3,10.3],[12,10.1,12.1],[13,14.0,17.0],[14,12.7,14.7],[15,15.1,15.1],[16,4.3,6.3],[17,11.4,11.4]],"34":[[1,7.1,12.1],[2,28.7,37.7],[3,1.3,3.3],[4,2.0,4.0]],"35":[[1,19.6,23.6],[2,8.9,12.9],[3,8.5,14.5],[4,16.1,20.1],[5,24.3,31.3],[6,2.4,4.4],[7,5.8,9.8],[8,3.5,6.5],[10,17.5,23.5],[11,4.0,9.0],[12,3.2,6.2],[13,4.2,8.2],[14,1.5,3.5],[15,6.4,10.4],[16,4.0,5.0],[17,2.0,5.0],[18,0.8,1.8]],"36":[[1,13.0,14.0],[2,14.4,14.4],[3,7.4,12.4],[4,27.7,31.7],[6,27.0,32.0],[7,17.8,18.8],[8,10.5,13.5],[9,16.0,20.0],[10,14.7,19.7],[11,4.0,4.0],[13,9.1,10.1],[14,15.2,17.2],[15,21.2,23.2],[16,2.8,4.8],[17,0.3,1.3]],"37":[[1,15.5,22.5],[2,5.0,9.0],[3,14.4,24.4],[4,14.2,20.2],[5,13.1,19.1],[6,1.3,4.3],[10,0.0,0.0]],"38":[[1,3.3,6.3],[2,11.6,14.6],[3,1.5,2.5],[4,3.2,6.2],[5,8.2,11.2],[6,6.2,11.2],[7,15.6,21.6],[8,10.4,11.4],[9,26.1,33.1],[11,12.3,15.3],[12,3.1,8.1],[14,21.2,27.2],[16,11.3,14.3],[17,5.9,9.9],[18,12.7,18.7]],"39":[[1,6.8,11.8],[2,10.0,16.0],[3,4.8,7.8],[4,6.2,10.2],[5,7.3,13.3],[6,14.9,17.9],[7,3.3,6.3],[8,9.9,16.9],[9,4.6,8.6],[10,6.0,11.0],[11,25.0,33.0],[12,9.5,11.5],[13,10.3,11.3],[15,2.5,4.5],[16,13.3,19.3],[17,0.5,1.5],[18,8.5,12.5]],"40":[[1,1.2,3.2],[2,0.0,0.0],[3,3.1,4.1],[6,1.1,3.1],[7,2.4,5.4],[8,3.8,6.8],[9,23.8,29.8],[10,5.5,9.5],[11,4.0,7.0],[12,10.9,14.9],[13,2.8,5.8],[14,8.9,12.9],[15,6.1,10.1],[16,3.0,6.0],[17,15.4,21.4],[18,15.1,25.1]],"41":[[1,15.6,18.6],[2,14.9,16.9],[3,11.6,11.6],[4,18.5,19.5],[5,5.8,8.8],[6,5.5,9.5],[7,5.5,6.5],[9,11.5,16.5],[10,13.7,15.7],[11,19.3,19.3],[12,17.6,20.6],[13,4.1,5.1],[14,20.2,21.2],[15,28.5,31.5],[16,12.6,16.6],[17,9.2,11.2],[18,3.8,4.8]],"42":[[1,7.4,13.4],[2,4.8,9.8],[3,4.1,8.1],[4,1.1,2.1],[5,9.9,14.9],[6,16.0,23.0],[7,6.7,15.7],[8,14.8,20.8],[9,5.6,9.6],[10,16.7,20.7],[11,1.3,4.3],[13,9.9,13.9],[14,1.2,2.2],[15,2.0,4.0],[16,10.3,14.3],[17,3.1,4.1]],"43":[[1,0.9,2.9],[2,11.9,13.9],[3,18.1,24.1],[4,11.0,13.0],[5,8.4,14.4],[6,29.0,31.0],[7,15.4,18.4],[8,9.0,10.0]],"44":[[1,3.0,7.0],[2,12.8,17.8],[3,9.9,14.9],[4,4.8,7.8],[5,17.0,23.0],[6,9.8,15.8],[7,1.5,2.5],[8,15.9,20.9],[9,8.2,14.2],[10,14.4,19.4],[11,5.2,8.2],[13,4.0,7.0],[14,13.1,18.1],[15,2.6,4.6],[16,7.2,12.2],[17,0.7,0.7]],"45":[[1,2.7,4.7],[2,4.8,9.8],[3,7.4,10.4],[8,11.4,14.4],[13,15.6,22.6],[14,4.1,7.1],[15,12.9,15.9],[16,5.3,8.3],[17,6.3,11.3],[18,5.7,9.7]],"46":[[1,5.1,9.1],[2,16.6,22.6],[3,11.6,14.6],[4,11.6,15.6],[5,8.8,13.8],[6,3.9,7.9],[7,21.5,26.5],[9,18.0,23.0],[10,13.7,19.7],[11,6.1,7.1],[12,18.2,23.2],[13,17.8,21.8],[14,2.9,6.9],[15,7.1,11.1]],"47":[[1,-0.3,0.7],[2,0.5,1.5],[3,16.8,19.8],[4,-0.4,1.6],[6,5.1,9.1],[7,2.1,3.1],[8,-0.1,0.9],[10,5.1,8.1],[11,2.7,5.7],[12,6.1,9.1],[13,3.6,7.6],[14,7.0,11.0],[15,8.4,14.4],[17,19.8,27.8],[18,4.5,7.5]],"48":[[1,6.5,9.5],[2,10.9,13.9],[3,7.8,10.8],[4,12.0,16.0],[6,23.5,25.5],[7,19.8,20.8],[8,13.1,15.1],[10,9.8,14.8],[11,9.0,9.0],[12,0.9,1.9],[13,19.8,20.8],[14,8.2,11.2],[15,21.6,22.6],[16,7.0,9.0],[17,19.9,21.9],[18,4.8,5.8]],"49":[[1,4.3,8.3],[2,12.1,13.1],[3,28.4,29.4],[4,1.2,1.2],[5,17.2,18.2],[6,6.1,8.1],[7,3.9,5.9],[9,9.0,11.0],[10,9.1,10.1],[11,3.7,4.7],[12,3.7,6.7],[13,10.8,12.8],[14,13.3,14.3],[15,9.2,9.2],[16,1.4,1.4],[17,4.0,6.0],[18,5.5,6.5]],"50":[[1,29.4,29.4],[2,26.3,26.3],[3,27.0,27.0],[4,10.7,10.7],[9,25.6,25.6],[10,16.6,16.6],[11,4.7,4.7],[12,7.2,7.2],[13,6.5,6.5],[14,21.1,21.1],[15,14.6,14.6],[16,4.7,4.7],[18,20.4,20.4]],"51":[[2,7.1,10.1],[3,15.5,16.5],[4,17.5,21.5],[5,12.8,13.8],[6,3.6,3.6],[7,26.4,26.4],[8,1.7,4.7],[10,8.5,10.5],[11,5.9,5.9],[12,16.7,16.7],[13,12.9,15.9],[14,8.4,9.4],[15,1.7,4.7],[16,5.1,10.1]],"52":[[1,7.9,14.9],[2,7.9,11.9],[3,3.8,6.8],[4,13.3,18.3],[5,10.4,14.4],[6,12.3,18.3],[7,12.9,16.9],[8,5.3,9.3],[9,2.6,7.6],[10,9.9,17.9],[12,4.5,9.5],[13,8.2,11.2],[14,1.7,3.7],[15,1.9,4.9],[16,3.0,6.0],[17,4.3,9.3],[18,2.6,7.6]],"53":[[1,2.6,6.6],[2,16.8,18.8],[3,4.3,6.3],[4,3.7,5.7],[5,1.0,2.0],[6,12.6,18.6],[7,0.0,0.0],[9,12.6,16.6],[10,17.9,23.9],[11,15.7,19.7],[12,0.0,0.0],[13,19.9,26.9],[14,10.3,17.3],[15,19.4,26.4],[16,7.0,12.0],[17,3.7,5.7],[18,7.4,13.4]],"54":[[1,5.1,11.1],[2,4.0,6.0],[3,4.7,7.7],[4,10.6,12.6],[5,2.7,4.7],[6,3.6,4.6],[7,0.5,0.5],[8,5.5,5.5],[9,8.7,12.7],[10,27.0,28.0],[11,27.3,32.3],[12,8.1,11.1],[13,8.6,11.6],[15,28.1,30.1],[16,1.2,2.2],[17,8.2,8.2],[18,17.3,17.3]],"55":[[1,7.6,10.6],[2,4.6,9.6],[3,8.8,12.8],[4,3.8,7.8],[6,5.2,8.2],[7,5.2,8.2],[8,7.6,11.6],[9,19.0,23.0],[10,0.0,0.0],[11,2.1,3.1],[12,18.4,23.4],[13,2.7,4.7],[14,-0.4,0.6],[15,18.9,22.9],[16,16.9,21.9],[17,0.7,1.7],[18,1.1,2.1]],"56":[[1,5.1,10.1],[2,5.6,10.6],[3,9.3,13.3],[7,0.0,0.0],[15,13.2,19.2],[16,9.1,14.1],[17,9.1,12.1],[18,3.4,5.4]],"57":[[1,1.1,1.1],[2,13.4,15.4],[3,8.1,8.1],[4,2.2,3.2],[5,1.1,2.1],[6,2.8,4.8],[7,2.2,2.2],[9,8.6,9.6],[10,1.0,2.0],[11,13.4,13.4],[12,1.7,1.7],[13,7.9,8.9],[14,-1.5,-1.5],[15,8.3,9.3],[18,8.3,8.3]],"58":[[1,10.5,14.5],[2,12.1,18.1],[3,9.9,13.9],[4,20.5,25.5],[13,14.1,16.1],[14,14.1,16.1],[15,7.1,8.1],[16,7.1,7.1],[17,3.3,8.3],[18,9.8,10.8]],"59":[[1,14.8,15.8],[2,26.3,26.3],[3,19.2,19.2],[4,23.2,23.2],[5,12.1,12.1],[6,27.2,27.2],[7,23.1,23.1],[8,26.3,26.3],[9,16.4,16.4],[10,18.1,18.1],[11,15.4,15.4],[12,16.0,16.0],[13,20.5,20.5],[15,20.5,20.5],[16,23.7,23.7],[17,32.4,32.4],[18,15.7,15.7]],"60":[[1,9.7,15.7],[2,24.8,31.8],[3,12.2,15.2],[4,12.9,16.9],[6,3.2,5.2],[7,3.1,5.1],[8,11.4,18.4],[9,0.0,0.0],[10,14.6,20.6],[11,4.1,6.1],[12,5.3,8.3],[13,0.8,2.8]],"61":[[8,8.5,12.5],[9,5.8,7.8],[10,4.5,6.5],[11,16.6,20.6],[12,4.9,9.9],[13,14.3,18.3],[14,20.9,24.9],[15,2.9,5.9],[16,1.7,3.7],[17,17.3,22.3]],"62":[[1,8.8,8.8],[2,7.0,7.0],[13,19.2,19.2],[14,23.4,23.4],[15,5.5,5.5],[16,29.0,29.0],[17,20.4,20.4],[18,21.1,21.1]],"64":[[1,20.1,20.1],[2,19.7,19.7],[5,17.1,17.1],[6,21.6,21.6],[7,17.7,17.7],[9,15.2,15.2],[14,2.7,2.7]],"66":[[1,13.1,18.1],[2,2.7,4.7],[3,4.4,7.4],[4,12.6,18.6],[5,9.8,13.8],[6,3.2,5.2],[7,5.8,7.8],[9,15.6,22.6],[10,11.3,14.3],[13,6.9,12.9],[16,1.4,2.4],[17,0.0,0.0]],"67":[[1,24.3,24.3],[2,11.5,11.5],[3,29.0,29.0],[4,19.4,19.4],[5,19.5,19.5],[6,20.6,20.6],[7,24.0,24.0],[8,25.4,25.4],[10,12.0,12.0],[11,14.5,14.5],[12,30.9,30.9],[13,16.3,16.3],[14,2.4,2.4],[15,22.9,22.9],[16,19.4,19.4],[17,8.9,8.9]],"68":[[1,8.0,9.0],[2,4.9,8.9],[3,5.5,7.5],[4,5.6,10.6],[5,8.0,12.0],[6,15.0,23.0],[7,3.1,6.1],[9,5.5,8.5],[13,2.8,4.8],[14,8.7,11.7],[15,13.1,17.1],[16,1.8,3.8],[17,3.9,7.9],[18,4.9,7.9]],"69":[[1,0.0,0.0],[2,7.6,12.6],[3,3.4,7.4],[4,5.9,5.9],[5,7.6,9.6],[6,2.9,4.9],[7,6.2,10.2],[9,9.0,17.0],[10,14.9,17.9],[11,2.0,4.0],[12,13.1,18.1],[13,2.6,3.6],[15,5.3,8.3],[16,20.5,26.5],[17,11.0,19.0],[18,14.7,19.7]],"70":[[1,11.9,13.9],[2,13.4,17.4],[3,8.1,13.1],[6,6.3,8.3],[7,15.8,19.8],[8,7.3,9.3],[9,14.9,16.9],[10,9.1,11.1],[11,6.7,8.7],[12,12.8,12.8],[13,10.4,12.4],[14,12.2,15.2],[15,4.8,7.8],[16,27.1,29.1],[17,6.4,6.4],[18,9.9,14.9]],"71":[[1,24.2,24.2],[2,17.0,17.0],[3,29.1,29.1],[4,11.8,11.8],[6,19.9,19.9],[7,4.7,4.7],[8,11.8,11.8],[9,36.7,38.7],[10,25.1,25.1],[11,10.3,10.3],[12,21.7,21.7],[13,9.5,9.5],[14,14.9,14.9],[15,19.0,19.0],[16,21.0,21.0],[17,23.0,23.0],[18,16.6,16.6]],"72":[[1,6.9,7.9],[2,9.2,9.2],[3,11.9,13.9],[4,7.6,10.6],[5,11.8,14.8],[6,4.7,6.7],[7,6.1,12.1],[8,5.3,6.3],[9,6.8,7.8],[11,2.6,5.6],[12,4.1,8.1],[13,4.3,5.3],[14,28.1,28.1],[15,17.2,18.2],[16,10.2,10.2],[17,9.5,11.5],[18,6.5,9.5]],"74":[[1,8.3,12.3],[2,8.0,11.0],[3,9.2,12.2],[4,18.6,23.6],[6,15.5,19.5],[7,5.0,8.0],[8,11.5,16.5],[9,0.6,2.6],[10,3.5,6.5],[11,4.9,9.9],[12,9.4,14.4],[13,3.2,6.2],[14,14.8,21.8],[15,11.5,14.5],[16,4.2,8.2]],"75":[[1,7.9,9.9],[2,18.4,24.4],[3,2.9,5.9],[4,5.6,10.6],[6,10.3,12.3],[7,11.8,16.8],[8,26.3,33.3],[9,2.0,4.0]],"76":[[1,7.9,13.9],[2,2.6,5.6],[3,3.3,7.3],[4,3.9,6.9],[5,15.2,20.2],[6,11.5,16.5],[7,1.5,4.5],[9,15.7,21.7],[10,5.3,10.3]],"77":[[1,2.7,4.7],[2,16.2,21.2],[3,1.6,4.6],[4,4.1,5.1],[5,12.7,14.7],[6,1.8,1.8],[7,14.8,16.8],[8,4.9,5.9],[12,1.0,2.0],[13,8.0,11.0],[15,7.7,10.7],[16,15.8,17.8],[17,22.2,27.2],[18,33.3,35.3]],"78":[[1,12.1,18.1],[2,0.6,1.6],[3,17.8,23.8],[4,14.1,19.1],[5,9.9,17.9],[6,1.7,2.7],[7,10.7,16.7],[8,6.7,10.7],[9,9.0,10.0],[10,2.4,5.4],[11,5.9,9.9],[13,12.2,17.2],[14,6.2,12.2],[15,17.3,24.3],[16,14.6,20.6],[17,4.0,8.0],[18,0.5,1.5]],"79":[[1,5.9,12.9],[2,3.7,7.7],[3,3.9,7.9],[4,13.0,18.0],[6,1.8,4.8],[7,6.2,13.2],[8,5.9,14.9],[9,3.8,7.8],[10,3.8,5.8],[11,1.4,3.4],[12,2.5,4.5],[13,8.2,15.2],[14,9.0,15.0],[15,34.6,45.6],[16,11.7,18.7],[17,1.6,3.6],[18,5.8,11.8]],"80":[[1,27.9,27.9],[2,18.8,18.8],[3,14.6,14.6],[4,12.5,12.5],[5,14.6,14.6],[6,18.8,18.8],[7,27.9,27.9],[8,25.3,25.3],[9,27.7,27.7],[10,14.7,14.7],[11,3.3,3.3],[13,12.8,12.8],[14,12.2,12.2],[15,10.4,10.4],[16,30.2,30.2],[17,15.1,15.1]],"81":[[1,3.6,4.6],[2,6.8,10.8],[3,6.7,10.7],[6,4.8,6.8],[7,9.8,14.8],[8,6.9,8.9],[9,11.5,17.5],[10,14.4,18.4],[12,2.6,3.6],[13,13.8,17.8],[14,8.0,13.0],[15,1.6,2.6],[16,20.6,24.6],[17,0.0,0.0],[18,25.2,29.2]],"82":[[1,6.6,13.6],[2,4.8,9.8],[3,2.5,5.5],[4,2.5,4.5],[5,7.3,11.3],[6,8.1,15.1],[7,3.6,7.6],[8,12.4,18.4],[10,4.4,8.4],[11,2.6,4.6],[12,4.4,8.4],[13,8.3,11.3],[14,17.4,25.4],[15,5.0,12.0],[16,15.5,19.5],[17,9.0,11.0]],"83":[[1,7.8,7.8],[2,22.1,22.1],[3,12.0,12.0],[4,31.0,31.0],[5,28.3,28.3],[6,22.3,22.3],[7,23.3,23.3],[8,6.6,6.6],[9,15.4,15.4],[11,24.3,24.3],[12,27.1,27.1],[13,20.6,20.6],[14,18.4,18.4],[15,12.0,12.0],[16,19.2,19.2],[17,22.7,22.7],[18,0.7,0.7]],"84":[[1,10.3,10.3],[2,19.2,19.2],[3,7.8,7.8],[4,11.7,11.7],[5,26.2,26.2],[6,19.2,19.2],[7,17.6,17.6],[9,21.2,21.2],[10,9.8,9.8],[11,15.0,15.0],[12,17.1,17.1],[13,21.7,21.7],[14,19.4,19.4],[15,44.3,44.3],[16,31.2,31.2],[17,23.1,23.1],[18,23.3,23.3]],"85":[[1,14.9,17.9],[2,13.7,18.7],[3,7.6,9.6],[4,6.9,9.9],[7,5.5,7.5],[8,9.4,9.4],[9,1.7,1.7],[10,1.5,2.5],[11,2.8,3.8],[12,4.3,8.3],[13,18.4,20.4],[15,3.8,4.8],[16,3.4,4.4],[17,-0.2,2.8],[18,1.7,3.7]],"86":[[1,19.9,24.9],[2,12.9,15.9],[3,8.9,14.9],[4,15.8,23.8],[5,2.9,6.9],[7,9.0,11.0],[9,11.3,15.3],[10,4.2,9.2],[11,0.0,0.0],[13,8.3,11.3],[14,0.8,2.8],[16,16.4,20.4],[17,9.8,14.8]],"87":[[1,1.6,3.6],[2,1.9,2.9],[3,9.8,10.8],[4,3.0,4.0],[5,29.4,32.4],[6,29.9,33.9],[7,9.6,10.6],[8,5.4,5.4],[9,26.1,28.1],[10,12.3,15.3],[11,10.0,15.0],[12,7.4,11.4],[13,7.9,9.9],[15,11.4,12.4],[16,4.3,8.3],[17,6.3,9.3],[18,1.0,3.0]],"88":[[1,6.9,7.9],[2,2.4,3.4],[3,1.6,4.6],[4,15.8,19.8],[5,3.0,6.0],[6,2.5,6.5],[7,6.2,7.2],[8,23.1,24.1],[9,11.6,16.6],[10,1.8,3.8],[11,5.0,8.0],[13,18.2,21.2],[14,16.0,22.0],[15,10.5,10.5],[16,18.1,22.1],[17,13.6,18.6],[18,3.3,4.3]],"90":[[1,14.0,20.0],[2,4.0,8.0],[3,13.3,19.3],[4,10.1,15.1],[5,9.9,14.9],[6,2.0,4.0],[7,13.8,20.8],[8,15.5,23.5],[9,11.5,20.5],[10,1.9,3.9],[12,8.7,13.7],[13,1.3,2.3],[14,7.9,16.9],[15,2.6,5.6],[16,3.2,7.2],[17,1.6,3.6],[18,1.1,3.1]],"92":[[2,-0.3,-0.3],[3,0.3,0.3],[4,19.8,19.8],[5,15.6,15.6],[6,23.6,23.6],[7,28.4,28.4],[8,19.4,19.4],[9,27.2,27.2],[10,26.3,26.3],[13,13.6,13.6],[15,22.1,22.1],[16,0.0,0.0],[17,25.1,25.1],[18,20.4,20.4]],"93":[[1,16.8,16.8],[4,17.7,17.7],[11,19.3,19.3],[12,7.3,7.3],[13,17.1,17.1],[15,26.2,26.2],[16,30.9,30.9],[17,36.9,36.9],[18,5.2,5.2]],"94":[[4,2.6,5.6],[5,2.6,5.6],[12,0.9,2.9],[13,7.8,10.8],[14,5.5,10.5],[15,10.0,14.0],[16,3.0,8.0],[17,16.8,23.8],[18,0.8,1.8]],"95":[[1,13.6,13.6],[2,17.3,17.3],[3,13.8,13.8],[4,27.4,27.4],[5,25.6,25.6],[6,9.3,9.3],[7,27.4,27.4],[9,26.8,26.8],[10,26.9,26.9],[11,13.2,13.2],[12,22.9,22.9],[13,11.6,11.6],[14,23.2,23.2],[15,20.9,20.9],[16,30.9,30.9],[17,12.8,12.8],[18,26.7,26.7]],"96":[[1,0.5,1.5],[2,7.1,8.1],[3,0.5,1.5],[4,1.5,4.5],[5,1.6,3.6],[6,4.4,8.4],[7,4.0,7.0],[9,6.1,9.1],[10,3.4,7.4],[11,18.5,33.5],[12,11.8,21.8],[13,3.6,6.6],[14,26.2,37.2],[15,11.4,16.4],[16,11.2,13.2],[17,14.9,19.9],[18,15.9,20.9]],"97":[[1,1.6,2.6],[2,12.6,14.6],[3,1.4,2.4],[4,4.6,8.6],[5,19.1,23.1],[6,14.6,17.6],[7,4.4,8.4],[8,6.1,8.1],[10,5.4,10.4],[11,6.2,8.2],[12,4.2,5.2],[13,2.9,5.9],[14,5.5,6.5],[15,2.6,3.6],[16,6.0,8.0],[17,1.7,3.7],[18,4.1,6.1]],"98":[[1,2.3,5.3],[2,3.6,6.6],[3,8.6,9.6],[4,25.4,31.4],[6,3.6,9.6],[7,1.5,3.5],[8,1.5,3.5],[9,3.4,7.4],[10,0.4,2.4],[11,22.5,29.5],[12,12.2,18.2],[13,4.5,6.5],[14,10.2,16.2],[15,12.6,19.6],[16,18.8,23.8],[17,3.8,6.8],[18,13.4,21.4]],"99":[[1,1.1,2.1],[2,3.6,4.6],[3,2.0,3.0],[4,1.8,1.8],[6,4.4,5.4],[7,15.4,17.4],[8,2.4,2.4],[9,19.8,22.8],[10,8.8,8.8],[11,9.7,10.7],[12,10.8,10.8],[13,19.0,19.0],[14,7.7,8.7],[15,3.3,3.3],[16,9.3,12.3],[17,4.7,7.7],[18,4.9,5.9]],"100":[[1,1.2,3.2],[2,5.1,11.1],[3,3.4,5.4],[4,2.4,6.4],[5,5.4,11.4],[6,10.2,16.2],[8,9.9,12.9],[9,11.7,17.7],[10,0.3,1.3],[12,1.0,3.0],[13,4.4,6.4],[14,2.3,6.3],[15,7.3,10.3],[16,6.8,11.8],[17,3.4,5.4],[18,5.6,9.6]],"101":[[1,8.5,12.5],[7,0.0,0.0],[8,10.3,14.3],[9,2.9,6.9],[10,14.4,23.4],[11,18.7,24.7],[12,7.8,13.8],[13,6.7,10.7],[15,14.8,22.8],[16,17.5,24.5],[18,2.9,7.9]],"102":[[1,26.0,26.0],[2,22.1,22.1],[3,13.2,13.2],[4,27.3,27.3],[5,26.7,26.7],[6,31.5,31.5],[7,26.2,26.2],[8,23.0,23.0],[9,10.5,10.5],[11,13.3,13.3],[12,17.1,17.1],[13,29.4,29.4],[14,5.3,6.3],[15,13.1,13.1]],"103":[[1,12.8,14.8],[2,14.5,15.5],[3,14.3,15.3],[4,10.5,11.5],[5,14.4,15.4],[6,4.0,4.0],[7,8.0,9.0],[8,12.1,14.1],[9,5.9,6.9],[10,8.4,9.4]],"104":[[1,1.6,2.6],[2,10.4,10.4],[3,5.3,5.3],[4,1.6,3.6],[5,1.3,1.3],[6,2.3,2.3],[7,4.3,5.3],[9,5.8,5.8],[10,5.6,5.6],[11,0.5,1.5],[12,2.4,2.4],[13,14.1,14.1],[14,25.1,26.1],[15,13.1,13.1],[16,12.1,13.1],[17,1.8,1.8],[18,6.9,7.9]],"105":[[4,11.4,15.4],[5,10.1,15.1],[7,12.8,21.8],[8,8.6,11.6],[9,6.4,8.4],[10,3.5,6.5],[11,8.0,10.0],[12,0.0,0.0],[13,3.6,8.6],[14,6.2,10.2],[15,6.6,8.6],[16,2.6,4.6],[17,12.5,12.5],[18,0.8,1.8]],"106":[[1,10.5,13.5],[14,5.3,9.3],[15,5.5,10.5],[16,4.1,7.1],[17,4.1,8.1]],"107":[[1,6.8,6.8],[2,20.2,20.2],[3,13.4,13.4],[4,25.7,25.7],[5,17.9,17.9],[6,13.4,13.4],[7,40.0,40.0],[8,23.8,23.8],[9,18.5,18.5],[10,5.8,5.8],[11,12.6,12.6],[13,16.4,16.4],[14,16.0,16.0],[15,29.1,29.1],[16,15.2,15.2],[17,19.5,19.5],[18,10.5,10.5]],"108":[[1,5.5,11.5],[2,20.2,28.2],[3,2.6,3.6],[4,1.4,4.4],[5,3.2,8.2],[6,14.4,20.4],[7,9.5,15.5],[8,4.8,7.8],[9,4.6,13.6],[10,6.2,12.2],[11,3.6,7.6],[12,21.6,30.6],[13,3.4,10.4],[15,11.4,16.4],[16,2.2,5.2],[17,11.3,22.3]],"109":[[1,9.7,17.7],[2,6.8,12.8],[3,6.3,9.3],[4,3.0,7.0],[5,3.2,7.2],[6,3.9,7.9],[9,2.3,6.3],[10,4.1,7.1],[11,6.4,11.4],[12,11.0,15.0],[13,15.3,21.3],[14,10.8,14.8],[15,7.1,12.1],[16,4.6,8.6],[17,1.9,7.9],[18,4.4,9.4]],"110":[[1,10.7,12.7],[2,6.1,10.1],[3,2.6,6.6],[4,4.8,9.8],[5,12.1,19.1],[6,7.8,13.8],[7,5.4,8.4],[8,15.9,21.9],[9,8.6,12.6],[11,15.1,24.1],[12,4.4,8.4],[13,10.5,15.5],[14,0.8,1.8],[15,7.0,14.0],[16,0.6,1.6],[17,3.6,8.6],[18,1.2,4.2]],"111":[[1,10.9,10.9],[2,34.0,34.0],[3,12.7,12.7],[4,12.7,12.7],[5,20.1,20.1],[6,16.8,16.8],[7,10.3,10.3],[9,19.4,19.4],[10,24.8,24.8],[11,12.1,12.1],[12,17.2,17.2],[13,20.6,20.6],[14,16.2,16.2],[15,25.5,25.5],[16,26.5,26.5],[17,2.1,2.1],[18,15.2,15.2]],"112":[[1,1.6,3.6],[2,1.5,1.5],[3,6.1,10.1],[4,6.3,11.3],[6,10.2,13.2],[7,3.7,7.7],[8,0.4,3.4],[9,0.9,2.9],[11,2.4,3.4],[14,0.0,0.0],[15,5.5,8.5],[16,0.4,0.4],[17,1.2,2.2],[18,0.8,1.8]],"113":[[1,0.0,0.0],[4,12.1,17.1],[5,5.1,11.1],[6,8.6,10.6],[7,4.8,7.8],[8,5.3,10.3],[9,3.0,6.0],[11,2.5,5.5],[12,5.9,9.9],[13,7.4,11.4],[14,5.5,8.5],[15,3.5,5.5],[16,4.1,6.1],[17,0.1,0.1]],"114":[[1,4.4,11.4],[3,9.3,10.3],[4,15.7,19.7],[5,7.9,10.9],[6,17.0,26.0],[7,1.8,4.8],[8,14.8,17.8],[10,4.3,8.3],[11,2.4,4.4],[12,2.0,4.0],[13,2.7,4.7],[14,7.8,15.8],[15,19.0,25.0],[16,9.2,12.2],[17,6.8,9.8]],"115":[[1,7.5,8.5],[2,3.8,5.8],[3,23.6,23.6],[4,7.2,10.2],[5,9.6,12.6],[7,11.7,11.7],[8,0.6,1.6],[9,3.7,4.7],[10,3.1,4.1],[11,10.5,10.5],[12,4.2,4.2],[13,4.8,5.8],[14,11.2,11.2],[15,2.9,2.9],[16,1.1,2.1],[18,9.4,9.4]],"116":[[1,10.8,14.8],[2,3.7,7.7],[3,12.6,17.6],[4,8.8,9.8],[5,10.8,16.8],[8,2.3,3.3],[9,16.1,22.1],[10,3.7,5.7],[14,10.1,14.1],[15,3.4,6.4],[16,0.0,0.0],[18,4.8,7.8]],"117":[[5,1.2,2.2],[6,0.6,2.6],[8,0.8,2.8],[9,6.0,9.0],[10,1.7,3.7],[11,1.5,3.5],[12,1.0,2.0],[13,7.5,12.5],[14,8.5,12.5],[16,0.0,0.0],[17,2.7,5.7],[18,3.2,5.2]],"118":[[1,2.3,7.3],[2,7.8,16.8],[3,8.2,21.2],[4,10.0,17.0],[5,16.9,23.9],[6,9.3,12.3],[7,14.9,21.9],[8,0.0,0.0],[9,3.0,8.0],[11,7.6,11.6],[12,6.1,11.1],[13,3.6,8.6],[14,5.8,10.8],[15,1.6,3.6],[16,1.9,4.9],[17,6.6,7.6],[18,0.5,1.5]],"119":[[1,18.3,18.3],[2,14.0,14.0],[3,14.1,14.1],[4,16.1,16.1],[5,15.3,15.3]],"120":[[1,12.7,15.7],[2,2.3,2.3],[8,3.0,5.0],[9,9.8,11.8],[10,12.9,15.9],[11,8.1,11.1],[12,5.7,8.7],[13,0.5,4.5],[14,7.6,7.6],[15,6.5,9.5],[16,9.3,11.3],[17,12.3,15.3]],"121":[[1,14.2,14.2],[2,1.7,1.7],[3,9.1,10.1],[4,5.7,7.7],[5,25.0,27.0],[6,4.8,5.8],[7,3.2,4.2],[8,2.5,2.5],[9,4.1,5.1],[10,3.0,3.0],[11,3.3,4.3],[13,2.0,2.0],[14,3.2,3.2],[15,15.6,15.6],[16,8.5,8.5],[17,22.5,22.5],[18,2.9,2.9]],"122":[[1,0.5,1.5],[2,0.4,1.4],[3,21.1,27.1],[4,3.0,10.0],[5,2.2,4.2],[6,2.6,6.6],[8,3.4,6.4],[9,14.6,16.6],[10,7.4,10.4],[11,12.7,15.7],[12,1.1,2.1],[13,4.7,8.7],[14,0.9,1.9],[15,1.8,3.8],[16,2.4,4.4],[17,2.8,6.8],[18,1.4,3.4]],"123":[[1,6.8,8.8],[2,8.8,11.8],[3,2.5,4.5],[4,23.8,29.8],[6,5.5,10.5],[7,7.2,13.2],[8,6.4,9.4],[9,9.1,16.1],[10,0.5,1.5],[11,5.3,9.3],[12,2.3,4.3],[13,8.0,12.0],[14,0.0,0.0],[15,3.6,5.6],[16,14.4,19.4],[17,6.2,9.2]],"124":[[1,22.6,22.6],[2,19.9,19.9],[3,17.7,17.7],[4,18.9,18.9],[5,26.7,26.7],[6,19.6,19.6],[7,11.1,11.1],[8,4.1,4.1],[10,22.9,22.9],[11,16.8,16.8],[12,3.5,3.5],[13,14.5,14.5],[14,11.1,11.1],[15,19.2,19.2],[16,12.7,12.7],[17,17.4,17.4],[18,13.2,13.2]],"126":[[1,15.9,15.9],[2,20.9,20.9],[3,11.1,11.1],[4,26.3,26.3],[6,15.0,15.0],[7,13.4,13.4],[8,28.3,28.3],[9,9.0,9.0],[10,7.8,7.8],[11,17.7,17.7],[12,7.1,7.1],[13,25.8,25.8],[14,19.3,19.3],[15,13.9,13.9],[16,3.8,3.8]],"127":[[3,0.0,0.0],[8,4.3,4.3],[9,9.2,9.2],[10,19.0,19.0],[12,7.9,7.9],[13,17.4,17.4],[14,21.3,21.3],[15,18.1,18.1],[16,17.1,17.1],[17,21.9,21.9],[18,21.8,21.8]],"128":[[1,6.4,12.4],[2,1.2,2.2],[3,10.5,14.5],[4,12.9,17.9],[5,5.0,11.0],[6,3.3,6.3],[8,14.8,20.8],[9,4.3,11.3],[10,5.8,12.8],[11,-0.3,0.7],[12,9.0,17.0],[13,0.5,1.5],[14,7.6,9.6],[15,6.5,11.5],[16,3.4,7.4],[17,3.5,9.5]],"129":[[1,3.2,5.2],[2,2.8,3.8],[3,0.5,1.5],[4,8.4,9.4],[5,3.2,7.2],[7,0.0,0.0],[8,9.4,13.4],[9,0.4,1.4],[10,10.2,15.2],[11,5.5,9.5],[12,9.8,13.8],[13,6.5,11.5],[14,3.4,6.4],[15,0.4,1.4],[16,1.7,2.7],[17,14.8,16.8],[18,8.3,10.3]],"130":[[7,0.0,0.0],[8,3.6,6.6],[9,0.9,1.9],[10,2.1,5.1],[11,7.2,11.2],[12,3.2,6.2],[13,13.4,17.4],[15,10.0,14.0],[16,4.7,7.7],[17,1.6,3.6],[18,10.7,16.7]],"131":[[1,3.3,9.3],[2,11.2,15.2],[3,4.2,8.2],[4,5.2,9.2],[5,17.4,21.4],[6,2.8,6.8],[7,4.0,8.0],[8,5.5,14.5],[9,6.8,11.8],[10,2.3,3.3],[11,2.9,4.9],[12,0.5,0.5],[13,1.6,2.6],[14,12.7,16.7],[15,7.1,12.1],[16,9.1,9.1],[17,0.8,1.8],[18,0.2,1.2]],"132":[[1,3.5,5.5],[2,5.1,9.1],[3,3.6,5.6],[6,0.6,0.6],[7,10.6,10.6],[8,5.3,7.3],[9,3.7,6.7],[10,7.1,8.1],[11,13.9,17.9],[12,13.0,16.0],[13,3.3,4.3],[15,21.7,24.7],[16,7.8,9.8],[17,5.7,6.7],[18,19.9,27.9]],"133":[[1,5.7,11.7],[2,3.2,7.2],[3,2.3,5.3],[4,10.1,16.1],[5,14.6,24.6],[6,2.8,5.8],[7,6.9,13.9],[8,7.4,10.4],[9,9.8,12.8],[10,10.6,15.6],[11,10.5,19.5],[12,2.0,4.0],[13,2.6,5.6],[15,2.6,5.6],[16,13.8,22.8],[17,16.1,22.1],[18,4.3,7.3]],"134":[[3,3.9,3.9],[4,5.9,5.9],[5,0.7,0.7],[7,7.2,7.2],[8,0.2,0.2],[9,12.5,12.5],[10,7.6,7.6],[11,8.5,9.5],[13,10.1,10.1],[14,5.2,5.2],[16,12.9,13.9],[18,14.3,15.3]],"135":[[1,0.3,0.3],[2,5.1,6.1],[3,3.6,4.6],[4,23.9,27.9],[5,2.4,2.4],[7,9.5,12.5],[8,11.1,15.1],[9,2.7,2.7],[10,14.1,16.1],[11,5.1,6.1],[12,6.9,7.9],[13,6.7,7.7],[14,13.6,15.6],[15,3.8,4.8],[17,7.5,8.5],[18,4.8,6.8]],"136":[[11,5.8,5.8],[12,0.6,0.6],[16,13.2,13.2],[17,31.5,31.5]],"137":[[1,1.9,4.9],[2,3.5,7.5],[3,6.6,11.6],[4,0.4,1.4],[5,4.8,8.8],[6,4.6,10.6],[7,0.0,0.0],[8,5.3,9.3],[9,1.0,3.0],[11,5.6,8.6],[12,4.0,7.0],[13,2.9,6.9],[14,2.0,4.0],[15,3.3,7.3],[16,10.4,16.4],[17,11.5,14.5],[18,0.2,2.2]],"138":[[1,5.9,9.9],[2,1.7,4.7],[3,6.1,12.1],[4,4.5,10.5],[5,2.2,3.2],[12,9.3,14.3],[13,10.5,13.5],[14,2.7,5.7],[15,2.6,3.6],[16,9.9,14.9],[17,5.4,8.4],[18,11.2,17.2]],"139":[[1,10.8,14.8],[2,5.2,9.2],[3,11.7,19.7],[4,4.6,8.6],[11,0.0,1.0],[12,0.8,2.8],[13,1.4,3.4],[15,9.6,15.6],[17,8.5,13.5]],"140":[[1,7.6,15.6],[2,10.9,15.9],[3,5.1,11.1],[4,2.8,5.8],[5,1.7,3.7],[6,-0.5,1.5],[7,7.9,12.9],[8,5.3,10.3],[9,9.1,12.1],[10,15.2,19.2],[12,4.6,10.6],[13,3.9,8.9],[14,3.8,7.8],[15,3.0,7.0],[16,8.9,16.9],[17,9.5,13.5],[18,4.1,7.1]],"141":[[1,10.7,10.7],[2,1.0,1.0],[4,10.4,12.4],[5,10.8,11.8],[6,3.7,4.7],[7,17.5,19.5],[9,4.6,5.6],[10,14.3,14.3],[11,4.7,6.7],[12,9.5,9.5],[13,11.2,11.2],[14,6.6,8.6],[15,3.1,3.1],[16,13.4,17.4],[17,24.2,26.2],[18,15.7,18.7]],"142":[[15,3.8,5.8],[16,1.6,3.6],[17,11.4,18.4],[18,1.1,2.1]],"143":[[1,2.8,4.8],[2,2.9,3.9],[3,4.8,5.8],[4,10.8,12.8],[5,5.6,8.6],[6,5.1,6.1],[7,11.4,12.4],[8,5.8,5.8],[13,3.3,5.3],[14,3.0,3.0],[15,2.1,2.1],[16,7.5,13.5],[17,3.2,3.2]],"144":[[3,4.6,9.6],[4,1.6,3.6],[5,1.4,2.4],[6,4.8,11.8],[7,22.4,29.4],[8,13.7,18.7],[9,6.8,11.8],[10,1.3,4.3],[11,4.1,6.1],[13,2.7,3.7],[14,0.7,1.7],[15,6.1,10.1],[16,0.7,1.7],[17,9.2,12.2],[18,2.3,4.3]],"145":[[5,1.4,1.4],[6,5.0,9.0],[7,4.0,7.0],[8,14.2,17.2],[9,6.2,9.2],[11,3.4,8.4],[12,2.5,6.5],[13,2.4,8.4],[14,4.7,6.7],[15,3.6,5.6],[16,16.5,21.5],[17,0.1,1.1],[18,2.7,9.7]],"146":[[1,11.7,13.7],[2,10.0,16.0],[3,5.6,6.6],[4,7.2,11.2],[5,5.5,9.5],[6,7.6,12.6],[7,2.9,5.9],[8,4.5,6.5],[9,-0.3,0.7],[10,11.5,14.5],[12,1.5,3.5]],"147":[[1,6.6,10.6],[2,0.9,1.9],[3,21.0,29.0],[4,9.9,11.9],[5,4.6,6.6],[6,2.7,5.7],[7,3.3,7.3],[8,6.7,7.7],[9,5.1,9.1],[10,0.9,1.9],[11,4.5,8.5],[12,17.5,24.5],[13,7.3,11.3],[15,1.8,2.8],[16,9.5,15.5],[17,10.9,13.9],[18,5.6,10.6]],"148":[[1,2.4,2.4],[2,14.0,15.0],[3,0.4,1.4],[4,11.1,11.1],[6,9.8,10.8],[7,1.6,1.6],[8,7.4,9.4],[9,0.6,0.6],[10,17.7,17.7],[11,7.6,9.6],[12,4.9,5.9],[13,11.5,13.5],[14,6.7,8.7],[15,1.8,1.8],[16,7.3,8.3],[17,2.3,2.3],[18,1.9,2.9]],"149":[[1,29.5,29.5],[2,22.8,22.8],[3,15.8,15.8],[4,10.4,10.4],[5,16.7,16.7],[6,22.5,22.5],[7,22.2,22.2],[8,23.2,23.2],[9,14.1,14.1],[10,15.5,15.5],[12,16.8,16.8],[13,16.1,16.1],[14,0.8,0.8]],"150":[[1,15.6,22.6],[2,10.4,17.4],[3,2.9,4.9],[4,14.1,20.1],[5,15.6,23.6],[6,1.4,5.4],[8,1.2,4.2],[9,4.4,9.4],[10,8.9,12.9],[11,13.7,20.7],[13,6.1,11.1],[14,2.7,6.7],[15,4.3,7.3],[16,3.5,6.5],[17,9.3,11.3],[18,2.1,4.1]],"151":[[1,2.8,3.8],[2,3.1,6.1],[3,3.7,6.7],[4,8.2,9.2],[5,4.2,7.2],[7,3.7,5.7],[8,0.0,0.0],[9,1.6,2.6],[10,18.4,23.4],[11,1.6,2.6],[12,0.0,0.0],[13,0.0,0.0],[14,3.0,6.0],[15,16.5,19.5],[16,0.0,0.0],[17,0.0,0.0],[18,4.9,7.9]],"153":[[1,1.5,4.5],[2,1.2,2.2],[3,10.9,15.9],[4,3.9,7.9],[5,3.8,9.8],[7,4.3,10.3],[8,2.6,4.6],[9,7.1,9.1],[10,0.8,2.8],[11,3.9,6.9],[12,1.9,5.9],[13,5.9,11.9],[14,7.2,9.2],[15,6.6,10.6],[16,0.2,1.2]],"154":[[1,8.7,8.7],[2,15.0,15.0],[3,10.4,10.4],[4,18.4,18.4],[5,28.8,28.8],[7,13.7,13.7],[8,21.7,21.7],[9,4.4,4.4],[13,9.0,9.0],[14,12.6,12.6],[15,23.4,23.4],[16,11.5,11.5],[17,13.8,13.8],[18,17.3,17.3]],"155":[[1,11.4,13.4],[2,1.9,4.9],[3,32.9,40.9],[4,2.2,4.2],[5,7.1,11.1],[6,7.0,12.0],[7,3.3,8.3],[9,3.8,6.8],[10,3.5,5.5],[11,10.7,14.7],[12,2.8,5.8],[13,2.0,5.0],[14,2.4,4.4],[15,0.0,0.0],[16,5.4,9.4],[17,4.9,9.9],[18,3.4,5.4]],"156":[[1,2.5,2.5],[2,9.8,9.8],[3,12.0,12.0],[4,4.5,4.5],[5,8.0,8.0],[6,6.9,6.9],[7,10.2,10.2],[8,12.8,12.8],[9,6.4,6.4],[11,13.1,13.1],[12,23.9,23.9],[13,6.3,6.3],[14,11.1,11.1],[15,15.0,15.0],[16,18.0,18.0],[17,17.0,17.0],[18,9.2,9.2]],"157":[[1,1.2,1.2],[3,0.0,0.0],[4,0.0,0.0],[5,0.0,0.0],[6,0.0,0.0],[7,1.0,2.0],[8,10.4,10.4],[10,0.7,0.7],[11,3.4,3.4],[12,0.8,0.8],[14,0.4,0.4],[15,5.7,5.7],[16,9.7,9.7],[17,0.9,1.9],[18,16.6,17.6]],"160":[[1,3.3,9.3],[2,2.2,5.2],[3,2.1,3.1],[4,4.2,7.2],[5,6.4,9.4],[6,1.5,5.5],[7,16.1,24.1]],"161":[[1,1.6,3.6],[2,14.9,19.9],[4,4.4,6.4],[6,0.7,1.7],[7,3.1,7.1],[8,4.5,8.5],[9,10.1,14.1],[10,11.1,17.1],[11,5.4,9.4],[12,10.1,15.1],[13,9.9,13.9],[15,15.7,18.7],[16,13.1,18.1],[17,10.2,12.2],[18,3.5,7.5]],"162":[[1,5.4,5.4],[2,15.8,15.8],[3,16.7,16.7],[4,16.1,16.1],[5,27.6,27.6],[6,20.0,20.0],[7,8.6,8.6],[9,27.2,27.2],[10,4.9,4.9],[11,4.3,4.3],[12,17.7,17.7],[13,3.1,3.1],[14,22.3,22.3],[15,11.3,11.3],[16,19.5,19.5],[17,6.1,6.1],[18,8.8,8.8]],"163":[[1,3.7,4.7],[2,1.9,2.9],[3,2.2,2.2],[4,2.1,2.1],[5,1.2,1.2],[6,0.8,3.8],[7,3.6,3.6],[8,0.0,0.0],[9,11.3,11.3],[10,10.5,11.5],[11,2.4,2.4],[12,4.4,5.4],[13,2.6,2.6],[15,2.1,2.1],[16,2.0,2.0],[17,2.8,3.8],[18,0.9,0.9]],"165":[[1,2.8,5.8],[2,2.9,5.9],[3,3.9,8.9],[4,3.0,8.0],[5,6.0,11.0],[7,9.8,18.8],[8,2.4,4.4],[9,7.7,13.7],[10,11.3,18.3],[11,5.1,11.1],[12,0.8,1.8],[13,5.5,12.5],[14,2.2,5.2],[15,13.6,21.6],[16,9.5,14.5],[17,1.9,4.9],[18,7.3,11.3]],"166":[[1,6.6,11.6],[2,5.1,9.1],[3,1.7,2.7],[4,4.8,7.8],[5,1.5,3.5],[6,4.3,9.3],[7,1.7,3.7],[8,0.0,0.0],[10,13.8,19.8],[11,2.1,5.1],[12,1.9,2.9],[13,2.6,5.6],[14,13.6,16.6],[15,2.2,4.2],[16,1.2,4.2],[17,5.4,10.4],[18,2.2,4.2]],"167":[[1,8.2,8.2],[2,21.3,21.3],[3,11.6,11.6],[4,10.3,10.3],[5,12.0,12.0],[6,18.5,18.5],[7,10.5,10.5],[9,3.0,3.0],[10,1.6,1.6],[11,31.8,31.8],[12,8.3,8.3],[13,22.5,22.5],[15,15.4,15.4],[16,17.6,17.6],[17,8.9,8.9],[18,16.5,16.5]],"168":[[1,2.1,4.1],[2,2.0,4.0],[3,0.0,0.0],[4,7.6,10.6],[5,0.0,0.0],[7,0.8,1.8],[8,0.0,0.0],[9,0.7,1.7],[11,1.0,2.0],[12,4.2,6.2],[13,16.2,24.2],[14,2.4,3.4],[15,11.4,17.4],[16,4.3,7.3],[17,2.2,5.2],[18,0.0,0.0]],"169":[[1,0.2,1.2],[2,8.8,10.8],[3,2.3,3.3],[4,9.2,12.2],[5,17.3,24.3],[6,7.1,10.1],[7,0.9,1.9],[9,8.5,11.5],[10,0.3,0.3],[11,7.1,17.1],[12,1.8,3.8],[13,3.7,7.7],[14,2.7,5.7],[15,2.7,5.7],[16,11.0,15.0],[17,10.3,13.3],[18,1.4,3.4]],"171":[[1,2.7,6.7],[2,5.7,8.7],[3,2.7,3.7],[4,3.0,5.0],[5,13.1,18.1],[6,1.8,2.8],[11,1.3,2.3]],"172":[[5,2.1,3.1],[6,0.0,0.0],[7,9.1,10.1],[9,5.4,7.4],[10,3.2,4.2],[12,0.0,0.0],[13,0.0,0.0],[14,0.0,0.0],[15,0.6,1.6],[16,9.3,12.3],[17,11.4,13.4]],"173":[[1,6.9,6.9],[2,1.1,1.1],[3,4.7,6.7],[4,0.6,0.6]],"175":[[1,10.4,14.4],[2,11.2,12.2],[3,3.7,6.7]],"176":[[1,1.6,2.6],[2,0.9,2.9],[3,2.7,5.7],[4,1.2,2.2],[5,3.4,7.4],[6,1.5,3.5],[7,3.6,7.6],[8,8.3,10.3],[9,1.5,2.5],[11,2.9,6.9],[12,5.1,11.1],[13,2.3,8.3],[14,0.8,1.8],[15,10.9,14.9],[16,0.9,2.9],[17,0.1,1.1]],"177":[[5,1.3,2.3],[6,0.0,0.0],[8,4.3,4.3],[9,1.8,2.8],[10,3.1,3.1],[11,5.4,7.4],[12,1.9,2.9],[13,9.1,11.1],[14,7.6,7.6],[15,6.6,6.6],[16,1.3,1.3],[17,3.8,5.8],[18,0.2,0.2]],"178":[[1,9.3,17.3],[2,7.9,10.9],[3,0.2,0.2],[4,-0.2,-0.2],[5,0.2,1.2],[6,2.4,4.4],[7,1.7,2.7],[8,2.9,7.9],[10,-0.1,0.9],[11,1.9,1.9],[12,14.2,16.2],[13,2.3,2.3],[14,4.8,9.8],[17,2.7,5.7],[18,4.4,6.4]],"180":[[2,0.0,0.0],[3,2.1,4.1],[4,2.6,4.6],[5,12.4,18.4],[6,3.3,6.3],[7,0.0,0.0],[8,0.7,1.7],[9,7.2,9.2],[11,6.2,7.2],[12,0.0,0.0],[13,3.4,6.4],[14,17.5,26.5],[15,4.0,8.0],[16,7.8,9.8],[18,6.8,11.8]],"181":[[1,1.1,2.1],[2,3.4,5.4],[3,0.0,0.0],[4,0.0,0.0],[6,2.7,6.7],[7,2.3,4.3],[8,6.8,8.8],[9,1.8,3.8],[10,0.4,2.4],[11,1.2,2.2],[13,3.0,6.0],[14,2.1,3.1],[15,4.9,7.9],[16,5.4,9.4],[17,1.5,2.5],[18,2.8,4.8]],"182":[[1,7.3,8.3],[2,2.9,3.9],[3,0.0,0.0],[5,7.2,8.2],[7,0.0,0.0],[10,1.1,2.1],[11,0.0,0.0],[12,0.0,0.0],[13,9.5,11.5],[14,8.0,10.0],[15,0.0,0.0],[16,11.2,15.2],[17,10.9,13.9],[18,1.8,2.8]],"183":[[9,4.9,9.9],[10,2.2,3.2],[11,1.8,3.8],[13,2.4,4.4],[14,4.1,7.1],[15,4.6,6.6],[16,2.6,5.6],[17,11.1,16.1],[18,3.1,6.1]],"184":[[1,0.1,1.1],[2,2.4,2.4],[3,0.0,0.0],[4,0.3,0.3],[5,0.1,0.1],[6,7.9,9.9],[8,1.6,1.6],[9,0.0,0.0],[10,-0.2,0.8],[11,0.0,0.0],[12,6.0,6.0],[13,6.2,6.2],[14,0.0,0.0],[15,1.3,2.3],[16,3.4,5.4],[17,1.6,2.6],[18,23.4,25.4]],"185":[[1,2.9,4.9],[2,8.5,9.5],[3,3.2,6.2],[4,2.1,4.1],[5,0.0,4.0],[6,2.3,6.3],[7,3.0,8.0],[8,9.6,13.6],[9,4.1,7.1],[10,7.3,9.3],[11,4.2,7.2],[13,3.0,7.0],[14,1.0,4.0],[15,1.0,2.0],[16,9.2,10.2],[17,0.5,1.5],[18,8.8,11.8]],"186":[[5,0.7,0.7],[6,0.0,0.0],[7,3.4,4.4],[8,2.9,2.9],[18,12.4,12.4]],"187":[[1,2.8,5.8],[2,3.1,6.1],[3,0.6,1.6],[6,1.1,2.1],[7,23.1,28.1],[8,1.3,4.3],[9,8.7,11.7],[10,3.3,6.3],[11,1.9,2.9],[12,7.9,10.9],[14,0.9,2.9],[15,4.5,7.5],[16,2.0,6.0],[17,6.3,9.3],[18,5.1,8.1]],"189":[[1,25.7,25.7],[2,10.4,10.4],[3,11.7,11.7],[4,12.8,12.8],[6,17.5,17.5],[7,22.6,22.6],[8,16.8,16.8],[9,12.1,12.1],[10,6.4,6.4],[11,9.4,9.4],[13,2.7,2.7],[14,20.5,21.5],[15,17.0,17.0],[16,15.5,15.5],[17,7.3,7.3],[18,17.8,17.8]],"190":[[2,0.2,0.2],[5,0.0,0.0],[6,20.7,20.7],[7,19.8,19.8],[9,24.8,24.8],[10,19.4,19.4],[11,21.9,21.9],[12,18.7,18.7],[13,19.6,19.6],[14,19.0,19.0],[15,20.6,20.6],[16,10.6,10.6],[17,16.5,16.5],[18,15.6,15.6]],"194":[[1,0.2,0.2],[2,0.0,0.0],[3,0.0,0.0],[4,0.0,0.0],[5,-0.1,2.9],[6,8.5,8.5],[7,0.6,1.6],[8,10.2,10.2],[10,5.1,6.1],[11,32.0,34.0],[12,4.6,5.6],[13,0.0,0.0],[14,8.9,8.9],[15,6.7,6.7],[16,6.3,6.3],[17,0.8,0.8],[18,-0.4,-0.4]],"195":[[4,0.0,0.0],[5,1.9,2.9],[6,19.8,22.8],[7,3.5,7.5],[8,18.7,19.7],[9,3.0,3.0],[10,16.8,17.8],[11,1.2,3.2],[13,19.7,20.7],[14,10.4,11.4],[15,4.8,5.8],[16,1.1,1.1],[18,1.0,2.0]],"197":[[1,10.3,16.3],[2,7.6,8.6],[3,2.8,4.8],[4,1.8,2.8],[5,4.3,7.3],[6,21.3,26.3],[7,11.5,13.5],[8,13.5,16.5],[9,0.0,0.0],[12,1.5,3.5],[13,9.5,13.5],[15,3.0,4.0],[16,1.6,2.6],[18,2.4,4.4]],"200":[[2,2.0,4.0],[3,4.4,8.4],[4,1.5,2.5],[7,6.8,9.8],[8,1.1,2.1],[9,1.5,2.5],[10,1.7,2.7],[11,3.4,6.4],[12,13.4,16.4],[13,2.5,4.5],[14,0.6,1.6],[15,3.5,6.5],[16,2.4,4.4],[17,3.5,5.5],[18,2.0,5.0]],"202":[[1,-1.1,-0.1],[2,2.5,5.5],[3,4.5,7.5],[4,23.7,28.7],[5,1.2,2.2],[6,4.4,9.4],[8,0.2,0.2],[9,1.5,3.5],[10,7.3,8.3],[12,0.0,0.0]],"203":[[1,1.5,3.5],[2,9.0,16.0],[3,3.1,5.1],[4,2.6,6.6],[5,5.9,11.9],[6,10.0,12.0],[7,1.2,2.2],[10,7.4,9.4],[11,2.3,5.3],[12,2.4,4.4],[13,2.4,5.4],[14,9.5,11.5],[15,4.6,9.6],[16,3.9,6.9],[17,0.6,1.6],[18,2.9,4.9]],"204":[[1,0.0,0.0],[2,6.0,6.0],[3,2.2,4.2],[4,0.0,0.0],[5,0.0,0.0],[6,0.0,0.0],[7,0.0,0.0],[9,0.9,0.9],[10,9.1,9.1],[11,0.6,0.6]],"205":[[1,1.0,3.0],[2,1.5,3.5],[3,12.3,17.3],[4,2.4,3.4],[5,0.0,0.0],[6,0.8,1.8],[8,5.1,7.1],[9,7.3,9.3],[10,3.0,4.0],[13,0.0,0.0],[14,2.3,4.3],[16,0.0,0.0],[17,0.7,1.7]],"208":[[11,1.5,1.5],[12,10.3,10.3],[13,10.6,10.6],[14,33.5,33.5],[15,3.5,3.5],[16,11.2,11.2],[17,9.4,9.4],[18,5.0,5.0]],"209":[[1,0.4,0.4],[2,0.0,0.0],[3,2.5,2.5],[4,8.1,11.1],[6,0.7,1.7],[7,1.5,2.5],[8,8.7,11.7],[9,1.7,2.7],[10,0.4,1.4],[11,12.9,13.9],[12,24.5,26.5],[13,1.4,1.4],[14,1.0,1.0],[15,0.3,0.3],[16,8.2,8.2],[17,2.4,3.4],[18,4.8,5.8]],"210":[[1,0.7,1.7],[2,0.0,0.0],[3,0.4,1.4],[4,0.0,1.0],[5,7.8,9.8],[7,7.7,11.7],[8,6.3,11.3],[9,-0.3,-0.3],[10,3.5,7.5],[11,1.2,2.2],[12,0.9,1.9],[13,0.0,0.0],[14,1.3,3.3],[15,0.0,0.0],[16,0.0,0.0],[17,11.6,14.6],[18,1.3,2.3]],"212":[[8,2.8,3.8],[10,1.7,1.7],[11,0.4,0.4],[13,1.6,1.6],[14,16.7,16.7],[15,1.1,2.1],[16,11.3,12.3],[17,5.6,5.6],[18,2.0,4.0]],"213":[[1,4.0,8.0],[2,10.9,16.9],[3,10.9,15.9],[4,6.7,12.7]],"214":[[1,17.2,25.2],[2,2.6,5.6],[3,2.0,5.0],[4,4.5,7.5],[5,6.3,10.3],[6,1.1,4.1],[8,3.0,6.0],[9,1.7,3.7],[10,10.6,13.6],[13,6.9,8.9],[14,1.6,3.6],[18,6.9,8.9]],"215":[[1,2.3,3.3],[3,1.0,2.0],[4,0.0,0.0],[5,2.7,5.7],[6,0.0,0.0],[7,1.3,3.3],[9,0.0,0.0],[10,0.0,0.0],[11,1.9,2.9],[13,2.2,4.2],[14,5.0,11.0],[15,1.7,3.7],[16,4.3,6.3],[18,0.0,0.0]],"217":[[1,1.8,1.8],[2,0.6,1.6],[3,0.0,0.0],[4,2.7,4.7],[5,3.3,6.3],[6,0.1,1.1],[7,3.2,5.2],[8,12.9,17.9],[10,1.1,2.1],[11,1.1,1.1],[12,0.7,0.7],[13,0.0,0.0],[14,2.2,2.2],[15,12.5,13.5],[16,6.0,10.0],[17,2.0,3.0]],"220":[[1,4.1,4.1],[2,0.0,0.0],[3,0.3,0.3],[5,2.2,2.2],[18,3.0,3.0]],"224":[[1,2.0,3.0],[2,0.5,1.5],[3,1.8,5.8],[4,6.5,11.5],[5,8.7,17.7],[6,0.2,1.2],[7,3.1,6.1],[8,9.4,14.4],[10,0.4,1.4],[11,3.0,7.0],[12,2.1,5.1],[13,2.1,4.1],[14,5.1,10.1]],"225":[[2,2.0,2.0],[4,2.0,5.0],[6,6.2,9.2],[7,6.2,9.2],[9,4.3,8.3],[10,1.5,2.5],[11,6.7,10.7],[12,2.2,4.2],[13,4.5,6.5],[14,1.2,2.2],[15,2.5,5.5],[16,1.6,4.6],[17,1.5,3.5]],"227":[[1,22.2,22.2],[2,2.8,2.8],[9,18.9,18.9],[10,14.7,14.7],[11,6.0,6.0],[12,0.5,0.5],[14,20.4,20.4],[15,23.5,23.5],[16,8.3,8.3],[18,8.0,8.0]],"228":[[2,14.6,16.6],[3,3.4,4.4],[4,0.0,0.0],[5,0.0,0.0],[12,3.0,4.0],[13,0.0,0.0],[16,0.0,0.0],[18,10.6,12.6]],"232":[[1,9.9,19.9],[2,3.0,8.0],[3,4.2,8.2],[4,9.8,12.8],[5,4.8,8.8],[6,16.5,20.5],[7,7.4,9.4],[8,0.0,0.0],[9,7.3,9.3],[11,4.0,8.0],[12,1.0,2.0],[13,8.0,10.0],[14,3.5,4.5],[16,2.2,5.2],[17,0.7,1.7],[18,6.4,9.4]],"236":[[1,0.0,0.0],[2,2.5,5.5],[4,0.9,3.9],[5,8.1,12.1],[6,5.1,10.1],[7,6.5,13.5],[8,4.0,8.0],[10,8.2,17.2],[11,2.8,4.8],[12,2.1,6.1],[13,0.9,2.9],[14,1.9,4.9],[16,1.5,3.5],[17,3.3,7.3],[18,15.4,22.4]],"239":[[1,3.0,5.0],[2,4.4,8.4],[3,2.1,4.1],[4,1.9,3.9],[6,1.5,3.5],[7,0.5,1.5],[10,3.8,7.8],[11,0.9,1.9],[12,3.2,5.2],[13,22.0,28.0],[15,0.6,1.6],[16,1.2,3.2],[17,0.7,1.7]],"240":[[1,17.5,17.5],[2,3.2,3.2],[3,26.1,26.1],[4,9.8,9.8],[5,5.9,5.9],[6,8.7,8.7],[7,2.8,2.8],[9,26.3,26.3],[10,4.4,4.4],[11,12.9,12.9],[12,14.2,14.2],[13,12.0,12.0],[14,9.0,9.0],[16,14.0,14.0],[17,7.1,7.1]],"241":[[1,-2.6,-0.6],[4,1.7,3.7],[5,0.0,0.0],[7,4.7,7.7],[9,1.0,3.0],[10,10.1,14.1],[11,7.4,9.4],[12,10.1,14.1],[13,2.7,6.7],[14,9.2,12.2],[15,19.5,24.5],[16,2.1,4.1],[17,5.3,11.3],[18,15.6,19.6]],"244":[[1,5.3,5.3],[2,18.6,18.6],[3,12.8,12.8],[4,15.7,15.7],[5,22.7,22.7],[6,6.6,6.6],[7,-1.4,-1.4],[8,24.2,24.2],[9,8.5,8.5],[10,10.8,10.8],[11,6.8,6.8],[13,4.7,4.7],[14,9.1,9.1],[15,16.2,16.2]],"246":[[1,4.4,8.4],[2,16.0,24.0],[3,0.8,2.8],[4,5.5,9.5],[5,5.5,8.5],[6,0.1,3.1],[7,9.9,12.9],[8,20.9,26.9],[9,4.3,8.3],[10,10.0,15.0],[11,8.4,12.4],[13,2.1,4.1],[14,1.1,4.1],[15,14.8,20.8],[16,6.6,10.6],[17,1.7,5.7],[18,0.0,0.0]],"247":[[1,3.7,6.7],[2,4.0,8.0],[3,4.0,9.0],[4,1.1,3.1],[5,12.7,18.7],[6,2.8,5.8],[8,9.7,13.7],[10,8.1,10.1],[11,0.7,1.7],[13,0.4,2.4],[14,6.1,7.1]],"249":[[1,2.1,5.1],[2,1.2,2.2],[4,2.9,6.9],[5,9.3,13.3],[6,4.9,9.9],[7,4.2,9.2],[8,3.6,7.6],[9,0.0,0.0],[10,1.2,3.2],[11,3.3,7.3],[13,7.9,13.9],[14,0.8,2.8],[15,1.2,2.2],[16,3.6,5.6],[17,2.1,6.1],[18,4.5,7.5]],"250":[[1,7.5,10.5],[2,3.1,7.1],[3,2.1,4.1],[4,11.8,14.8],[5,10.1,17.1],[6,5.8,11.8],[8,6.2,7.2],[11,0.0,0.0],[16,0.7,1.7],[17,12.0,19.0]],"252":[[1,1.4,2.4],[2,1.8,4.8],[3,0.6,1.6],[4,0.8,1.8],[5,1.5,3.5],[12,3.5,7.5],[13,1.9,3.9],[14,14.6,20.6],[15,1.1,2.1],[16,9.5,12.5],[17,4.7,6.7],[18,1.3,3.3]],"253":[[3,2.5,5.5],[4,2.0,5.0],[5,6.4,10.4],[9,2.6,6.6],[10,0.3,1.3],[11,0.6,1.6],[12,11.4,16.4],[14,0.6,1.6],[16,3.7,6.7],[17,0.1,2.1],[18,-0.3,0.7]],"256":[[3,1.2,1.2],[8,7.1,7.1],[11,2.1,2.1],[12,14.5,14.5],[13,13.4,13.4],[14,2.5,2.5],[15,26.9,26.9],[16,17.6,17.6],[17,9.1,9.1],[18,9.2,9.2]],"257":[[1,12.8,19.8],[2,12.1,17.1],[3,12.5,19.5],[4,3.7,8.7],[5,5.8,10.8],[6,2.7,6.7],[7,17.9,28.9],[8,4.4,8.4],[9,4.1,6.1],[10,1.9,3.9],[11,5.3,9.3],[13,3.0,7.0],[14,2.2,5.2],[15,3.6,8.6],[16,4.4,9.4],[17,1.7,2.7],[18,3.6,10.6]],"259":[[2,1.8,3.8],[4,0.0,0.0],[5,0.0,0.0],[6,2.2,4.2],[7,0.6,1.6],[8,10.0,12.0],[9,2.0,4.0],[10,4.3,5.3],[11,8.2,13.2],[13,4.2,7.2],[14,3.2,7.2],[16,4.2,9.2],[18,3.1,7.1]],"260":[[1,4.1,6.1],[2,11.9,13.9],[3,13.1,18.1],[4,7.1,8.1],[5,9.0,12.0],[7,3.9,4.9],[9,0.0,0.0],[11,6.1,7.1],[12,0.0,0.0],[13,0.0,0.0],[14,1.9,3.9],[15,4.7,6.7]],"263":[[1,0.6,2.6],[2,0.0,0.0],[3,0.1,0.1],[4,0.4,0.4],[5,2.9,4.9],[6,3.2,5.2],[7,3.1,3.1],[8,16.0,17.0],[9,0.5,0.5],[13,3.4,5.4],[14,3.8,4.8],[15,4.3,5.3],[16,10.1,12.1],[17,7.3,8.3],[18,5.2,8.2]],"265":[[1,0.0,0.0],[3,0.0,0.0],[4,8.1,10.1],[5,6.1,6.1],[6,0.1,0.1],[9,7.8,8.8],[10,10.4,13.4],[11,2.0,4.0],[15,0.1,2.1],[16,3.0,3.0],[17,2.0,4.0],[18,5.7,6.7]],"266":[[1,0.0,0.0],[2,9.2,11.2],[3,15.2,18.2],[4,1.0,2.0],[5,9.9,12.9],[6,0.0,0.0],[7,0.0,0.0],[9,16.8,20.8]],"267":[[1,24.0,24.0],[2,5.3,5.3],[3,3.8,3.8],[4,18.7,18.7],[6,14.6,14.6],[7,12.2,12.2],[9,22.7,22.7],[10,11.0,11.0],[11,7.9,7.9]],"268":[[1,2.4,2.4],[2,0.6,0.6],[3,2.1,3.1],[4,0.0,0.0],[5,1.0,1.0],[6,1.6,2.6],[8,0.6,0.6],[9,8.0,10.0],[10,2.6,4.6],[11,13.0,15.0],[12,5.2,8.2],[13,2.5,5.5],[14,3.9,5.9],[15,2.8,5.8],[16,7.6,7.6],[17,4.8,7.8],[18,17.6,19.6]],"269":[[1,1.1,2.1],[2,1.3,1.3],[3,0.9,1.9],[4,0.7,1.7],[5,0.0,0.0],[6,1.2,2.2],[7,0.4,1.4],[9,1.1,2.1],[10,0.6,1.6],[11,3.6,3.6],[12,0.2,0.2],[13,0.0,0.0],[14,0.8,2.8],[15,1.6,2.6],[16,1.0,1.0],[17,0.3,0.3]],"271":[[1,0.5,1.5],[2,3.4,7.4],[3,1.0,2.0],[4,7.7,10.7],[5,15.3,21.3],[6,2.7,4.7],[7,12.6,15.6],[8,2.0,5.0],[9,8.7,11.7],[10,7.5,14.5],[11,3.6,6.6],[12,7.7,10.7],[13,2.9,5.9],[15,7.2,10.2],[16,0.0,0.0]],"272":[[1,0.0,1.0],[2,1.6,3.6],[3,4.4,7.4],[4,6.1,10.1],[5,0.0,0.0],[6,0.8,1.8],[7,1.6,2.6],[8,10.7,12.7],[11,0.0,0.0],[13,0.0,0.0],[17,3.1,7.1],[18,0.0,0.0]],"273":[[1,0.3,1.3],[2,2.7,5.7],[3,0.0,0.0],[4,0.1,1.1],[6,0.1,0.1],[7,0.0,0.0],[8,0.0,0.0],[9,2.4,4.4],[10,0.0,0.0],[11,0.8,0.8],[12,2.6,3.6],[13,0.9,2.9],[14,0.6,1.6],[15,1.6,2.6],[16,0.4,0.4],[17,1.1,2.1],[18,6.1,6.1]],"274":[[1,2.0,4.0],[2,1.9,3.9],[4,0.0,0.0],[5,1.5,3.5],[6,7.9,8.9],[8,1.5,2.5],[9,3.0,4.0],[10,3.7,6.7],[11,2.3,3.3],[12,1.7,4.7],[13,2.8,5.8],[14,11.3,17.3],[15,15.7,18.7],[16,1.0,2.0],[17,3.0,8.0],[18,8.4,10.4]],"275":[[1,0.3,1.3],[2,1.3,2.3],[3,9.8,9.8],[4,1.0,1.0],[5,-0.2,-0.2],[6,0.2,1.2],[7,1.3,2.3],[8,12.6,13.6],[9,0.9,1.9],[10,-0.3,-0.3],[11,10.5,10.5],[13,1.0,1.0],[14,7.7,7.7],[15,0.0,0.0],[16,-0.1,-0.1],[17,0.0,0.0],[18,1.1,2.1]],"278":[[1,1.3,2.3],[2,6.3,7.3],[5,1.3,3.3],[8,1.0,2.0],[10,1.5,2.5],[12,3.7,6.7],[13,15.3,23.3],[14,4.0,7.0],[15,6.9,11.9]],"279":[[1,0.9,0.9],[2,0.8,2.8],[3,0.5,3.5],[4,-0.4,-0.4],[5,1.7,3.7],[6,0.8,2.8],[7,12.9,16.9],[8,9.4,16.4],[9,6.5,7.5],[11,1.4,3.4],[12,16.4,21.4],[13,0.9,1.9],[14,8.4,13.4],[15,1.0,5.0],[16,10.0,13.0],[17,6.2,10.2],[18,2.7,5.7]],"281":[[2,1.2,2.2],[4,2.7,3.7],[5,8.2,13.2],[6,0.5,1.5],[7,4.9,7.9],[8,0.0,0.0],[9,13.0,18.0],[11,2.0,5.0],[12,6.6,10.6],[13,8.9,9.9],[14,1.7,3.7],[15,0.0,0.0],[16,2.1,3.1],[17,4.1,8.1],[18,1.0,3.0]],"282":[[1,1.0,2.0],[2,4.8,6.8],[3,2.8,2.8]],"284":[[1,5.9,8.9],[2,0.4,1.4],[3,0.7,1.7],[4,0.0,0.0],[5,2.4,3.4],[6,1.7,2.7],[8,10.0,11.0],[10,0.0,0.0],[11,4.3,6.3],[12,0.0,0.0],[13,1.2,2.2],[14,0.3,1.3],[16,1.3,4.3],[17,0.0,0.0],[18,4.0,7.0]],"285":[[1,1.3,3.3],[2,11.6,15.6],[3,9.8,13.8],[4,4.4,6.4],[5,1.8,3.8],[6,2.7,5.7],[7,2.9,4.9],[8,5.2,9.2],[9,4.6,7.6],[11,1.1,3.1],[13,0.5,1.5],[14,7.4,8.4],[15,1.7,2.7],[16,5.8,8.8],[17,9.7,13.7],[18,5.0,8.0]],"286":[[2,21.8,21.8],[3,13.3,13.3],[5,22.2,22.2],[6,11.2,11.2],[7,5.2,5.2],[8,18.0,18.0],[9,15.8,15.8],[10,23.1,23.1],[11,-0.3,-0.3],[13,0.2,0.2],[16,-0.3,-0.3]],"287":[[1,29.5,29.5],[2,4.0,4.0],[4,27.1,27.1],[5,25.9,25.9],[6,4.9,4.9],[7,4.0,4.0],[8,20.9,20.9],[10,7.0,7.0],[11,19.3,19.3]],"288":[[1,11.0,11.0],[2,22.0,22.0],[3,8.0,8.0],[4,8.0,8.0],[5,7.0,7.0],[6,9.0,9.0],[7,17.0,17.0],[8,6.0,6.0],[9,5.0,5.0],[11,9.0,9.0],[12,7.0,7.0],[13,12.0,12.0],[14,23.0,23.0],[15,16.0,16.0],[16,5.0,5.0],[17,17.0,17.0],[18,5.0,5.0]],"289":[[1,9.0,9.0],[2,8.0,8.0],[3,12.0,12.0],[4,5.0,5.0],[5,6.0,6.0],[6,17.0,17.0],[7,7.0,7.0],[8,15.0,15.0],[9,11.0,11.0],[10,14.0,14.0],[11,8.0,8.0],[13,9.0,9.0],[14,20.0,20.0],[15,12.0,12.0],[16,10.0,10.0],[17,4.0,4.0],[18,3.0,3.0]],"290":[[1,14.0,14.0],[2,9.0,9.0],[3,4.0,4.0],[4,10.0,10.0],[5,18.0,18.0],[7,8.0,8.0],[8,14.0,14.0],[9,18.0,18.0],[12,12.0,12.0],[13,9.0,9.0],[14,8.0,8.0],[15,18.0,18.0],[16,16.0,16.0],[17,10.0,10.0],[18,26.0,26.0]],"291":[[1,8.0,8.0],[2,9.0,9.0],[3,17.0,17.0],[4,14.0,14.0],[5,5.0,5.0],[6,10.0,10.0],[7,10.0,10.0],[9,9.0,9.0],[10,15.0,15.0],[11,15.0,15.0],[12,13.0,13.0],[13,19.0,19.0],[14,14.0,14.0],[15,24.0,24.0],[16,2.0,2.0],[17,10.0,10.0],[18,8.0,8.0]],"292":[[1,15.0,15.0],[2,10.0,10.0],[3,5.0,5.0],[4,9.0,9.0],[5,9.0,9.0],[6,0.0,0.0],[7,1.0,1.0],[9,15.0,15.0],[10,13.0,13.0],[11,5.0,5.0],[12,13.0,13.0],[13,6.0,6.0],[14,11.0,11.0],[15,12.0,12.0],[16,11.0,11.0],[17,14.0,14.0],[18,15.0,15.0]],"293":[[2,10.0,10.0],[3,12.0,12.0],[4,7.0,7.0],[5,17.0,17.0],[6,18.0,18.0],[7,11.0,11.0],[8,1.0,1.0],[9,12.0,12.0],[10,2.0,2.0],[11,14.0,14.0],[15,14.0,14.0],[16,12.0,12.0],[17,6.0,6.0],[18,4.0,4.0]],"294":[[1,13.0,13.0],[2,12.0,12.0],[3,7.0,7.0],[4,9.0,9.0],[5,4.0,4.0],[6,3.0,3.0],[8,13.0,13.0],[9,4.0,4.0],[10,14.0,14.0],[11,12.0,12.0],[12,11.0,11.0],[13,2.0,2.0],[14,10.0,10.0],[15,6.0,6.0],[16,6.0,6.0],[17,11.0,11.0],[18,7.0,7.0]],"295":[[1,7.0,7.0],[2,10.0,10.0],[3,9.0,9.0],[4,13.0,13.0],[5,5.0,5.0],[6,5.0,5.0],[7,8.0,8.0],[9,7.0,7.0],[10,13.0,13.0],[11,5.0,5.0],[12,12.0,12.0],[13,6.0,6.0],[14,16.0,16.0],[15,11.0,11.0],[16,6.0,6.0],[17,5.0,5.0],[18,14.0,14.0]],"296":[[10,6.0,6.0],[11,3.0,3.0],[12,13.0,13.0],[13,4.0,4.0],[14,9.0,9.0],[15,12.0,12.0],[16,14.0,14.0],[17,6.0,6.0],[18,15.0,15.0]],"297":[[1,5.0,5.0],[2,7.0,7.0],[3,5.0,5.0],[4,3.0,3.0],[5,8.0,8.0],[6,5.0,5.0],[7,17.0,17.0],[8,8.0,8.0],[9,11.0,11.0],[11,8.0,8.0],[12,12.0,12.0],[13,24.0,24.0],[14,4.0,4.0],[15,0.0,0.0],[16,10.0,10.0],[17,9.0,9.0],[18,0.0,0.0]],"299":[[1,7.0,7.0],[2,3.0,3.0],[3,7.0,7.0],[4,19.0,19.0],[8,11.0,11.0],[9,11.0,11.0],[10,6.0,6.0],[11,16.0,16.0],[12,8.0,8.0],[13,6.0,6.0],[14,8.0,8.0],[15,8.0,8.0],[16,14.0,14.0],[17,8.0,8.0],[18,0.0,0.0]],"300":[[1,11.0,11.0],[2,7.0,7.0],[3,13.0,13.0],[4,13.0,13.0],[5,4.0,4.0],[6,6.0,6.0],[7,7.0,7.0],[8,4.0,4.0],[9,8.0,8.0],[11,7.0,7.0],[12,16.0,16.0],[13,4.0,4.0],[14,4.0,4.0],[15,8.0,8.0],[16,12.0,12.0],[17,10.0,10.0],[18,15.0,15.0]]};
+const DEPTH={"ARI":{"K":[["Chad Ryland",4363538,1]],"WR":[["Marvin Harrison Jr.",4432708,1],["Michael Wilson",4360761,2],["Kendrick Bourne",3045523,3],["Xavier Weaver",4428811,4],["Reggie Virgil",4869132,5],["Devin Duvernay",4039050,6],["Simi Fehoko",4360739,7],["Jalen Brooks",4692835,8],["Harrison Wallace III",4699354,9],["Bryson Green",4432705,10],["Ihmir Smith-Marsette",4240573,11]],"QB":[["Jacoby Brissett",2578570,1],["Gardner Minshew II",4038524,2],["Carson Beck",4430841,3],["Kedon Slovis",4428512,4]],"TE":[["Trey McBride",4361307,1],["Tip Reiman",4696700,2],["Elijah Higgins",4426844,3],["Teagan Quitoriano",4374045,4],["Kenny Yeboah",4044144,5],["Rivaldo Fairweather",4605858,6],["Jameson Geers",4588298,7]],"RB":[["Jeremiyah Love",4870808,1],["Tyler Allgeier",4373626,2],["James Conner",3045147,3],["Trey Benson",4429275,4],["Bam Knight",4427728,5],["Corey Kiner",4431431,6],["Evan Hull",4569609,7]]},"ATL":{"K":[["Nick Folk",10621,1]],"WR":[["Drake London",4426502,1],["Jahan Dotson",4361409,2],["Olamide Zaccheaus",3917914,3],["Zachariah Branch",4870612,4],["Dylan Drummond",4363551,5],["Vinny Anthony II",4869816,6],["Chris Blair",4369886,7],["Juice Wells Jr.",4696062,8],["Le'Meke Brockington",4596010,9],["Keelan Marion",4604004,10]],"QB":[["Tua Tagovailoa",4241479,1],["Michael Penix Jr.",4360423,2],["Cooper Rush",2972515,3],["Jack Strand",5344782,4]],"TE":[["Kyle Pitts Sr.",4360248,1],["Austin Hooper",3043275,2],["Charlie Woerner",4035020,3],["Joshua Simon",4430482,4],["Jack Velling",4832827,5]],"RB":[["Bijan Robinson",4430807,1],["Brian Robinson Jr.",4241474,2],["Tyler Goodson",4429676,3],["Nathan Carter",4605841,4],["Cash Jones",4881826,5]]},"BAL":{"K":[["Tyler Loop",4697745,1]],"WR":[["Zay Flowers",4429615,1],["Rashod Bateman",4360939,2],["Devontez Walker",4696882,3],["Ja'Kobi Lane",4870847,4],["Elijah Sarratt",5088338,5],["Chris Moore",2576581,6],["LaJohntay Wester",4690143,7],["Dayton Wade",4428763,8],["Cornelius Johnson",4426479,9],["Xavier Guillory",4695910,10],["Cortez Braham Jr.",5081997,11],["Octavian Smith Jr.",4869520,12]],"QB":[["Lamar Jackson",3916387,1],["Tyler Huntley",4035671,2],["Joe Fagnano",4429582,3],["Skylar Thompson",4036419,4]],"TE":[["Mark Andrews",3116365,1],["Durham Smythe",3052897,2],["Matthew Hibner",4432260,3],["Josh Cuevas",4876132,4],["Ty Pezza",5084402,5]],"RB":[["Derrick Henry",3043078,1],["Lucas Scott",4879972,1],["Justice Hill",4038441,2],["Rasheen Ali",4690013,3],["Adam Randall",4685526,4],["Dontae McMillan",4427971,5],["Elijah Tau-Tolliver",4876311,6]]},"BUF":{"K":[["Tyler Bass",3917232,1]],"WR":[["DJ Moore",3915416,1],["Khalil Shakir",4373678,2],["Joshua Palmer",4242433,3],["Keon Coleman",4635008,4],["Skyler Bell",4683153,5],["Mecole Hardman Jr.",4035004,6],["Tyrell Shavers",4241476,7],["Trent Sherfield",3122168,8],["Dante Pettis",3127306,9],["Stephen Gosnell",4432215,10],["Mac Dalena",4431053,11],["Max Tomczak",4878956,12],["Ja'Mori Maclin",4430270,13],["Quentin Skinner",4613050,14]],"QB":[["Josh Allen",3918298,1],["Kyle Allen",3115293,2],["Shane Buechele",4039034,3]],"TE":[["Dalton Kincaid",4385690,1],["Dawson Knox",3930086,2],["Jackson Hawes",4573699,3],["Shane Zylstra",4608362,4],["Keleki Latu",4688552,5]],"RB":[["James Cook III",4379399,1],["Ben VanSumeren",4372070,1],["Ray Davis",4429501,2],["Jackson Acker",4431152,2],["Ty Johnson",3915411,3],["Frank Gore",8479,4],["Ian Wheeler",4579554,5]]},"CAR":{"K":[["Ryan Fitzgerald",4568263,1]],"WR":[["Tetairoa McMillan",4685472,1],["Jalen Coker",4695883,2],["Xavier Legette",4430034,3],["Jimmy Horn Jr.",4708486,4],["John Metchie III",4567096,5],["David Moore",4212909,6],["Brycen Tremayne",4360763,7],["Casey Washington",4428796,8],["Ja'seem Reed",4876995,9],["Malick Meiga",4570636,10],["Elijah Cooks",4241588,11],["Roc Taylor",4431597,12],["Chris Brazzell II",5091739,13],["Dan Chisena",3929637,14]],"QB":[["Bryce Young",4685720,1],["Kenny Pickett",4240703,2],["Haynes King",4428993,3]],"TE":[["Tommy Tremble",4372780,1],["Ja'Tavion Sanders",4431588,2],["Mitchell Evans",4683243,3],["Feleipe Franks",4034948,4],["James Mitchell",4361988,5],["Caden Prieskorn",4687509,6],["Chamon Metayer",4431461,7]],"RB":[["Chuba Hubbard",4241416,1],["Jonathon Brooks",4678008,2],["Trevor Etienne",4685350,3],["AJ Dillon",4239934,4],["Anthony Tyus III",4709392,5],["Miles Davis",4613105,6]]},"CHI":{"K":[["Cairo Santos",17427,1]],"WR":[["Rome Odunze",4431299,1],["Luther Burden III",4685278,2],["Kalif Raymond",2973405,3],["Zavion Thomas",4869748,4],["Jahdae Walker",5160110,5],["Scotty Miller",3914397,6],["Maurice Alexander",3914307,7],["JP Richardson",4685183,8],["Kaden Davis",5065495,9],["Omari Kelly",4701951,10],["Kyron Hudson",4432784,11]],"QB":[["Caleb Williams",4431611,1],["Tyson Bagent",4434153,2],["Case Keenum",15168,3],["Miller Moss",4431580,4]],"TE":[["Colston Loveland",4723086,1],["Cole Kmet",4258595,2],["Sam Roush",4685504,3],["Nikola Kalinic",4916349,4],["Stephen Carlson",3948283,5],["Qadir Ismail",4379769,6],["Hayden Large",5150662,7]],"RB":[["D'Andre Swift",4259545,1],["Kyle Monangai",4608686,2],["Roschon Johnson",4426386,3],["Brittain Brown",4036032,4],["Salvon Ahmed",4243315,5],["Coleman Bennett",4694074,6]]},"CIN":{"K":[["Evan McPherson",4360234,1]],"WR":[["Ja'Marr Chase",4362628,1],["Tee Higgins",4239993,2],["Andrei Iosivas",4368003,3],["Colbie Young",5092508,4],["Mitchell Tinsley",4690070,5],["Charlie Jones",4257188,6],["Ke'Shawn Williams",4570738,7],["Jordan Moore",4594444,8],["Kendric Pryor",4035776,9],["Xavier Johnson",4385430,10],["Dohnte Meyers",4384852,11],["Noah Thomas",4718457,12]],"QB":[["Joe Burrow",3915511,1],["Joe Flacco",11252,2],["Josh Johnson",11394,3],["Sean Clifford",4259592,4]],"TE":[["Mike Gesicki",3116164,1],["Drew Sample",3127310,2],["Erick All Jr.",4427834,3],["Tanner Hudson",3050481,4],["Jack Endries",5085189,5],["Cam Grandy",4700712,6],["Josh Kattus",4819215,7]],"RB":[["Chase Brown",4362238,1],["Samaje Perine",3116389,2],["Tahj Brooks",4429299,3],["Gary Brightwell",4245645,4],["Kendall Milton",4429012,5],["Kentrel Bullock",4430992,6],["Jamal Haynes",4611995,7]]},"CLE":{"K":[["Andre Szmyt",4258620,1]],"WR":[["Jerry Jeudy",4241463,1],["KC Concepcion",4870653,2],["Denzel Boston",4832800,3],["Cedric Tillman",4369863,4],["Isaiah Bond",4808839,5],["Tylan Wallace",4241424,6],["Malachi Corley",4613104,7],["Jamari Thrash",4428678,8],["Gage Larvadain",4877203,9],["Luke Floriea",4566157,10],["Kole Wilson",5096863,11],["Aaron Anderson",4691138,12]],"QB":[["Deshaun Watson",3122840,1],["Shedeur Sanders",4432762,2],["Dillon Gabriel",4427238,3],["Taylen Green",4431325,4]],"TE":[["Harold Fannin Jr.",5083076,1],["Joe Royer",4565859,2],["Jack Stoll",4034862,3],["Blake Whiteheart",4362018,4],["Carsen Ryan",4685540,5],["Brenden Bates",4362603,6]],"RB":[["Quinshon Judkins",4685702,1],["Michael Burton",2515270,1],["Dylan Sampson",5081397,2],["Raheim Sanders",4601080,3],["Ahmani Marshall",4432374,4],["Davon Booth",5153650,5]]},"DAL":{"K":[["Brandon Aubrey",3953687,1]],"WR":[["CeeDee Lamb",4241389,1],["George Pickens",4426354,2],["Ryan Flournoy",5083754,3],["KaVontae Turpin",3676833,4],["Marquez Valdes-Scantling",3051738,5],["Jonathan Mingo",4426485,6],["Anthony Smith",4685110,7],["Tyler Johnson",2310331,8],["Traeshon Holden",4429172,9],["Denzel Mims",4035403,10],["Jordan Hudson",4685409,11],["Camden Brown",4808759,12],["Jaden Smith",4581750,13]],"QB":[["Dak Prescott",2577417,1],["Joe Milton III",4360698,2],["Sam Howell",4426875,3]],"TE":[["Jake Ferguson",4242355,1],["Brevyn Spann-Ford",4360967,2],["Luke Schoonmaker",4372096,3],["Zack Kuntz",4361417,4],["Michael Trigg",4594749,5],["DJ Rogers",4710711,6],["Princeton Fant",4242442,7]],"RB":[["Javonte Williams",4361579,1],["Hunter Luepke",4383396,1],["Jaydon Blue",4685279,2],["Malik Davis",4240603,3],["Phil Mafah",4431562,4],["Israel Abanikanda",4429202,5],["Dominic Richardson",4430689,6]]},"DEN":{"K":[["Wil Lutz",2985659,1]],"WR":[["Courtland Sutton",3128429,1],["Jaylen Waddle",4372016,2],["Troy Franklin",4431280,3],["Pat Bryant",4600981,4],["Marvin Mims Jr.",4686472,5],["Lil'Jordan Humphrey",4039057,6],["Michael Bandy",4034704,7],["Hakeem Butler",3917940,8],["Dane Key",4685424,9],["Kolbe Katsis",5225419,10],["Joseph Manjack IV",4683227,11],["Cameron Ross",4569001,12]],"QB":[["Bo Nix",4426338,1],["Jarrett Stidham",3892775,2],["Sam Ehlinger",4241820,3]],"TE":[["Evan Engram",3051876,1],["Adam Trautman",3911853,2],["Justin Joly",4912052,3],["Nate Adkins",4383440,4],["Lucas Krull",4360231,5],["Dallen Bentley",5159802,6],["Caleb Lohner",4432208,7]],"RB":[["J.K. Dobbins",4241985,1],["Adam Prentice",3929914,1],["RJ Harvey",4568490,2],["Jonah Coleman",4702555,3],["Jaleel McLaughlin",4722893,4],["Tyler Badie",4362748,5],["Cody Schrader",4391845,6]]},"DET":{"K":[["Jake Bates",4689936,1]],"WR":[["Amon-Ra St. Brown",4374302,1],["Jameson Williams",4426388,2],["Isaac TeSlaa",5123663,3],["Greg Dortch",4037235,4],["Dominic Lovett",4596439,5],["Cedrick Wilson Jr.",4036335,6],["Tom Kennedy",3126997,7],["Malik Cunningham",4240069,8],["Tay Martin",4245144,9],["Lucky Jackson",3915802,10],["Tarik Black",4258170,11],["Kendrick Law",4685441,12]],"QB":[["Jared Goff",3046779,1],["Teddy Bridgewater",16728,2],["Luke Altmyer",4597679,3]],"TE":[["Sam LaPorta",4430027,1],["Brock Wright",4242392,2],["Tyler Conklin",3915486,3],["Jackson Meeks",4602788,4],["Nick Muse",4249624,5],["Zach Horton",4877824,6],["Thomas Gordon",4569615,7],["Anthony Firkser",3049698,8],["Miles Kitselman",5089453,9]],"RB":[["Jahmyr Gibbs",4429795,1],["Isiah Pacheco",4361529,2],["Sione Vaki",4912274,3],["Jacob Saylors",4383429,4],["Raheem Blackshear",4259308,5],["Jabari Small",4432545,6],["Kye Robichaux",4880638,7]]},"GB":{"K":[["Trey Smack",4869461,1]],"WR":[["Christian Watson",4248528,1],["Jayden Reed",4362249,2],["Matthew Golden",4701936,3],["Savion Williams",4431487,4],["Bo Melton",4259305,5],["Skyy Moore",4430191,6],["Isaiah Neyor",4428116,7],["Will Sheppard",4608679,8],["J. Michael Sturdivant",4635009,9],["Kaden Prather",4431509,10]],"QB":[["Jordan Love",4036378,1],["Tyrod Taylor",14163,2],["Kyle McCord",4433971,3],["Kyron Drones",4678010,4]],"TE":[["Tucker Kraft",4572680,1],["Luke Musgrave",4428085,2],["Josh Whyle",4360086,3],["Drake Dabney",4429466,4],["Messiah Swinson",4362770,5],["McCallan Castles",4372741,6],["Thomas Yassmin",4361027,7],["",4683174,8],["Luke Lachey",4432338,9],["RJ Maryland",4702913,10]],"RB":[["Josh Jacobs",4047365,1],["MarShawn Lloyd",4429023,2],["Chris Brooks",3149687,3],["Pierre Strong Jr.",4249836,4],["Damien Martinez",4808830,5],["Jaden Nixon",4683165,6]]},"HOU":{"K":[["Ka'imi Fairbairn",2971573,1]],"WR":[["Nico Collins",4258173,1],["Jayden Higgins",4877706,2],["Jaylin Noel",4586312,3],["Xavier Hutchinson",4686422,4],["Tank Dell",4366031,5],["Lewis Bond",4683159,6],["Justin Watson",3118892,7],["Josh Kelly",4575558,8],["Jared Wayne",4430681,9],["Montrell Washington",4248822,10],["Treyvhon Saunders",5085942,11],["Daniel Sobkowicz",4878293,12],["Jha'Quan Jackson",4427575,13],["DJ Turner",4036211,14]],"QB":[["C.J. Stroud",4432577,1],["Davis Mills",4242546,2],["Graham Mertz",4426335,3]],"TE":[["Dalton Schultz",3117256,1],["Foster Moreau",3843945,2],["Brevin Jordan",4362504,3],["Marlin Klein",4695705,4],["Cade Stover",4426496,5],["Layne Pryor",4878842,6]],"RB":[["David Montgomery",4035538,1],["Woody Marks",4429059,2],["Jawhar Jordan",4429939,3],["British Brooks",4373273,4],["Noah Whittington",4432631,5],["Josh Pitsenberger",5094042,6]]},"IND":{"K":[["Blake Grupe",4259619,1],["Spencer Shrader",4571557,2]],"WR":[["Alec Pierce",4360078,1],["Josh Downs",4688813,2],["Ashton Dulin",4061956,3],["Nick Westbrook-Ikhine",3929785,4],["Deion Burks",4683151,5],["Anthony Gould",4429684,6],["Laquon Treadwell",3051889,7],["Coleman Owen",4578436,8],["Eli Pancol",4430288,9],["Sahmir Hagans",4612246,10],["EJ Horton Jr.",4608533,11],["Raylen Sharpe",4872957,12],["",4594337,13]],"QB":[["Daniel Jones",3917792,1],["Anthony Richardson Sr.",4429084,2],["Riley Leonard",4683423,3],["Easton Stick",3120590,4]],"TE":[["Tyler Warren",4431459,1],["Mo Alie-Cox",2998565,2],["Drew Ogletree",4722908,3],["Will Mallory",4362523,4],["Pharaoh Brown",2971281,5],["Carson Towt",4702120,6],["Sean McKeon",4036275,7]],"RB":[["Jonathan Taylor",4242335,1],["DJ Giddens",4874509,2],["Seth McGowan",4686468,3],["Ulysses Bentley IV",4426689,4],["Anderson Castle",4612558,5],["",4685723,6]]},"JAX":{"K":[["Cam Little",4686361,1]],"WR":[["Brian Thomas Jr.",4432773,1],["Parker Washington",4432620,2],["Jakobi Meyers",3916433,3],["Travis Hunter",4685415,4],["Josh Cameron",4879194,5],["CJ Williams",5085024,6],["Tim Jones",4245131,7],["Austin Trammell",4244856,8],["Chandler Brayboy",4573243,9],["Brady Boyd",4594319,10],["Trebor Pena",4575862,11],["Michael Wortham",5152117,12]],"QB":[["Trevor Lawrence",4360310,1],["Nick Mullens",3059989,2],["Carter Bradley",4362260,3],["Joey Aguilar",5151948,4]],"TE":[["Brenton Strange",4430539,1],["Nate Boerkircher",4686248,2],["Tanner Koziol",4917427,3],["Quintin Morris",4244049,4],["Hunter Long",4239944,5],["Patrick Herbert",4429811,6],["Ethan Conner",5151528,7]],"RB":[["Bhayshul Tuten",4882093,1],["Chris Rodriguez Jr.",4362619,2],["LeQuint Allen Jr.",4911851,3],["Ameer Abdullah",2576336,4],["DeeJay Dallas",4240631,5],["J'Mari Taylor",4713118,6]]},"KC":{"K":[["Harrison Butker",3055899,1]],"WR":[["Rashee Rice",4428331,1],["Xavier Worthy",4683062,2],["Tyquan Thornton",4362921,3],["Jalen Royals",5082630,4],["Cyrus Allen",4912218,5],["Nikko Remigio",4372716,6],["Jason Brownlee",4689988,7],["Jimmy Holiday",4431142,8],["Andrew Armstrong",5093923,9],["Jeff Caldwell",4885466,10],["Omari Evans",4702908,11],["Jacob De Jesus",5155179,12],["Xavier Loyd",4874510,13],["",5082601,14]],"QB":[["Patrick Mahomes",3139477,1],["Justin Fields",4362887,2],["Garrett Nussmeier",4567747,3],["Chris Oladokun",4044111,4]],"TE":[["Travis Kelce",15847,1],["Noah Gray",4240472,2],["Jared Wiley",4430723,3],["Jake Briningstool",4431196,4],["Tre Watson",4685784,5],["Mason Pline",4911517,6],["John Michael Gyllenborg",4708490,7]],"RB":[["Kenneth Walker III",4567048,1],["Emmett Johnson",4832955,2],["Emari Demercado",4362478,3],["Brashard Smith",4596602,4],["Jaydn Ott",4685489,5],["EJ Smith",4430825,6]]},"LAC":{"K":[["Cameron Dicker",4362081,1]],"WR":[["Ladd McConkey",4612826,1],["Quentin Johnston",4429025,2],["Tre' Harris",4686612,3],["Brenen Thompson",4685553,4],["KeAndre Lambert-Smith",4430870,5],["Derius Davis",4362477,6],["Dalevon Campbell",4569372,7],["Luke Grimm",4433830,8],["JaQuae Jackson",5160748,9],["Devonte Ross",4709678,10],["Sincere Brown",4568687,11],["Mante Morrow",5222064,12]],"QB":[["Justin Herbert",4038941,1],["Trey Lance",4383351,2],["DJ Uiagalelei",4429020,3]],"TE":[["Oronde Gadsden",4595342,1],["David Njoku",3123076,2],["Charlie Kolar",4241263,3],["Jerand Bradley",4565184,4],["Evan Svoboda",5082633,5],["Johnny Pascuzzi",4873485,6]],"RB":[["Omarion Hampton",4685382,1],["Alec Ingold",3917668,1],["Kimani Vidal",4430968,2],["Scott Matlock",4373684,2],["Keaton Mitchell",4596334,3],["Jaret Patterson",4362452,4],["Amar Johnson",4878878,5],["Greg Desrosiers Jr.",4691889,6]]},"LAR":{"K":[["Harrison Mevis",4574716,1]],"WR":[["Puka Nacua",4426515,1],["Davante Adams",16800,2],["Jordan Whittington",4569382,3],["Xavier Smith",4386544,4],["Konata Mumpfield",4710855,5],["CJ Daniels",4605951,6],["Tyler Scott",4565908,7],["Mario Williams",4431618,8],["Brennan Presley",4431342,9],["Tru Edwards",4875786,10]],"QB":[["Matthew Stafford",12483,1],["Ty Simpson",4685522,2],["Stetson Bennett IV",4259553,3],["Matthew Caldwell",4877717,4]],"TE":[["Colby Parkinson",4242557,1],["Tyler Higbee",2573401,2],["Terrance Ferguson",4570037,3],["Max Klare",4833029,4],["Davis Allen",4426553,5],["Mark Redman",4431346,6],["Dan Villari",4608858,7],["Rohan Jones",5083509,8]],"RB":[["Kyren Williams",4430737,1],["Blake Corum",4429096,2],["Ronnie Rivers",4243003,3],["Jarquez Hunter",4710341,4],["Jordan Waters",4428803,5],["Dean Connors",5082269,6]]},"LV":{"K":[["Matt Gay",4249087,1],["Kansei Matsuzawa",5158921,2]],"WR":[["Tre Tucker",4428718,1],["Jalen Nailor",4382466,2],["Jack Bech",4603186,3],["Dont'e Thornton Jr.",4432775,4],["Malik Benson",5150247,5],["Dareke Young",4401805,6],["Shedrick Jackson",4361332,7],["Phillip Dorsett II",2579604,8],["Brandon Johnson",4035198,9],["Chase Roberts",4714388,10],["E.J. Williams Jr.",4686093,11],["Deven Thompkins",4374187,12],["Justin Shorter",4361426,13],["Corey Rucker",4433901,14]],"QB":[["Kirk Cousins",14880,1],["Fernando Mendoza",4837248,2],["Aidan O'Connell",4260394,3],["Jacob Clark",4569535,4]],"TE":[["Brock Bowers",4432665,1],["Michael Mayer",4429086,2],["Ian Thomas",4045305,3],["Carter Runyon",5155825,4],["Albert Okwuegbunam Jr.",4035115,5],["Chris Myarick",3138744,6],["Patrick Gurd",4693208,7]],"RB":[["Ashton Jeanty",4890973,1],["Connor Heyward",4241961,1],["Mike Washington Jr.",4686658,2],["Dylan Laube",4366963,3],["Dare Ogunbowale",2983509,4],["Roman Hemby",4688835,5],["Chris Collier",4698191,6]]},"MIA":{"K":[["Riley Patterson",4243371,1],["Zane Gonzalez",3043234,2]],"WR":[["Malik Washington",4569603,1],["Jalen Tolbert",4249417,2],["Tutu Atwell",4360797,3],["Caleb Douglas",4869645,4],["Chris Bell",4869961,5],["Kevin Coleman Jr.",4685307,6],["Theo Wease Jr.",4426535,7],["Tahj Washington",4567506,8],["Jalen Reagor",4241802,9],["Terrace Marshall Jr.",4362630,10],["AJ Henning",4429053,11],["Donaven McCulley",4596347,12]],"QB":[["Malik Willis",4242512,1],["Quinn Ewers",4889929,2],["Cam Miller",4693331,3],["Mark Gronowski",4695400,4]],"TE":[["Greg Dulcich",4367209,1],["Will Kacmarek",4880236,2],["Seydou Traore",4714379,3],["Ben Sims",4373030,4],["Cole Turner",4361438,5],["",4708354,6]],"RB":[["De'Von Achane",4429160,1],["Jaylen Wright",4682745,2],["Ollie Gordon II",4711533,3],["Donovan Edwards",4431536,4],["Carlos Washington Jr.",4248425,5],["Anthony Hankerson",4685385,6]]},"MIN":{"K":[["Will Reichard",4567104,1]],"WR":[["Justin Jefferson",4262921,1],["Jordan Addison",4429205,2],["Jauan Jennings",3886598,3],["Tai Felton",4565185,4],["Myles Price",4430656,5],["Dillon Bell",4712579,6],["Jeshaun Jones",4360637,7],["Dontae Fleming",4565297,8],["Trayvon Rudolph",4433906,9],["Michael Briscoe",4688418,10],["Terrill Davis",5279633,11],["Marcus Sanders Jr.",4907543,12]],"QB":[["Kyler Murray",3917315,1],["J.J. McCarthy",4433970,2],["Carson Wentz",2573079,3],["Max Brosmer",4573398,4]],"TE":[["T.J. Hockenson",4036133,1],["Josh Oliver",3921690,2],["Ben Yurosek",4433959,3],["Gavin Bartholomew",4708049,4],["Bryson Nesbit",4602969,5],["Marshall Lang",4566195,6]],"RB":[["Aaron Jones Sr.",3042519,1],["Max Bredeson",4878695,1],["Jordan Mason",4360569,2],["Demond Claiborne",4832846,3],["Zavier Scott",4257364,4],["Jordan Mims",4243004,5]]},"NE":{"K":[["Andy Borregales",4569923,1]],"WR":[["A.J. Brown",4047646,1],["Romeo Doubs",4361432,2],["Kayshon Boutte",4429022,3],["Mack Hollins",2991662,4],["DeMario Douglas",4427095,5],["Kyle Williams",4613202,6],["Efton Chism III",4695193,7],["Kyle Dixon",5011554,8],["Cameron Dorner",5295981,9],["Nick DeGennaro",4692796,10],["Kobe Prentice",4869965,11],["Tejhaun Palmer",4875912,12],["Jeremiah Webb",4572655,13],["Jimmy Kibble",4832914,14]],"QB":[["Drake Maye",4431452,1],["Tommy DeVito",4240391,2],["Behren Morton",4431465,3]],"TE":[["Hunter Henry",3046439,1],["Eli Raridon",4831959,2],["CJ Dippre",4596545,3],["Tanner Arkin",4683308,4],["Mitch Van Vooren",5289897,5],["Julian Hill",4365395,6]],"RB":[["Rhamondre Stevenson",4569173,1],["Reggie Gilliam",4039505,1],["TreVeyon Henderson",4432710,2],["Jack Westover",4361100,2],["Terrell Jennings",4427600,3],["Lan Larison",4698253,4],["Jam Miller",4685477,5],["Myles Montgomery",4676889,6]]},"NO":{"K":[["Charlie Smyth",5208518,1],["Tanner Brown",4696736,2]],"WR":[["Chris Olave",4361370,1],["Jordyn Tyson",4880281,2],["Devaughn Vele",4569559,3],["Bryce Lance",4879276,4],["Barion Brown",4698597,5],["Mason Tipton",4573697,6],["Ronnie Bell",4372063,7],["Trey Palmer",4426407,8],["Bub Means",4427985,9],["Kevin Austin Jr.",4372758,10],["Jalen Moreno-Cropper",4426990,11],["Brock Rechsteiner",4877738,12]],"QB":[["Tyler Shough",4360689,1],["Spencer Rattler",4426339,2],["Zach Wilson",4361259,3],["Hunter Dekkers",4565358,4]],"TE":[["Juwan Johnson",3929645,1],["Noah Fant",4036131,2],["Oscar Delp",4702559,3],["Moliki Matavao",4432731,4],["Zaire Mitchell-Paden",4876006,5],["Treyton Welch",4430684,6],["Cody Hardy",5086529,7]],"RB":[["Travis Etienne Jr.",4239996,1],["Alvin Kamara",3054850,2],["Devin Neal",4682652,3],["Kendre Miller",4599739,4],["Ty Chandler",4242431,5],["Audric Estime",4569682,6],["CJ Donaldson",5081999,7]]},"NYG":{"K":[["Ben Sauls",4566158,1],["Dominic Zvada",5082424,2]],"WR":[["Malik Nabers",4595348,1],["Darius Slayton",3916945,2],["Darnell Mooney",4040655,3],["Calvin Austin III",4243389,4],["Malachi Fields",4682648,5],["JuJu Smith-Schuster",3120348,6],["Odell Beckham Jr.",16733,7],["Isaiah Hodgins",4242540,8],["Braxton Berrios",3123075,9],["Jalin Hyatt",4692590,10],["Dalen Cambre",4570296,11],["Xavier Gipson",4427278,12],["Ryan Miller",4369466,13],["Gunner Olszewski",4424106,14],["Beaux Collins",4431210,15]],"QB":[["Jaxson Dart",4689114,1],["Jameis Winston",2969939,2],["Brandon Allen",2574511,3]],"TE":[["Isaiah Likely",4361050,1],["Theo Johnson",4429148,2],["",2531358,3],["Thomas Fidone II",4590292,4],["Tanner Conner",4047422,5]],"RB":[["Cam Skattebo",4696981,1],["Patrick Ricard",2975417,1],["Tyrone Tracy Jr.",4360516,2],["",5393270,2],["Devin Singletary",4040761,3],["Eric Gray",4570561,4],["Dante Miller",4367510,5],["Damon Bankston",4876378,6]]},"NYJ":{"K":[["Jason Sanders",3124679,1],["Cade York",4428963,2]],"WR":[["Garrett Wilson",4569618,1],["Adonai Mitchell",4597500,2],["Omar Cooper Jr.",4723820,3],["Tim Patrick",3134353,4],["Isaiah Williams",4569371,5],["Arian Smith",4429105,6],["Jamaal Pritchett",4892576,7],["Caullin Lacy",4430185,8],["DT Sheffield",5153056,9],["Malik McClain",4682509,10],["Quincy Skinner Jr.",4572380,11],["Cam Camper",5081322,12],["Jalen Walthall",4875788,13]],"QB":[["Geno Smith",15864,1],["Cade Klubnik",4685413,2],["Brady Cook",4429435,3],["Bailey Zappe",4250360,4]],"TE":[["Kenyon Sadiq",5083315,1],["Mason Taylor",4808766,2],["Jeremy Ruckert",4361372,3],["Jelani Woods",4241410,4],["Chase Curtis",4695223,5],["",4893748,6]],"RB":[["Breece Hall",4427366,1],["Andrew Beck",3125107,1],["Braelon Allen",4685247,2],["Isaiah Davis",4695404,3],["Kene Nwangwu",4035537,4],["Sam Scott",4700138,5],["Chip Trayanum",4430893,6]]},"PHI":{"K":[["Jake Elliott",3050478,1]],"WR":[["DeVonta Smith",4241478,1],["Makai Lemon",4870795,2],["Dontayvion Wicks",4428850,3],["Hollywood Brown",4241372,4],["Elijah Moore",4372414,5],["Johnny Wilson",4686104,6],["Darius Cooper",4715355,7],["Britain Covey",3926231,8],["Quez Watkins",4050373,9],["Samori Toure",4027873,10],["Danny Gray",4689546,11],["Erik Ezukanma",4362186,12],["Brandon Hayes",4606713,13]],"QB":[["Jalen Hurts",4040715,1],["Andy Dalton",14012,2],["Tanner McKee",4685201,3],["Cole Payton",4879250,4]],"TE":[["Dallas Goedert",3121023,1],["Eli Stowers",4431574,2],["Johnny Mundt",3052096,3],["Grant Calcaterra",4241374,4],["Stone Smartt",4250764,5],["Cameron Latu",4372026,6],["E.J. Jenkins",4248557,7],["Dae'Quan Wright",4838696,8]],"RB":[["Saquon Barkley",3929630,1],["Carson Steele",4714365,1],["Tank Bigsby",4429013,2],["Will Shipley",4431545,3],["Dameon Pierce",4360238,4],["Elijah Mitchell",4241555,5]]},"PIT":{"K":[["Chris Boswell",17372,1],["Laith Marjan",4710727,2]],"WR":[["DK Metcalf",4047650,1],["Michael Pittman Jr.",4035687,2],["Roman Wilson",4431492,3],["Germie Bernard",4685261,4],["Ben Skowronek",4035656,5],["Kaden Wetjen",5081338,6],["A.T. Perry",4362019,7],["Max Hurleman",4694237,8],["Brandon Smith",4240577,9],["Jakobie Keeney-James",5178972,10],["Joaquin Davis",4696907,11],["Levi Wentz",4613132,12],["Cole Burgess",5192448,13]],"QB":[["Aaron Rodgers",8439,1],["Mason Rudolph",3116407,2],["Will Howard",4429955,3],["Drew Allar",4714771,4]],"TE":[["Pat Freiermuth",4361411,1],["Darnell Washington",4430802,2],["Robert Tonyan",2975674,3],["Jaheim Bell",4429262,4],["Lake McRee",4566198,5],["JJ Galbreath",4695800,6]],"RB":[["Jaylen Warren",4569987,1],["Riley Nowakowski",4693370,1],["Rico Dowdle",4038815,2],["Kaleb Johnson",4819231,3],["Travis Homer",4037457,4],["Lew Nichols",4428119,5],["Eli Heidenreich",5081508,6]]},"SEA":{"K":[["Jason Myers",2473037,1]],"WR":[["Jaxon Smith-Njigba",4430878,1],["Rashid Shaheed",4032473,2],["Cooper Kupp",2977187,3],["Tory Horton",4597703,4],["Jake Bobo",4360405,5],["Emmanuel Henderson Jr.",4685381,6],["Cody White",4241983,7],["Ricky White III",4431479,8],["Irv Charles",3929636,9],["Montorie Foster Jr.",4600597,10],["Rashad Rochelle",4700149,11]],"QB":[["Sam Darnold",3912547,1],["Drew Lock",3924327,2],["Jalen Milroe",4432734,3]],"TE":[["AJ Barner",4576297,1],["Elijah Arroyo",4678006,2],["Eric Saubert",2975863,3],["Nick Vannett",2576399,4],["Nick Kallerup",4569547,5]],"RB":[["Zach Charbonnet",4426385,1],["Robbie Ouzts",4691688,1],["Jadarian Price",4685512,2],["Brady Russell",4243176,2],["George Holani",4429835,3],["Brock Lampe",4875767,3],["Emanuel Wilson",4887558,4],["Velus Jones Jr.",4035693,5],["Jacardia Wright",4428943,6],["T.J. Harden",5086027,7]]},"SF":{"K":[["Eddy Pineiro",4034949,1]],"WR":[["Mike Evans",16737,1],["Deebo Samuel",3126486,2],["Christian Kirk",3895856,3],["De'Zhaun Stribling",4710714,4],["Demarcus Robinson",3043116,5],["Jordan Watkins",4431466,6],["Jacob Cowing",4575665,7],["Junior Bergen",4887918,8],["Malik Turner",3115928,9],["Trenton Irwin",3931391,10],["Wesley Grimes",4888723,11],["Will Pauling",4683114,12],["KhaDarel Hodge",3047876,13],["Brandon Aiyuk",4360438,14],["Ricky Pearsall",4428209,15]],"QB":[["Brock Purdy",4361741,1],["Mac Jones",4241464,2],["Kurtis Rourke",4430431,3],["Adrian Martinez",4361182,4]],"TE":[["George Kittle",3040151,1],["Jake Tonges",4259147,2],["Luke Farrell",4040612,3],["Brayden Willis",4360290,4],["Hayden Rucci",4428396,5],["Josiah Deguara",3914151,6],["Tanner McLachlan",4384171,7]],"RB":[["Christian McCaffrey",3117251,1],["Kyle Juszczyk",16002,1],["Jordan James",4685397,2],["Kaelon Black",4696044,3],["Isaac Guerendo",4372561,4],["Patrick Taylor Jr.",4039358,5],["Sincere McCormick",4430104,6],["Khalil Herbert",4035886,7]]},"TB":{"K":[["Chase McLaughlin",3150744,1],["B.T. Potter",4360317,2]],"WR":[["Emeka Egbuka",4567750,1],["Chris Godwin Jr.",3116165,2],["Jalen McMillan",4430834,3],["Ted Hurst III",5220680,4],["Tez Johnson",4608810,5],["Kameron Johnson",5097554,6],["David Sills V",3871102,7],["Dennis Houston",4572786,8],["Garrett Greene",4429847,9],["Eric Rivers Jr.",4713277,10],["Dean Patterson",4875613,11]],"QB":[["Baker Mayfield",3052587,1],["Jake Browning",3886812,2],["Connor Bazelak",4426444,3],["Jalon Daniels",4596472,4]],"TE":[["Cade Otton",4243331,1],["Payne Durham",4372505,2],["Ko Kieft",4034779,3],["Bauer Sharp",4890373,4],["Devin Culp",4361112,5],["Kenny Fletcher Jr.",4746099,6]],"RB":[["Bucky Irving",4596448,1],["Kenny Gainwell",4371733,2],["Sean Tucker",4430871,3],["Josh Williams",4568024,4],["Kadarius Calloway",5151965,5]]},"TEN":{"K":[["Joey Slye",3124084,1]],"WR":[["Carnell Tate",4871023,1],["Wan'Dale Robinson",4569587,2],["Calvin Ridley",3925357,3],["Chimere Dike",4431268,4],["Elic Ayomanor",4883647,5],["Bryce Oliver",4362617,6],["Mason Kinsey",4057082,7],["K.J. Osborn",3916566,8],["Xavier Restrepo",4431353,9],["Lance McCutcheon",4247812,10],["Courtney Jackson",4565172,11],["Tyren Montgomery",5103197,12],["Hank Beatty",4814930,13]],"QB":[["Cam Ward",4688380,1],["Mitchell Trubisky",3039707,2],["Will Levis",4361418,3],["Hendon Hooker",4240858,4]],"TE":[["Gunnar Helm",4686728,1],["Daniel Bellinger",4361516,2],["Kylen Granson",4039160,3],["Jaren Kanak",4877034,4],["David Martin-Robinson",4360978,5],["Joel Wilson",4362570,6]],"RB":[["Tony Pollard",3916148,1],["Tyjae Spears",4428557,2],["Nicholas Singleton",4685555,3],["Michael Carter",4240657,4],["Kalel Mullings",4429121,5],["Julius Chestnut",4367567,6]]},"WAS":{"K":[["Jake Moody",4372066,1],["Drew Stevens",5081335,2]],"WR":[["Terry McLaurin",3121422,1],["Stefon Diggs",2976212,2],["Antonio Williams",5081432,3],["Luke McCaffrey",4426948,4],["Treylon Burks",4567156,5],["Dyami Brown",4361577,6],["Jaylin Lane",4602667,7],["Van Jefferson",3930066,8],["River Cracraft",3052056,9],["Jacoby Jones",5083297,10],["Nick Nash",4570242,11],["Jaden Bradley",4683111,12],["Chris Hilton Jr.",4431334,13]],"QB":[["Jayden Daniels",4426348,1],["Marcus Mariota",2576980,2],["Athan Kaliakmanis",4432722,3],["Sam Hartman",4361994,4]],"TE":[["Chig Okonkwo",4360635,1],["John Bates",4048228,2],["Ben Sinnott",4690923,3],["Colson Yankoff",4361088,4],["Lawrence Cager",3917849,5],["Quentin Moore",4875350,6]],"RB":[["Jacory Croskey-Merritt",4575131,1],["Rachaad White",4697815,2],["Kaytron Allen",4685246,3],["Jeremy McNichols",3127586,4],["Jerome Ford",4372019,5],["Robert Henry Jr.",5151317,6]]}};
+/* ================= Core helpers & state ================= */
+const TEAM_COLORS={ARI:"#97233F",ATL:"#A71930",BAL:"#241773",BUF:"#00338D",CAR:"#0085CA",CHI:"#0B162A",CIN:"#FB4F14",CLE:"#311D00",DAL:"#003594",DEN:"#FB4F14",DET:"#0076B6",GB:"#203731",HOU:"#03202F",IND:"#002C5F",JAX:"#006778",KC:"#E31837",LAC:"#0080C6",LAR:"#003594",LV:"#A5ACAF",MIA:"#008E97",MIN:"#4F2683",NE:"#002244",NO:"#D3BC8D",NYG:"#0B2265",NYJ:"#125740",PHI:"#004C54",PIT:"#FFB612",SEA:"#69BE28",SF:"#AA0000",TB:"#D50A0A",TEN:"#4B92DB",WAS:"#5A1414",FA:"#3a4a68"};
+const ESPN_LOGO={WAS:"wsh"};
+const POSC={QB:"var(--qb)",RB:"var(--rb)",WR:"var(--wr)",TE:"var(--te)",K:"var(--k)",DST:"var(--dst)"};
+const TIERS=[
+ {n:1,name:"The Elite — Round 1 Locks",lo:1,hi:8},
+ {n:2,name:"Anchors — Rounds 1–2",lo:9,hi:21},
+ {n:3,name:"Star Power",lo:22,hi:40},
+ {n:4,name:"High-End Starters",lo:41,hi:64},
+ {n:5,name:"Solid Starters",lo:65,hi:92},
+ {n:6,name:"Flex & Upside",lo:93,hi:120},
+ {n:7,name:"Bench Builders",lo:121,hi:160},
+ {n:8,name:"Late-Round Targets",lo:161,hi:200},
+ {n:9,name:"Dart Throws & Handcuffs",lo:201,hi:9999},
+ {n:10,name:"Kickers & Defenses",lo:0,hi:0}
+];
+function tierOf(p){ if(p.pos==="K"||p.pos==="DST") return 10; for(const t of TIERS){ if(t.n<10 && p.adp>=t.lo && p.adp<=t.hi) return t.n; } return 9; }
+
+// Build player objects
+const P = PLAYERS.map(r=>({adp:r[0],name:r[1],team:r[2],pos:r[3],espn:r[4],pts25:r[5],rec25:r[6],s25:r[7],prj:r[8],prjRec:r[9],s26:r[10]}));
+P.forEach(p=>p.tier=tierOf(p));
+// Position ranks by ADP
+const posCount={};
+P.forEach(p=>{ posCount[p.pos]=(posCount[p.pos]||0)+1; p.posRank=posCount[p.pos]; });
+
+let scoring="ppr";               // std | half | ppr
+let view="board";                // board | rank | mock
+let posFilter="ALL";
+let query="";
+let hideDrafted=false;
+const status={};                 // adp -> "drafted" | "mine"
+
+function pts(raw,rec){ if(!raw) return 0; if(scoring==="std") return Math.round(raw-rec); if(scoring==="half") return Math.round(raw-rec/2); return Math.round(raw); }
+function fmtPts(v){ return v? v.toFixed(0):"—"; }
+function gval(g){ return scoring==="std"?g[1]:scoring==="ppr"?g[2]:Math.round((g[1]+g[2])/2*10)/10; }
+function gamesOf(p){ return GLOG[p.adp]||null; }
+function ppg(p){
+  const gl=gamesOf(p);
+  if(gl&&gl.length) return gl.reduce((s,g)=>s+gval(g),0)/gl.length;
+  if(p.pts25) return pts(p.pts25,p.rec25)/17;   // DST fallback: no per-game data
+  return 0;
+}
+function fmtPpg(p){ const v=ppg(p); return v?v.toFixed(1):"—"; }
+function initials(n){ const parts=n.replace(/ D\/ST$/,"").split(" "); return (parts[0][0]+(parts[1]?parts[1][0]:"")).toUpperCase(); }
+function logoUrl(team){ const ab=(ESPN_LOGO[team]||team).toLowerCase(); return "https://a.espncdn.com/i/teamlogos/nfl/500/"+ab+".png"; }
+function headshotUrl(id){ return "https://a.espncdn.com/i/headshots/nfl/players/full/"+id+".png"; }
+function avaFallback(img){
+  if(img.dataset.fb==="logo"){
+    img.dataset.fb="ini";
+    img.parentElement.classList.add("logo");
+    img.src=logoUrl(img.dataset.team);
+    return;
+  }
+  const s=document.createElement("span"); s.className="ini"; s.textContent=img.dataset.ini||"?";
+  img.replaceWith(s);
+}
+function avatarHtml(p,extra){
+  const col=TEAM_COLORS[p.team]||"#2a3a58";
+  if(p.pos==="DST"||(!p.espn&&p.team!=="FA")){
+    return '<div class="ava logo '+(extra||'')+'" style="--av:'+col+'33"><img loading="lazy" src="'+logoUrl(p.team)+'" alt="" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{className:\'ini\',textContent:\''+initials(p.name)+'\'}))"></div>';
+  }
+  if(p.espn){
+    if(p.team!=="FA"){
+      // Fallback chain: headshot -> team logo -> initials
+      return '<div class="ava '+(extra||'')+'" style="--av:'+col+'"><img loading="lazy" src="'+headshotUrl(p.espn)+'" alt="" data-fb="logo" data-team="'+p.team+'" data-ini="'+initials(p.name)+'" onerror="avaFallback(this)"></div>';
+    }
+    return '<div class="ava '+(extra||'')+'" style="--av:'+col+'"><img loading="lazy" src="'+headshotUrl(p.espn)+'" alt="" data-fb="ini" data-ini="'+initials(p.name)+'" onerror="avaFallback(this)"></div>';
+  }
+  return '<div class="ava '+(extra||'')+'" style="--av:'+col+'"><span class="ini">'+initials(p.name)+'</span></div>';
+}
+function matches(p){
+  if(posFilter!=="ALL" && p.pos!==posFilter) return false;
+  if(query){ const q=query.toLowerCase(); if(!(p.name.toLowerCase().includes(q)||p.team.toLowerCase().includes(q))) return false; }
+  if(hideDrafted && status[p.adp]==="drafted") return false;
+  return true;
+}
+function rd12(adp){ const r=Math.ceil(adp/12), pk=((adp-1)%12)+1; return r+"."+String(pk).padStart(2,"0"); }
+
+/* ================= Board view ================= */
+function renderBoard(){
+  const host=document.getElementById("view-board");
+  let html="";
+  for(const t of TIERS){
+    const players=P.filter(p=>p.tier===t.n && matches(p));
+    if(!players.length) continue;
+    html+='<section class="tier"><div class="tier-head"><span class="tier-num">Tier '+t.n+'</span><span class="tier-name">'+t.name+'</span><span class="tier-count">'+players.length+' players</span><span class="tier-ghost">'+(t.n<10?t.n:'K/D')+'</span></div><div class="tier-grid">';
+    for(const p of players){
+      const st=status[p.adp]||"";
+      html+='<div class="pcard '+(st==="drafted"?"drafted":"")+' '+(st==="mine"?"mine":"")+'" style="--pc:'+POSC[p.pos]+'" data-adp="'+p.adp+'">'
+        +avatarHtml(p)
+        +'<div class="p-main"><div class="p-name">'+p.name+'</div><div class="p-meta"><span class="pos-b">'+p.pos+p.posRank+'</span><span>'+p.team+'</span></div></div>'
+        +'<div class="p-side"><div class="p-proj">'+fmtPpg(p)+'</div><div class="p-adp">PPG · ADP '+p.adp+'</div></div>'
+        +'<button class="p-x" data-x="'+p.adp+'" title="Toggle drafted">✕</button></div>';
+    }
+    html+='</div></section>';
+  }
+  host.innerHTML = html || '<div class="empty-msg">No players match those filters.</div>';
+}
+
+/* ================= Rankings view ================= */
+function renderRank(){
+  const host=document.getElementById("view-rank");
+  const rows=P.filter(matches);
+  let html='<div class="rtable-wrap"><table class="rtable"><thead><tr><th>#</th><th>Player</th><th>Pos</th><th>Team</th><th>Tier</th><th>Rd (12tm)</th><th>2025 Pts</th><th>PPG</th></tr></thead><tbody>';
+  for(const p of rows){
+    const st=status[p.adp]||"";
+    html+='<tr class="'+(st==="drafted"?"drafted":"")+'" data-adp="'+p.adp+'">'
+      +'<td class="num">'+p.adp+'</td>'
+      +'<td><div class="rt-name">'+avatarHtml(p)+'<span>'+p.name+(st==="mine"?' <span style="color:var(--gold)">★</span>':'')+'</span></div></td>'
+      +'<td><span class="pos-b" style="--pc:'+POSC[p.pos]+'">'+p.pos+p.posRank+'</span></td>'
+      +'<td class="num" style="color:var(--mut)">'+p.team+'</td>'
+      +'<td><span class="tier-pill">T'+p.tier+'</span></td>'
+      +'<td class="num" style="color:var(--mut)">'+rd12(p.adp)+'</td>'
+      +'<td class="num">'+(p.pts25?pts(p.pts25,p.rec25):"—")+'</td>'
+      +'<td class="num" style="color:var(--gold)">'+fmtPpg(p)+'</td></tr>';
+  }
+  html+='</tbody></table></div>';
+  host.innerHTML=html;
+}
+
+/* ================= Player modal ================= */
+function gameLogHtml(p){
+  const gl=gamesOf(p);
+  if(!gl||!gl.length){
+    if(p.pos==="DST") return '<div class="glog-empty">Per-game data isn\'t tracked for team defenses.</div>';
+    return '<div class="glog-empty">No 2025 game log — '+(p.s25.indexOf("Rookie")>=0?"incoming rookie.":"didn\'t appear in a 2025 regular-season game.")+'</div>';
+  }
+  const vals=gl.map(gval);
+  const g=gl.length, tot=vals.reduce((a,b)=>a+b,0), avg=tot/g;
+  const best=Math.max(...vals), worst=Math.min(...vals);
+  const bestWk=gl[vals.indexOf(best)][0], worstWk=gl[vals.indexOf(worst)][0];
+  const played={}; gl.forEach((x,i)=>played[x[0]]=vals[i]);
+  const max=Math.max(best,1);
+  let bars='';
+  for(let w=1;w<=18;w++){
+    if(w in played){
+      const v=played[w], h=Math.max(4,Math.round(Math.max(v,0)/max*56));
+      const hot=v===best?' best':(v===worst?' low':'');
+      bars+='<div class="gcol" title="Week '+w+': '+v.toFixed(1)+' pts"><div class="gbar'+hot+'" style="height:'+h+'px"></div><div class="gwk">'+w+'</div><div class="gv">'+Math.round(v)+'</div></div>';
+    } else {
+      bars+='<div class="gcol dnp" title="Week '+w+': did not play"><div class="gbar ghost"></div><div class="gwk">'+w+'</div><div class="gv">·</div></div>';
+    }
+  }
+  return '<div class="glog"><div class="glog-head"><span class="stat-lab">2025 Game Log</span>'
+    +'<span class="glog-kpis"><b>'+avg.toFixed(1)+'</b> ppg · <b>'+g+'</b> gm · best <b class="gd">'+best.toFixed(1)+'</b> (W'+bestWk+') · low <b class="rd">'+worst.toFixed(1)+'</b> (W'+worstWk+')</span></div>'
+    +'<div class="gchart">'+bars+'</div></div>';
+}
+const DEPTH_DATE="Aug 7, 2026";
+function depthHtml(p){
+  if(p.team==="FA"||p.pos==="DST") return '';
+  const grp=(DEPTH[p.team]||{})[p.pos];
+  if(!grp||!grp.length) return '';
+  const byId={}; P.forEach(x=>{ if(x.espn) byId[x.espn]=x; });
+  const isMe=g=>g[1]===p.espn||g[0]===p.name;
+  const meIdx=grp.findIndex(isMe);
+  const CAP=8;
+  // Always show the viewed player, even if they're buried deep on the chart
+  let show=grp.slice(0,CAP), gapAfter=-1;
+  if(meIdx>=CAP){ show=grp.slice(0,CAP-1); gapAfter=CAP-2; show.push(grp[meIdx]); }
+  let rows='';
+  show.forEach((g,i)=>{
+    const [name,eid,rank]=g;
+    const me=isMe(g);
+    const linked=!me&&byId[eid];
+    rows+='<div class="dp-row'+(me?' me':'')+(linked?' link':'')+'"'+(linked?' data-adp="'+byId[eid].adp+'"':'')+'>'
+      +'<span class="dp-rank">'+rank+'</span><span class="dp-name">'+name+(me?' <span class="dp-you">◄ this player</span>':'')+'</span>'
+      +(linked?'<span class="dp-adp">ADP '+byId[eid].adp+'</span>':'')
+      +'</div>';
+    if(i===gapAfter) rows+='<div class="dp-gap">··· '+(meIdx-(CAP-1))+' more ···</div>';
+  });
+  const extra=grp.length-show.length-(gapAfter>=0?meIdx-(CAP-1):0);
+  if(gapAfter<0&&grp.length>CAP) rows+='<div class="dp-gap">+'+(grp.length-CAP)+' more on the roster</div>';
+  return '<div class="dp"><div class="dp-head"><span class="stat-lab">'+p.team+' '+p.pos+' Depth Chart</span><span class="dp-src">official · '+DEPTH_DATE+'</span></div>'+rows+'</div>';
+}
+function openModal(p){
+  const st=status[p.adp]||"";
+  const m=document.getElementById("modal");
+  m.innerHTML='<div class="m-head" style="--pc:'+POSC[p.pos]+'">'+avatarHtml(p)
+    +'<div><div class="m-name">'+p.name+'</div><div class="m-sub"><span class="pos-b" style="--pc:'+POSC[p.pos]+'">'+p.pos+p.posRank+'</span><span>'+(p.team==="FA"?"Free Agent":p.team)+'</span><span class="mono">ADP '+p.adp+' · Rd '+rd12(p.adp)+'</span></div></div>'
+    +'<button class="m-close" id="mClose">✕</button></div>'
+    +'<div class="m-body">'
+    +'<div class="stat-row"><span class="stat-lab">2025 Season</span><span class="stat-line">'+p.s25+'</span><span class="stat-pts">'+(p.pts25?pts(p.pts25,p.rec25):"—")+'</span></div>'
+    +gameLogHtml(p)
+    +depthHtml(p)
+    +'<div class="m-tags"><span class="m-tag">Tier '+p.tier+' · '+TIERS.find(t=>t.n===p.tier).name+'</span><span class="m-tag">'+scoring.toUpperCase()+' scoring</span>'+(p.pts25===0&&!gamesOf(p)?'<span class="m-tag" style="color:var(--gold);border-color:var(--gold-dim)">'+(p.adp<=250&&p.s25.indexOf("Rookie")>=0?"ROOKIE":"NO 2025 DATA")+'</span>':'')+'</div>'
+    +'</div>'
+    +'<div class="m-actions">'
+    +'<button class="btn" id="mDraft">'+(st==="drafted"?"Undo drafted":"Mark drafted")+'</button>'
+    +'<button class="btn gold" id="mMine">'+(st==="mine"?"Remove from my team":"★ Draft to my team")+'</button>'
+    +'</div><div class="note">Season-total points shown for the selected scoring format. 2025 lines are approximate.</div>';
+  document.getElementById("overlay").classList.add("show");
+  document.getElementById("mClose").onclick=closeModal;
+  document.getElementById("mDraft").onclick=()=>{ status[p.adp]=(st==="drafted")?"":"drafted"; closeModal(); refresh(); };
+  document.getElementById("mMine").onclick=()=>{ status[p.adp]=(st==="mine")?"":"mine"; closeModal(); refresh(); };
+  m.querySelectorAll(".dp-row.link").forEach(r=>r.onclick=()=>{
+    const t=P.find(x=>x.adp===+r.dataset.adp); if(t) openModal(t);
+  });
+}
+function closeModal(){ document.getElementById("overlay").classList.remove("show"); }
+document.getElementById("overlay").addEventListener("click",e=>{ if(e.target.id==="overlay") closeModal(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
+
+/* ================= Wiring ================= */
+function refresh(){
+  document.getElementById("myCount").textContent=Object.values(status).filter(s=>s==="mine").length;
+  if(view==="board") renderBoard();
+  else if(view==="rank") renderRank();
+}
+document.getElementById("view-board").addEventListener("click",e=>{
+  const x=e.target.closest(".p-x");
+  if(x){ const a=+x.dataset.x; status[a]=(status[a]==="drafted")?"":"drafted"; refresh(); e.stopPropagation(); return; }
+  const c=e.target.closest(".pcard");
+  if(c) openModal(P.find(p=>p.adp===+c.dataset.adp));
+});
+document.getElementById("view-rank").addEventListener("click",e=>{
+  const r=e.target.closest("tr[data-adp]");
+  if(r) openModal(P.find(p=>p.adp===+r.dataset.adp));
+});
+document.getElementById("scoringSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  scoring=b.dataset.s;
+  document.querySelectorAll("#scoringSeg button").forEach(x=>x.classList.toggle("on",x===b));
+  refresh(); if(view==="mock") mockRefreshPanels();
+});
+document.getElementById("viewSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  view=b.dataset.v;
+  document.querySelectorAll("#viewSeg button").forEach(x=>x.classList.toggle("on",x===b));
+  document.getElementById("view-board").style.display=view==="board"?"":"none";
+  document.getElementById("view-rank").style.display=view==="rank"?"":"none";
+  document.getElementById("view-mock").style.display=view==="mock"?"":"none";
+  document.getElementById("boardTools").style.display=view==="mock"?"none":"flex";
+  if(view==="mock") renderMock(); else refresh();
+});
+document.getElementById("q").addEventListener("input",e=>{ query=e.target.value.trim(); refresh(); });
+document.getElementById("posChips").addEventListener("click",e=>{
+  const c=e.target.closest(".chip"); if(!c) return;
+  posFilter=c.dataset.p;
+  document.querySelectorAll("#posChips .chip").forEach(x=>x.classList.toggle("on",x===c));
+  refresh();
+});
+document.getElementById("hideDrafted").addEventListener("change",e=>{ hideDrafted=e.target.checked; refresh(); });
+document.getElementById("resetBoard").addEventListener("click",()=>{
+  if(confirm("Clear all drafted marks and your team?")){ for(const k in status) delete status[k]; refresh(); }
+});
+document.getElementById("myTeamChip").addEventListener("click",()=>{
+  const mine=P.filter(p=>status[p.adp]==="mine");
+  if(!mine.length){ alert("No players on your team yet. Open a player and hit “★ Draft to my team.”"); return; }
+  const total=mine.reduce((s,p)=>s+ppg(p),0);
+  alert("MY TEAM ("+scoring.toUpperCase()+")\n\n"+mine.map(p=>p.pos+p.posRank+"  "+p.name+" — "+fmtPpg(p)+" ppg ’25").join("\n")+"\n\nCombined 2025 PPG: "+total.toFixed(1));
+});
+
+/* ================= Mock Draft ================= */
+const CPU_NAMES=["Gridiron Goblins","Blitz Krieg","Championship Chasers","The Waiver Wire Wolves","End Zone Elite","Fourth & Long Gang","Trench Warfare","Red Zone Raiders","Hail Mary Heroes","The Bench Warmers","Snap Count Syndicate","Pancake Blockers","Two Minute Drill"];
+let mock=null;   // {teams, slot, rounds, order:[teamIdx per pick], picks:[{team,round,overall,p}], avail:Set(adp), rosters:[[p]], timer, done, started, speed}
+
+function renderMock(){
+  const host=document.getElementById("view-mock");
+  if(!mock||!mock.started){ renderMockSetup(host); return; }
+  renderRoom(host);
+}
+function renderMockSetup(host){
+  const t=(mock&&mock.teams)||12, s=(mock&&mock.slot)||5, r=(mock&&mock.rounds)||15;
+  let slots=''; for(let i=1;i<=t;i++) slots+='<button class="opt '+(i===s?'on':'')+'" data-slot="'+i+'">'+i+'</button>';
+  host.innerHTML='<div class="setup"><h2>Mock Draft Simulator</h2><p class="sub">Pick your slot, sim the room, and make your picks when you\'re on the clock. CPU teams draft off ADP with realistic reaches and positional needs.</p>'
+   +'<div class="f-row"><span class="f-lab">League size</span><div class="opt-row" id="msTeams">'+[8,10,12,14].map(x=>'<button class="opt '+(x===t?'on':'')+'" data-t="'+x+'">'+x+' teams</button>').join('')+'</div></div>'
+   +'<div class="f-row"><span class="f-lab">Your draft slot</span><div class="slot-grid" id="msSlot">'+slots+'</div></div>'
+   +'<div class="f-row"><span class="f-lab">Rounds</span><div class="opt-row" id="msRounds">'+[14,15,16].map(x=>'<button class="opt '+(x===r?'on':'')+'" data-r="'+x+'">'+x+'</button>').join('')+'</div></div>'
+   +'<div style="display:flex;gap:10px;margin-top:6px"><button class="btn gold" id="msStart" style="flex:1;padding:13px;font-size:14px">Start mock draft</button><button class="btn" id="msTrack" style="flex:1;padding:13px;font-size:14px;border-color:var(--gold-dim);color:var(--gold)">Track live draft</button></div>'
+   +'<div class="note" style="margin-top:10px">Track mode: no CPU picks — you enter every pick as your real draft happens. Click Draft to fill the next slot, or drag a player onto any empty cell.</div></div>';
+  mock={teams:t,slot:Math.min(s,t),rounds:r,started:false};
+  host.querySelector("#msTeams").onclick=e=>{const b=e.target.closest(".opt"); if(!b)return; mock.teams=+b.dataset.t; if(mock.slot>mock.teams)mock.slot=mock.teams; renderMockSetup(host);};
+  host.querySelector("#msSlot").onclick=e=>{const b=e.target.closest(".opt"); if(!b)return; mock.slot=+b.dataset.slot; renderMockSetup(host);};
+  host.querySelector("#msRounds").onclick=e=>{const b=e.target.closest(".opt"); if(!b)return; mock.rounds=+b.dataset.r; renderMockSetup(host);};
+  host.querySelector("#msStart").onclick=()=>startMock("sim");
+  host.querySelector("#msTrack").onclick=()=>startMock("track");
+}
+function startMock(mode){
+  mock.started=true; mock.done=false; mock.mode=mode||"sim";
+  mock.names=[]; const pool=[...CPU_NAMES];
+  for(let i=0;i<mock.teams;i++){
+    if(i===mock.slot-1) mock.names.push("YOU");
+    else mock.names.push(mock.mode==="track" ? "Team "+(i+1) : pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  }
+  mock.order=[];
+  for(let r=0;r<mock.rounds;r++){ for(let i=0;i<mock.teams;i++){ mock.order.push(r%2===0?i:mock.teams-1-i); } }
+  mock.picks=[]; mock.avail=new Set(P.map(p=>p.adp));
+  mock.rosters=Array.from({length:mock.teams},()=>[]);
+  mock.baQ=""; mock.baPos="ALL";
+  renderMock(); runSim();
+}
+function filledSet(){ const s=new Set(); mock.picks.forEach(pk=>s.add(pk.round+"-"+pk.team)); return s; }
+function curPickIdx(){
+  const f=filledSet();
+  for(let i=0;i<mock.order.length;i++){
+    const r=Math.floor(i/mock.teams)+1, t=mock.order[i];
+    if(!f.has(r+"-"+t)) return i;
+  }
+  return mock.order.length;
+}
+function curTeam(){ return mock.order[curPickIdx()]; }
+function isUserTurn(){ return !mock.done && (mock.mode==="track" || curTeam()===mock.slot-1); }
+function runSim(){
+  clearTimeout(mock.timer);
+  if(mock.mode==="track"){
+    if(curPickIdx()>=mock.order.length) mock.done=true;
+    renderRoom(document.getElementById("view-mock"));
+    return;
+  }
+  const step=()=>{
+    if(curPickIdx()>=mock.order.length){ mock.done=true; renderRoom(document.getElementById("view-mock")); return; }
+    if(isUserTurn()){ renderRoom(document.getElementById("view-mock")); return; }
+    cpuPick();
+    renderRoom(document.getElementById("view-mock"));
+    mock.timer=setTimeout(step,170);
+  };
+  mock.timer=setTimeout(step,220);
+}
+function counts(roster){ const c={QB:0,RB:0,WR:0,TE:0,K:0,DST:0}; roster.forEach(p=>c[p.pos]++); return c; }
+function cpuPick(){
+  const teamIdx=curTeam(), round=Math.floor(curPickIdx()/mock.teams)+1;
+  const roster=mock.rosters[teamIdx], c=counts(roster);
+  const last2=round>=mock.rounds-1, last4=round>=mock.rounds-3;
+  // Forced K/DST at the end
+  if(last2){
+    if(!c.K && (round===mock.rounds ? !c.DST===false||true : Math.random()<.5)){ /*fallthrough weighted below*/ }
+    if(round===mock.rounds){ const need=!c.K?"K":(!c.DST?"DST":null); if(need){ const f=bestAvail().find(p=>p.pos===need); if(f) return takePick(teamIdx,f); } }
+    if(round===mock.rounds-1){ const need=!c.DST?"DST":(!c.K?"K":null); if(need&&Math.random()<.8){ const f=bestAvail().find(p=>p.pos===need); if(f) return takePick(teamIdx,f); } }
+  }
+  const elig=bestAvail().filter(p=>{
+    if((p.pos==="K"&&(c.K>=1||!last4))||(p.pos==="DST"&&(c.DST>=1||!last4))) return false;
+    if(p.pos==="QB"&&(c.QB>=2||(c.QB>=1&&round<11))) return false;
+    if(p.pos==="TE"&&(c.TE>=2||(c.TE>=1&&round<10))) return false;
+    if(p.pos==="RB"&&c.RB>=7) return false;
+    if(p.pos==="WR"&&c.WR>=7) return false;
+    return true;
+  }).slice(0,9);
+  if(!elig.length) return takePick(teamIdx,bestAvail()[0]);
+  const w=elig.map((p,i)=>{
+    let m=Math.exp(-i*0.55);
+    if(p.pos==="QB"&&!c.QB&&round>=7) m*=2.1;
+    if(p.pos==="TE"&&!c.TE&&round>=7) m*=1.5;
+    if((p.pos==="RB"||p.pos==="WR")&&round<=4) m*=1.25;
+    if(p.pos==="K"||p.pos==="DST") m*= last2?1.6:0.25;
+    return m;
+  });
+  const sum=w.reduce((a,b)=>a+b,0); let r=Math.random()*sum, pick=elig[0];
+  for(let i=0;i<elig.length;i++){ r-=w[i]; if(r<=0){ pick=elig[i]; break; } }
+  takePick(teamIdx,pick);
+}
+function bestAvail(){ return P.filter(p=>mock.avail.has(p.adp)); }
+function takePick(teamIdx,p,forceRound){
+  mock.avail.delete(p.adp);
+  const round=forceRound||Math.floor(curPickIdx()/mock.teams)+1;
+  // overall = this cell's position in the snake order
+  let overall=0;
+  for(let i=0;i<mock.order.length;i++){
+    if(Math.floor(i/mock.teams)+1===round && mock.order[i]===teamIdx){ overall=i+1; break; }
+  }
+  const slotIn=((overall-1)%mock.teams)+1;
+  mock.picks.push({team:teamIdx,round,overall,label:round+"."+String(slotIn).padStart(2,"0"),p});
+  mock.rosters[teamIdx].push(p);
+}
+function removePick(round,teamIdx){
+  const i=mock.picks.findIndex(pk=>pk.round===round&&pk.team===teamIdx);
+  if(i<0) return;
+  const pk=mock.picks[i];
+  mock.picks.splice(i,1);
+  mock.avail.add(pk.p.adp);
+  const ri=mock.rosters[teamIdx].findIndex(x=>x.adp===pk.p.adp);
+  if(ri>=0) mock.rosters[teamIdx].splice(ri,1);
+  mock.done=false;
+}
+function userDraft(adp,forceRound,forceTeam){
+  if(!isUserTurn()&&forceTeam===undefined) return;
+  const p=P.find(x=>x.adp===adp); if(!p||!mock.avail.has(adp)) return;
+  const team=(forceTeam!==undefined)?forceTeam:(mock.mode==="track"?curTeam():mock.slot-1);
+  takePick(team,p,forceRound);
+  renderRoom(document.getElementById("view-mock"));
+  runSim();
+}
+
+/* ---------- Mock rendering ---------- */
+function renderRoom(host){
+  const onClock=mock.done?null:mock.names[curTeam()];
+  const round=Math.min(Math.floor(curPickIdx()/mock.teams)+1,mock.rounds);
+  let html='';
+  if(mock.done){
+    const my=mock.rosters[mock.slot-1];
+    const tot=my.reduce((s,p)=>s+ppg(p),0);
+    html+='<div class="results-banner"><h3>Draft complete</h3><p>Your starters + bench combined for <b class="mono" style="color:var(--gold)">'+tot.toFixed(1)+'</b> PPG in 2025 ('+scoring.toUpperCase()+'). Full board below — run it back with a different slot to compare.</p></div>';
+  }
+  html+='<div class="mock-bar">'
+    +'<span class="status">'+(mock.done?'<b>FINAL</b> · '+mock.rounds+' rounds':'Round <b>'+round+'</b> / '+mock.rounds+' · Pick <b>'+(curPickIdx()+1)+'</b> · On the clock: <b>'+onClock+'</b>')+'</span>'
+    +'<span style="flex:1"></span>'
+    +'<button class="btn" id="mkPng">⬇ Board PNG</button>'
+    +'<button class="btn" id="mkRestart">'+(mock.mode==="track"?"New draft":"New mock")+'</button>'
+    +(!mock.done&&isUserTurn()&&mock.mode!=="track"?'<button class="btn" id="mkAuto">Auto-pick for me</button>':'')
+    +'</div>';
+  // Ticker
+  html+='<div class="ticker" id="ticker">';
+  const recent=mock.picks.slice(-14);
+  for(const pk of recent){
+    html+='<div class="tick '+(pk.team===mock.slot-1?'user-pick':'')+'" style="--pc:'+POSC[pk.p.pos]+'"><span class="t-pick">PICK '+pk.label+'</span><span class="t-name">'+pk.p.name+'</span><span class="t-team">'+mock.names[pk.team]+' · '+pk.p.pos+'</span></div>';
+  }
+  if(!mock.done) html+='<div class="tick clock"><span class="t-clock">◉ On the clock</span><span class="t-who">'+onClock+' · '+(isUserTurn()?"MAKE YOUR PICK":"picking…")+'</span></div>';
+  html+='</div>';
+  // Room grid
+  html+='<div class="room"><div class="panel"><div class="panel-h">Draft board<span class="mini">'+mock.teams+'-team snake · click a name to rename</span></div><div class="dboard" id="dboardWrap"><table><thead><tr><th class="rlab"></th>';
+  for(let i=0;i<mock.teams;i++) html+='<th class="'+(i===mock.slot-1?'you':'')+'">'+(i===mock.slot-1?'★ ':'')+'<span class="tname" contenteditable="true" spellcheck="false" data-team="'+i+'">'+mock.names[i]+'</span></th>';
+  html+='</tr></thead><tbody>';
+  for(let r=0;r<mock.rounds;r++){
+    html+='<tr><td class="rlab mono" style="color:var(--dim);font-size:9px;padding:0 3px">R'+(r+1)+'</td>';
+    for(let team=0;team<mock.teams;team++){
+      const pk=mock.picks.find(x=>x.round===r+1&&x.team===team);
+      const isClockCell=!mock.done&&!pk&&mock.order[curPickIdx()]===team&&Math.floor(curPickIdx()/mock.teams)===r;
+      const trk=mock.mode==="track";
+      if(pk) html+='<td><div class="cell '+(team===mock.slot-1?'mine-cell':'')+(trk?' rm':'')+'" style="--pc:'+POSC[pk.p.pos]+'" '+(trk?'data-rm="'+(r+1)+'-'+team+'" title="Click to remove"':'')+'>'+avatarHtml(pk.p,"cava")+'<div class="cell-txt"><div class="c-n">'+pk.p.name+'</div><div class="c-m">'+pk.p.pos+' · '+pk.p.team+' · '+pk.label+'</div></div></div></td>';
+      else html+='<td><div class="cell empty '+(isClockCell?'on-clock':'')+(trk&&mock.selAdp?' placeable':'')+'" '+(trk?'data-drop="'+(r+1)+'-'+team+'"':'')+'></div></td>';
+    }
+    html+='</tr>';
+  }
+  html+='</tbody></table></div></div>';
+  // Right panel
+  html+='<div style="display:flex;flex-direction:column;gap:16px">';
+  if(!mock.done&&isUserTurn()){
+    const trk=mock.mode==="track";
+    const hdr=trk?('Enter pick — <span style="color:var(--gold)">'+onClock+'</span> on the clock'):'★ You\'re on the clock';
+    html+='<div class="panel"><div class="panel-h" '+(trk?'':'style="color:var(--gold)"')+'>'+hdr+'<span class="mini">Round '+round+' · Pick '+(curPickIdx()+1)+'</span></div>'
+      +(trk?'<div class="sim-note" style="padding:8px 13px">'+(mock.selAdp
+          ?'<b style="color:var(--gold)">'+P.find(x=>x.adp===mock.selAdp).name+' selected</b> — tap any empty cell to place, or tap them again to cancel.'
+          :'Tap <b>Draft</b> to fill the next slot in order — or tap a player, then tap any empty cell to place them anywhere. Tap a filled cell to undo it.')+'</div>':'')
+      +'<div style="display:flex;gap:8px;padding:10px 13px;border-bottom:1px solid var(--line)">'
+      +'<input class="search" id="baQ" style="max-width:none" placeholder="Search available…" value="'+(mock.baQ||'')+'">'
+      +'<select id="baPos" class="btn" style="padding:8px">'+["ALL","QB","RB","WR","TE","K","DST"].map(x=>'<option '+(mock.baPos===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div>'
+      +'<div class="ba-list" id="baList">'+baRows()+'</div></div>';
+  } else if(!mock.done){
+    html+='<div class="panel"><div class="panel-h">Best available</div><div class="sim-note">CPU teams are picking…<br>You\'re slot <b class="mono" style="color:var(--gold)">'+mock.slot+'</b> — hang tight.</div><div class="ba-list">'+baRows(6,true)+'</div></div>';
+  }
+  html+='<div class="panel"><div class="panel-h">My roster<span class="mini" id="myProj"></span></div><div id="rosterList">'+rosterRows()+'</div></div>';
+  html+='</div></div>';
+  host.innerHTML=html;
+  const tk=host.querySelector("#ticker"); if(tk) tk.scrollLeft=tk.scrollWidth;
+  host.querySelector("#mkRestart").onclick=()=>{ clearTimeout(mock.timer); mock={teams:mock.teams,slot:mock.slot,rounds:mock.rounds,started:false}; renderMock(); };
+  host.querySelector("#mkPng").onclick=downloadBoardPng;
+  host.querySelectorAll(".tname").forEach(el=>{
+    const commit=()=>{ const v=el.textContent.trim(); if(v) mock.names[+el.dataset.team]=v; else el.textContent=mock.names[+el.dataset.team]; };
+    el.addEventListener("blur",commit);
+    el.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); el.blur(); } });
+    el.addEventListener("click",e=>e.stopPropagation());
+  });
+  const auto=host.querySelector("#mkAuto"); if(auto) auto.onclick=()=>{ cpuPick(); renderRoom(host); runSim(); };
+  const q=host.querySelector("#baQ"); if(q){ q.oninput=e=>{ mock.baQ=e.target.value; host.querySelector("#baList").innerHTML=baRows(); wireDraftBtns(host); }; }
+  const ps=host.querySelector("#baPos"); if(ps){ ps.onchange=e=>{ mock.baPos=e.target.value; host.querySelector("#baList").innerHTML=baRows(); wireDraftBtns(host); }; }
+  wireDraftBtns(host);
+  if(mock.mode==="track"){
+    // click a player to select, then click any empty cell to place them
+    host.querySelectorAll(".ba-row[data-adp]").forEach(row=>{
+      row.addEventListener("click",e=>{
+        if(e.target.closest(".draft-btn")) return;
+        mock.selAdp=(mock.selAdp===+row.dataset.adp)?null:+row.dataset.adp;
+        renderRoom(host);
+      });
+    });
+    host.querySelectorAll("[data-drop]").forEach(cell=>{
+      cell.addEventListener("click",()=>{
+        if(!mock.selAdp) return;
+        const [r,t]=cell.dataset.drop.split("-").map(Number);
+        const adp=mock.selAdp; mock.selAdp=null;
+        userDraft(adp,r,t);
+      });
+    });
+    host.querySelectorAll("[data-rm]").forEach(cell=>{
+      cell.addEventListener("click",()=>{
+        const [r,t]=cell.dataset.rm.split("-").map(Number);
+        removePick(r,t);
+        renderRoom(host);
+      });
+    });
+  }
+  const my=mock.rosters[mock.slot-1];
+  host.querySelector("#myProj").textContent=my.length?(my.reduce((s,p)=>s+ppg(p),0).toFixed(1)+" combined ppg"):"";
+}
+function wireDraftBtns(host){
+  host.querySelectorAll("[data-draft]").forEach(b=>b.onclick=()=>userDraft(+b.dataset.draft));
+}
+function baRows(limit,readOnly){
+  let list=bestAvail();
+  if(!readOnly){
+    if(mock.baPos&&mock.baPos!=="ALL") list=list.filter(p=>p.pos===mock.baPos);
+    if(mock.baQ){ const q=mock.baQ.toLowerCase(); list=list.filter(p=>p.name.toLowerCase().includes(q)||p.team.toLowerCase().includes(q)); }
+  }
+  list=list.slice(0,limit||24);
+  return list.map(p=>'<div class="ba-row'+(mock.mode==="track"&&!readOnly&&mock.selAdp===p.adp?' sel':'')+'"'+(mock.mode==="track"&&!readOnly?' data-adp="'+p.adp+'"':'')+'>'+avatarHtml(p)
+    +'<div class="ba-info"><div class="ba-n">'+p.name+'</div><div class="ba-m"><span class="pos-b" style="--pc:'+POSC[p.pos]+'">'+p.pos+p.posRank+'</span> '+p.team+' · <span class="ba-adp">ADP '+p.adp+'</span></div></div>'
+    +'<div class="ba-pts">'+fmtPpg(p)+'<div class="ba-adp">ppg ’25</div></div>'
+    +(readOnly?'':'<button class="draft-btn" data-draft="'+p.adp+'">Draft</button>')+'</div>').join('');
+}
+function rosterRows(){
+  const my=mock.rosters[mock.slot-1];
+  const slots=["QB","RB","RB","WR","WR","TE","FLEX","K","DST"];
+  const used=new Set(); const rows=[];
+  for(const s of slots){
+    const ok=p=> s==="FLEX" ? ["RB","WR","TE"].includes(p.pos) : p.pos===s;
+    const p=my.filter(x=>!used.has(x.adp)&&ok(x)).sort((a,b)=>ppg(b)-ppg(a))[0];
+    if(p){ used.add(p.adp); rows.push({slot:s,p}); } else rows.push({slot:s,p:null});
+  }
+  const bench=my.filter(x=>!used.has(x.adp));
+  let html=rows.map(r=>r.p
+    ?'<div class="roster-row"><span class="roster-slot" style="--pc:'+POSC[r.p.pos]+'">'+r.slot+'</span><span class="nm">'+r.p.name+'</span><span class="pt">'+fmtPpg(r.p)+'</span></div>'
+    :'<div class="roster-row emptyslot"><span class="roster-slot">'+r.slot+'</span><span class="nm">—</span></div>').join('');
+  html+=bench.map(p=>'<div class="roster-row"><span class="roster-slot" style="color:var(--dim)">BN</span><span class="nm">'+p.name+'</span><span class="pt">'+fmtPpg(p)+'</span></div>').join('');
+  return html;
+}
+function loadImg(url){
+  return new Promise(res=>{
+    const im=new Image();
+    im.crossOrigin="anonymous";           // required so canvas stays exportable
+    const t=setTimeout(()=>res(null),4000);
+    im.onload=()=>{ clearTimeout(t); res(im); };
+    im.onerror=()=>{ clearTimeout(t); res(null); };
+    im.src=url;
+  });
+}
+async function downloadBoardPng(){
+  const btn=document.getElementById("mkPng");
+  if(btn){ btn.disabled=true; btn.textContent="Rendering…"; }
+  // Preload every avatar on the board (headshot first, team logo fallback)
+  const imgs={};
+  await Promise.all(mock.picks.map(async pk=>{
+    const p=pk.p; if(imgs[p.adp]!==undefined) return;
+    imgs[p.adp]=null;
+    if(p.espn){ imgs[p.adp]=await loadImg(headshotUrl(p.espn)); }
+    if(!imgs[p.adp]&&p.team!=="FA"){ imgs[p.adp]=await loadImg(logoUrl(p.team)); }
+  }));
+  try{ drawBoardPng(imgs); }
+  finally{ if(btn){ btn.disabled=false; btn.textContent="⬇ Board PNG"; } }
+}
+function drawBoardPng(imgs){
+  const CSS={bg:"#0B1220",panel:"#111B2D",panel2:"#0d1626",line:"#22304a",txt:"#E8EDF6",mut:"#8FA0BC",dim:"#5a6b8a",gold:"#E8C468"};
+  const PC={QB:"#F2545B",RB:"#35C29A",WR:"#4EA1F7",TE:"#F5A524",K:"#B48CF2",DST:"#95A3B8"};
+  const colW=170, rowH=56, labW=44, headH=64, titleH=70, pad=24, S=2;
+  const W=pad*2+labW+colW*mock.teams, H=pad*2+titleH+headH+rowH*mock.rounds;
+  const cv=document.createElement("canvas"); cv.width=W*S; cv.height=H*S;
+  const x=cv.getContext("2d"); x.scale(S,S);
+  x.fillStyle=CSS.bg; x.fillRect(0,0,W,H);
+  // title
+  x.fillStyle=CSS.gold; x.font="800 26px Archivo, Arial, sans-serif";
+  x.fillText("WAR ROOM ’26",pad,pad+30);
+  x.fillStyle=CSS.mut; x.font="12px 'IBM Plex Mono', monospace";
+  const sub=mock.teams+"-team snake · "+mock.rounds+" rounds · "+scoring.toUpperCase()+(mock.mode==="track"?" · live draft":" · mock draft")+" · "+new Date().toLocaleDateString();
+  x.fillText(sub,pad,pad+50);
+  const gx=pad, gy=pad+titleH;
+  // header row
+  x.fillStyle=CSS.panel; x.fillRect(gx,gy,labW+colW*mock.teams,headH);
+  x.font="700 13px 'IBM Plex Mono', monospace"; x.textAlign="center";
+  for(let i=0;i<mock.teams;i++){
+    const cx=gx+labW+colW*i+colW/2;
+    x.fillStyle=(i===mock.slot-1)?CSS.gold:CSS.mut;
+    let nm=(i===mock.slot-1?"★ ":"")+mock.names[i];
+    while(x.measureText(nm).width>colW-12&&nm.length>3) nm=nm.slice(0,-2);
+    x.fillText(nm,cx,gy+38);
+  }
+  x.strokeStyle=CSS.line; x.lineWidth=1;
+  x.beginPath(); x.moveTo(gx,gy+headH); x.lineTo(gx+labW+colW*mock.teams,gy+headH); x.stroke();
+  // cells
+  for(let r=0;r<mock.rounds;r++){
+    const cy=gy+headH+rowH*r;
+    x.fillStyle=CSS.dim; x.font="700 11px 'IBM Plex Mono', monospace"; x.textAlign="center";
+    x.fillText("R"+(r+1),gx+labW/2,cy+rowH/2+4);
+    for(let t=0;t<mock.teams;t++){
+      const cx=gx+labW+colW*t;
+      const pk=mock.picks.find(p=>p.round===r+1&&p.team===t);
+      const m=4;
+      if(pk){
+        x.fillStyle=(t===mock.slot-1)?"#1a2438":CSS.panel2;
+        roundRect(x,cx+m,cy+m,colW-m*2,rowH-m*2,6); x.fill();
+        x.strokeStyle=(t===mock.slot-1)?CSS.gold:CSS.line; x.stroke();
+        x.fillStyle=PC[pk.p.pos]||CSS.mut;
+        x.fillRect(cx+m,cy+m+4,4,rowH-m*2-8);
+        // avatar circle
+        const av=16, ax=cx+m+13+av, ay=cy+rowH/2, im=imgs[pk.p.adp];
+        x.save();
+        x.beginPath(); x.arc(ax,ay,av,0,Math.PI*2); x.closePath(); x.clip();
+        if(im){
+          x.fillStyle="#22314e"; x.fillRect(ax-av,ay-av,av*2,av*2);
+          const isLogo=!pk.p.espn||im.src.indexOf("teamlogos")>=0;
+          if(isLogo){ const s=av*1.4; x.drawImage(im,ax-s/2,ay-s/2,s,s); }
+          else{
+            // headshots are wide; crop center-top like object-fit:cover
+            const r=Math.max(av*2/im.width,av*2/im.height), w=im.width*r, h=im.height*r;
+            x.drawImage(im,ax-w/2,ay-av,w,h);
+          }
+        } else {
+          x.fillStyle=(TEAM_COLORS[pk.p.team]||"#22314e"); x.fillRect(ax-av,ay-av,av*2,av*2);
+          x.fillStyle="#fff"; x.font="800 12px Archivo, Arial, sans-serif"; x.textAlign="center";
+          x.fillText(initials(pk.p.name),ax,ay+4);
+        }
+        x.restore();
+        x.strokeStyle=CSS.line; x.beginPath(); x.arc(ax,ay,av,0,Math.PI*2); x.stroke();
+        const tx=ax+av+8;
+        x.textAlign="left";
+        x.fillStyle=CSS.txt; x.font="700 13px Archivo, Arial, sans-serif";
+        let nm=pk.p.name;
+        while(x.measureText(nm).width>colW-(tx-cx)-m-6&&nm.length>3) nm=nm.slice(0,-2);
+        x.fillText(nm,tx,cy+24);
+        x.fillStyle=CSS.dim; x.font="10px 'IBM Plex Mono', monospace";
+        x.fillText(pk.p.pos+" · "+pk.p.team+" · "+pk.label,tx,cy+40);
+        x.textAlign="center";
+      } else {
+        x.strokeStyle=CSS.line; x.setLineDash([4,4]);
+        roundRect(x,cx+m,cy+m,colW-m*2,rowH-m*2,6); x.stroke();
+        x.setLineDash([]);
+      }
+    }
+  }
+  x.textAlign="left"; x.fillStyle=CSS.dim; x.font="10px 'IBM Plex Mono', monospace";
+  x.fillText("Built with War Room ’26",gx,H-8);
+  let url;
+  try{ url=cv.toDataURL("image/png"); }
+  catch(e){
+    // A non-CORS image tainted the canvas — redraw with initials only
+    if(imgs&&Object.keys(imgs).length){ return drawBoardPng({}); }
+    alert("Couldn’t export the board image."); return;
+  }
+  const a=document.createElement("a");
+  a.download="war-room-draft-board.png";
+  a.href=url;
+  a.click();
+}
+function roundRect(x,px,py,w,h,r){
+  x.beginPath();
+  x.moveTo(px+r,py); x.arcTo(px+w,py,px+w,py+h,r); x.arcTo(px+w,py+h,px,py+h,r);
+  x.arcTo(px,py+h,px,py,r); x.arcTo(px,py,px+w,py,r); x.closePath();
+}
+function mockRefreshPanels(){ if(mock&&mock.started) renderRoom(document.getElementById("view-mock")); }
+
+/* init */
+refresh();
+</script>
+</body>
+</html>
