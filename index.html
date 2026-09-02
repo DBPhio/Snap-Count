@@ -213,13 +213,20 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
 @media (prefers-reduced-motion: reduce){.tick.clock .t-clock{animation:none}}
 
-.room{display:grid;grid-template-columns:1fr 380px;gap:16px;align-items:start}
+.room{display:grid;grid-template-columns:1fr 380px;gap:16px;align-items:start;min-width:0}
+.room>.panel{min-width:0}
+.room.wideboard{grid-template-columns:1fr 320px}
+@media(max-width:1100px){.room.wideboard{grid-template-columns:1fr}}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .panel-h{display:flex;align-items:center;gap:10px;padding:12px 15px;border-bottom:1px solid var(--line);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
 .panel-h .mini{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);font-weight:400;letter-spacing:0;text-transform:none}
 .dboard{overflow:visible}
+.dboard.wide{overflow-x:auto;padding-bottom:6px}
 .dboard table{border-collapse:collapse;width:100%;table-layout:fixed}
+.dboard.wide table{width:auto;min-width:100%}
+.dboard.wide td:not(.rlab),.dboard.wide th:not(.rlab){min-width:132px}
 .dboard th{font-family:'IBM Plex Mono',monospace;font-size:clamp(7px,0.85vw,9.5px);color:var(--dim);padding:6px 2px;border-bottom:1px solid var(--line);background:var(--panel2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.03em}
+.dboard.wide th{font-size:10.5px;padding:8px 4px}
 .dboard th.you{color:var(--gold)}
 .dboard th .tname{cursor:text;border-bottom:1px dashed transparent;padding:0 1px}
 .dboard th .tname:hover{border-bottom-color:var(--gold-dim)}
@@ -230,9 +237,17 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 .cell .ava.cava{width:26px;height:26px;min-width:26px;border-width:1px}
 .cell .ava.cava .ini{font-size:9px}
 .cell-txt{flex:1;min-width:0}
-@media(max-width:760px){.cell .ava.cava{display:none}}
+@media(max-width:760px){.dboard:not(.wide) .cell .ava.cava{display:none}}
 .cell .c-n{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cell .c-m{color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:clamp(6.5px,0.75vw,9px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* WIDE (readable) board — full names, bigger portraits, position badge */
+.dboard.wide .cell{height:auto;min-height:58px;padding:6px 7px;gap:7px;font-size:12px;border-left-width:4px;align-items:center}
+.dboard.wide .cell .ava.cava{width:38px;height:38px;min-width:38px;border-width:2px;border-color:var(--pc,var(--line2))}
+.dboard.wide .cell .ava.cava .ini{font-size:13px}
+.dboard.wide .cell .c-n{white-space:normal;overflow:visible;text-overflow:clip;font-size:12.5px;line-height:1.2;overflow-wrap:anywhere}
+.dboard.wide .cell .c-m{font-size:9.5px;margin-top:3px;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.dboard.wide .c-pos{font-weight:700;color:var(--pc);background:color-mix(in srgb,var(--pc) 16%,transparent);border:1px solid color-mix(in srgb,var(--pc) 40%,transparent);border-radius:3px;padding:1px 4px;font-size:9px;letter-spacing:.03em}
+.dboard.wide .cell.empty{min-height:58px}
 .cell.empty{border-style:dashed;border-left:1px dashed var(--line);background:transparent}
 
 .cell.empty[data-drop]{cursor:pointer}
@@ -1122,7 +1137,7 @@ function startMock(mode){
   for(let r=0;r<mock.rounds;r++){ for(let i=0;i<mock.teams;i++){ mock.order.push(r%2===0?i:mock.teams-1-i); } }
   mock.picks=[]; mock.avail=new Set(P.map(p=>p.adp));
   mock.rosters=Array.from({length:mock.teams},()=>[]);
-  mock.baQ=""; mock.baPos="ALL";
+  mock.baQ=""; mock.baPos="ALL"; mock.wide=(mock.mode==="track");
   renderMock(); runSim();
 }
 function filledSet(){ const s=new Set(); mock.picks.forEach(pk=>s.add(pk.round+"-"+pk.team)); return s; }
@@ -1229,6 +1244,7 @@ function renderRoom(host){
   html+='<div class="mock-bar">'
     +'<span class="status">'+(mock.done?'<b>FINAL</b> · '+mock.rounds+' rounds':'Round <b>'+round+'</b> / '+mock.rounds+' · Pick <b>'+(curPickIdx()+1)+'</b> · On the clock: <b>'+onClock+'</b>')+'</span>'
     +'<span style="flex:1"></span>'
+    +'<button class="btn" id="mkFit">'+(mock.wide?'⤡ Fit to screen':'⤢ Readable view')+'</button>'
     +'<button class="btn" id="mkPng">⬇ Board PNG</button>'
     +'<button class="btn" id="mkRestart">'+(mock.mode==="track"?"New draft":"New mock")+'</button>'
     +(!mock.done&&isUserTurn()&&mock.mode!=="track"?'<button class="btn" id="mkAuto">Auto-pick for me</button>':'')
@@ -1242,7 +1258,7 @@ function renderRoom(host){
   if(!mock.done) html+='<div class="tick clock"><span class="t-clock">◉ On the clock</span><span class="t-who">'+onClock+' · '+(isUserTurn()?"MAKE YOUR PICK":"picking…")+'</span></div>';
   html+='</div>';
   // Room grid
-  html+='<div class="room"><div class="panel"><div class="panel-h">Draft board<span class="mini">'+mock.teams+'-team snake · click a name to rename</span></div><div class="dboard" id="dboardWrap"><table><thead><tr><th class="rlab"></th>';
+  html+='<div class="room'+(mock.wide?' wideboard':'')+'"><div class="panel"><div class="panel-h">Draft board<span class="mini">'+mock.teams+'-team snake · click a name to rename</span></div><div class="dboard'+(mock.wide?' wide':'')+'" id="dboardWrap"><table><thead><tr><th class="rlab"></th>';
   for(let i=0;i<mock.teams;i++) html+='<th class="'+(i===mock.slot-1?'you':'')+'">'+(i===mock.slot-1?'★ ':'')+'<span class="tname" contenteditable="true" spellcheck="false" data-team="'+i+'">'+mock.names[i]+'</span></th>';
   html+='</tr></thead><tbody>';
   for(let r=0;r<mock.rounds;r++){
@@ -1251,7 +1267,7 @@ function renderRoom(host){
       const pk=mock.picks.find(x=>x.round===r+1&&x.team===team);
       const isClockCell=!mock.done&&!pk&&mock.order[curPickIdx()]===team&&Math.floor(curPickIdx()/mock.teams)===r;
       const trk=mock.mode==="track";
-      if(pk) html+='<td><div class="cell '+(team===mock.slot-1?'mine-cell':'')+'" style="--pc:'+POSC[pk.p.pos]+'" data-info="'+pk.p.adp+'" title="'+pk.p.name+' — click for stats">'+avatarHtml(pk.p,"cava")+'<div class="cell-txt"><div class="c-n">'+pk.p.name+'</div><div class="c-m">'+pk.p.pos+' · '+pk.p.team+' · '+pk.label+'</div></div>'+(trk?'<button class="cell-x" data-rm="'+(r+1)+'-'+team+'" title="Undo this pick">✕</button>':'')+'</div></td>';
+      if(pk) html+='<td><div class="cell '+(team===mock.slot-1?'mine-cell':'')+'" style="--pc:'+POSC[pk.p.pos]+'" data-info="'+pk.p.adp+'" title="'+pk.p.name+' — click for stats">'+avatarHtml(pk.p,"cava")+'<div class="cell-txt"><div class="c-n">'+pk.p.name+'</div><div class="c-m">'+(mock.wide?'<span class="c-pos">'+pk.p.pos+pk.p.posRank+'</span><span>'+pk.p.team+'</span><span>'+pk.label+'</span>':pk.p.pos+' · '+pk.p.team+' · '+pk.label)+'</div></div>'+(trk?'<button class="cell-x" data-rm="'+(r+1)+'-'+team+'" title="Undo this pick">✕</button>':'')+'</div></td>';
       else html+='<td><div class="cell empty '+(isClockCell?'on-clock':'')+(trk&&mock.selAdp?' placeable':'')+'" '+(trk?'data-drop="'+(r+1)+'-'+team+'"':'')+'></div></td>';
     }
     html+='</tr>';
@@ -1279,6 +1295,7 @@ function renderRoom(host){
   const tk=host.querySelector("#ticker"); if(tk) tk.scrollLeft=tk.scrollWidth;
   host.querySelector("#mkRestart").onclick=()=>{ clearTimeout(mock.timer); mock={teams:mock.teams,slot:mock.slot,rounds:mock.rounds,started:false}; renderMock(); };
   host.querySelector("#mkPng").onclick=downloadBoardPng;
+  host.querySelector("#mkFit").onclick=()=>{ mock.wide=!mock.wide; renderRoom(host); };
   host.querySelectorAll(".tname").forEach(el=>{
     const commit=()=>{ const v=el.textContent.trim(); if(v) mock.names[+el.dataset.team]=v; else el.textContent=mock.names[+el.dataset.team]; };
     el.addEventListener("blur",commit);
