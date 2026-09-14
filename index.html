@@ -77,42 +77,42 @@ main{max-width:1560px;margin:0 auto;padding:20px}
 
 /* ---------- data table ---------- */
 .tbl-wrap{border:1px solid var(--rule);border-radius:11px;overflow:auto;background:var(--surface)}
-table{border-collapse:collapse;width:100%;font-family:'IBM Plex Mono',monospace;font-size:12px;font-variant-numeric:tabular-nums}
-thead th{position:sticky;top:0;background:var(--surface2);color:var(--mid);font-weight:500;font-size:10.5px;text-align:right;padding:9px 10px;border-bottom:1px solid var(--rule);white-space:nowrap;cursor:pointer;z-index:2}
+table{border-collapse:collapse;width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;font-variant-numeric:tabular-nums}
+thead th{position:sticky;top:0;background:var(--surface2);color:var(--mid);font-weight:600;font-size:12px;text-align:right;padding:11px 12px;border-bottom:1px solid var(--rule);white-space:nowrap;cursor:pointer;z-index:2}
 thead th:first-child,thead th.l{text-align:left}
 thead th:hover{color:var(--chalk)}
 thead th.sorted{color:var(--chalk);box-shadow:inset 0 -2px 0 var(--wr)}
-tbody td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--rule);white-space:nowrap}
+tbody td{padding:11px 12px;text-align:right;border-bottom:1px solid var(--rule);white-space:nowrap}
 tbody td.l{text-align:left}
 tbody tr{cursor:pointer}
 tbody tr:hover td{background:var(--surface2)}
 tbody tr:last-child td{border-bottom:none}
-.who-cell{display:flex;align-items:center;gap:9px;font-family:'IBM Plex Sans',sans-serif}
-.who-cell .por{width:28px;height:28px;border-width:1.5px}
+.who-cell{display:flex;align-items:center;gap:12px;font-family:'IBM Plex Sans',sans-serif}
+.who-cell .por{width:44px;height:44px;border-width:2px}
 .tbl-wrap{contain:content}
-.who-cell .por .ini{font-size:11px}
-.who-cell b{font-weight:600;font-size:13px}
-.sub{color:var(--dim);font-size:10.5px;font-family:'IBM Plex Mono',monospace}
+.who-cell .por .ini{font-size:16px}
+.who-cell b{font-weight:600;font-size:15.5px;line-height:1.25}
+.sub{color:var(--mid);font-size:12px;font-family:'IBM Plex Mono',monospace;margin-top:2px}
 td.hot{color:var(--h4);font-weight:600}
 td.zero{color:#3C4854}
 
 /* ---------- filter workbench ---------- */
-.work{display:grid;grid-template-columns:236px 1fr;gap:18px;align-items:start}
+.work{display:grid;grid-template-columns:268px 1fr;gap:18px;align-items:start}
 @media(max-width:900px){.work{grid-template-columns:1fr}}
 .panel{background:var(--surface);border:1px solid var(--rule);border-radius:11px;overflow:hidden}
 .panel-h{padding:11px 14px;border-bottom:1px solid var(--rule);font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:600;letter-spacing:.01em;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .panel-h small{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);font-weight:400}
 .fgroup{padding:12px 14px;border-bottom:1px solid var(--rule)}
 .fgroup:last-child{border-bottom:none}
-.flab{font-size:11px;color:var(--dim);margin-bottom:7px;font-family:'IBM Plex Mono',monospace}
+.flab{font-size:12.5px;color:var(--mid);margin-bottom:8px;font-family:'IBM Plex Mono',monospace}
 .frow{display:flex;gap:7px;align-items:center;margin-bottom:7px}
 .frow:last-child{margin-bottom:0}
-.frow select,.frow input{flex:1;min-width:0;background:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:6px 8px;font-size:12px;font-family:'IBM Plex Mono',monospace}
+.frow select,.frow input{flex:1;min-width:0;background:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:8px 9px;font-size:13.5px;font-family:'IBM Plex Mono',monospace}
 .frow .x{color:var(--dim);font-size:13px;padding:0 2px}
 .frow .x:hover{color:var(--qb)}
-.preset{display:block;width:100%;text-align:left;padding:7px 10px;border-radius:6px;font-size:12px;color:var(--mid);border:1px solid transparent}
+.preset{display:block;width:100%;text-align:left;padding:9px 11px;border-radius:6px;font-size:13.5px;color:var(--mid);border:1px solid transparent}
 .preset:hover{background:var(--surface2);color:var(--chalk);border-color:var(--rule)}
-.addbtn{width:100%;padding:7px;border:1px dashed var(--rule2);border-radius:6px;font-size:11.5px;color:var(--mid);font-family:'IBM Plex Mono',monospace}
+.addbtn{width:100%;padding:9px;border:1px dashed var(--rule2);border-radius:6px;font-size:13px;color:var(--mid);font-family:'IBM Plex Mono',monospace}
 .addbtn:hover{color:var(--chalk);border-color:var(--chalk)}
 
 /* ---------- detail sheet ---------- */
@@ -259,7 +259,7 @@ function por(pid,cls){
   const p=P[pid];
   if(!p) return "";
   const col=TEAMS[p.t]||"#2A3542";
-  const px=cls==="sm"?64:160;
+  const px=cls==="sm"?96:160;   // 2x the 44px table portrait for retina
   const img=p.h?'<img loading="lazy" decoding="async" width="'+px+'" height="'+px+'" src="'+thumb(p.h,px)+'" alt="" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{className:\'ini\',textContent:\''+initials(p.n)+'\'}))">':'<span class="ini">'+initials(p.n)+'</span>';
   v='<div class="por '+(cls||'')+'" style="--pc:'+(PC[p.p]||col)+'">'+img+'</div>';
   porCache.set(key,v);
