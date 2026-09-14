@@ -116,6 +116,65 @@ td.zero{color:#3C4854}
 .addbtn:hover{color:var(--chalk);border-color:var(--chalk)}
 
 /* ---------- detail sheet ---------- */
+/* ---------- league cards ---------- */
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(372px,1fr));gap:16px;align-items:start}
+@media(max-width:520px){.lgrid{grid-template-columns:1fr}}
+.lcard{background:var(--surface);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.lhead{display:flex;align-items:center;gap:6px;padding:11px 12px;border-bottom:1px solid var(--rule)}
+.lname{flex:1;min-width:0;background:none;border:1px solid transparent;border-radius:6px;padding:4px 7px;font-family:'Barlow Condensed',sans-serif;font-size:21px;font-weight:600}
+.lname:hover{border-color:var(--rule)}
+.lname:focus{border-color:var(--wr);outline:none;background:var(--ink)}
+.lbtn{color:var(--dim);font-size:15px;padding:5px 7px;border-radius:6px}
+.lbtn:hover{color:var(--chalk);background:var(--surface2)}
+.lcfg{padding:12px 14px;background:var(--ink);border-bottom:1px solid var(--rule)}
+.slotgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.slotf{display:flex;flex-direction:column;gap:4px;align-items:center}
+.slotf span{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--mid)}
+.slotf input{width:100%;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:6px 0;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:14px}
+.lnote{margin-top:9px;font-size:11px;color:var(--dim);line-height:1.45}
+.lkpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule)}
+.lkpi{background:var(--surface);padding:11px 8px;text-align:center}
+.lkpi b{display:block;font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;line-height:1.1}
+.lkpi span{font-size:10px;color:var(--dim);font-family:'IBM Plex Mono',monospace}
+.lchart{display:flex;align-items:flex-end;gap:3px;padding:14px 12px 8px;border-bottom:1px solid var(--rule)}
+.lbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.lbar i{width:100%;background:var(--h2);border-radius:2px 2px 0 0;display:block;transition:background .12s}
+.lbar span{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--dim)}
+.lbar:hover i{background:var(--h3)}
+.lbar.on i{background:var(--h4)} .lbar.on span{color:var(--chalk)}
+.lcall{display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--rule);font-family:'IBM Plex Mono',monospace;font-size:11px}
+.lcall .up{color:var(--good)} .lcall .dn{color:var(--qb)}
+.lcall em{color:var(--dim);font-style:normal}
+.lineup{padding:6px 0}
+.lrow{display:flex;align-items:center;gap:9px;padding:6px 12px}
+.lrow:hover{background:var(--surface2)}
+.lrow.bench{opacity:.72}
+.lslot{width:38px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mid);background:var(--ink);border:1px solid var(--rule);border-radius:4px;padding:3px 0;text-align:center}
+.lslot.flex{color:var(--te);border-color:color-mix(in srgb,var(--te) 40%,transparent)}
+.lslot.bn{color:var(--dim)}
+.lrow .por{width:30px;height:30px;border-width:1.5px}
+.lrow .por .ini{font-size:11px}
+.lnm{flex:1;min-width:0;font-size:13px;font-weight:600;cursor:pointer;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lnm em{display:block;font-style:normal;font-weight:400;font-size:10.5px;color:var(--dim);font-family:'IBM Plex Mono',monospace}
+.lnm:hover{color:var(--wr)}
+.lnm.empty{color:var(--dim);font-weight:400;font-style:italic;cursor:default}
+.lpts{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;min-width:42px;text-align:right}
+.lpts.dnp{color:#3C4854;font-weight:400}
+.lx{color:transparent;font-size:11px;padding:2px 4px}
+.lrow:hover .lx{color:var(--dim)}
+.lx:hover{color:var(--qb)}
+.lbench{padding:8px 12px 4px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);border-top:1px solid var(--rule);margin-top:4px}
+.lempty{padding:20px 12px;text-align:center;color:var(--dim);font-size:12.5px}
+.ladd{padding:10px 12px;border-top:1px solid var(--rule);position:relative}
+.lsearch{width:100%;background:var(--ink);border:1px solid var(--rule);border-radius:7px;padding:9px 11px;font-size:13px}
+.lsearch:focus{border-color:var(--wr);outline:none}
+.lres{margin-top:6px}
+.lhit{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:6px 8px;border-radius:7px;font-size:13px}
+.lhit:hover{background:var(--surface2)}
+.lhit .por{width:28px;height:28px;border-width:1.5px}
+.lhit .por .ini{font-size:10px}
+.lhit em{display:block;font-style:normal;font-size:10.5px;color:var(--dim);font-family:'IBM Plex Mono',monospace}
+.lhit.none{color:var(--dim);font-size:12px;padding:8px}
 .veil{position:fixed;inset:0;background:rgba(8,10,13,.88);display:none;align-items:center;justify-content:center;padding:20px;z-index:60}
 .veil.show{display:flex}
 .sheet{background:var(--surface);border:1px solid var(--rule2);border-radius:14px;max-width:880px;width:100%;max-height:88vh;overflow:auto}
@@ -150,6 +209,7 @@ footer a{color:var(--mid)}
     <div class="seg" id="viewSeg">
       <button data-v="players" class="on">Players</button>
       <button data-v="finder">Stat finder</button>
+      <button data-v="leagues">My leagues</button>
     </div>
     <div class="grow"></div>
     <select class="ctl" id="seasonSel"><option value="2026">2026 season</option><option value="2025">2025 season</option></select>
@@ -164,6 +224,7 @@ footer a{color:var(--mid)}
 <main>
   <div id="view-players"></div>
   <div id="view-finder" style="display:none"></div>
+  <div id="view-leagues" style="display:none"></div>
 </main>
 <footer>
   <div>Snap Count — active-roster offensive players and kickers, every week of the season.</div>
@@ -200,7 +261,7 @@ let loaded=false;
 /* ---------- data loading ---------- */
 async function boot(){
   P=PLAYERS; W=WK;
-  reindex(); loaded=true; loadPrefs(); render();      // paint immediately from the bundle
+  reindex(); loaded=true; loadPrefs(); loadLeagues(); render();   // paint immediately from the bundle
   if(!DATA_BASE){ note("Bundled snapshot — set DATA_BASE for weekly auto-refresh"); return; }
   // Then refresh in the background, and only pull files that actually changed.
   try{
@@ -516,6 +577,193 @@ function renderFinder(){
   host.querySelectorAll("tbody tr").forEach(tr=>tr.onclick=()=>openSheet(tr.dataset.id));
 }
 
+/* =================== My leagues =================== */
+const LS_L="snapcount.leagues";
+let leagues=[], leagueWeek={};          // leagueWeek[id] = week being viewed
+const SLOT_KEYS=["QB","RB","WR","TE","FLEX","K"];
+const FLEX_OK=["RB","WR","TE"];
+
+function loadLeagues(){
+  try{ const v=JSON.parse(localStorage.getItem(LS_L)||"[]"); if(Array.isArray(v)) leagues=v; }catch(e){}
+}
+function saveLeagues(){
+  const dot=document.getElementById("saveDot"); dot.className="savedot busy";
+  try{ localStorage.setItem(LS_L,JSON.stringify(leagues)); dot.className="savedot on"; dot.title="Leagues saved in this browser"; }
+  catch(e){ dot.className="savedot err"; dot.title="Couldn't save leagues"; }
+}
+function newLeague(){
+  return {id:"L"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+          name:"League "+(leagues.length+1), scoring:"ppr",
+          slots:{QB:1,RB:2,WR:2,TE:1,FLEX:1,K:1}, roster:[]};
+}
+// points for one stat line under an explicit scoring mode
+function fpMode(r,mode){
+  return mode==="ppr"?r[C.ppr] : mode==="std"?r[C.std] : Math.round((r[C.ppr]+r[C.std])/2*10)/10;
+}
+/* Optimal lineup for one week: fill dedicated slots with the best at each
+   position, then FLEX takes the best remaining RB/WR/TE. */
+function lineupFor(lg,wk){
+  const pool=[];
+  for(const pid of lg.roster){
+    const p=P[pid]; if(!p) continue;
+    const row=logOf(pid).find(r=>r[C.wk]===wk);
+    pool.push({pid,pos:p.p,pts:row?fpMode(row,lg.scoring):0,played:!!row});
+  }
+  const used=new Set(), start=[];
+  for(const slot of SLOT_KEYS){
+    const n=lg.slots[slot]||0;
+    for(let i=0;i<n;i++){
+      const ok=c=>slot==="FLEX"?FLEX_OK.includes(c.pos):c.pos===slot;
+      const best=pool.filter(c=>!used.has(c.pid)&&ok(c)).sort((a,b)=>b.pts-a.pts)[0];
+      if(best){ used.add(best.pid); start.push({slot,...best}); }
+      else start.push({slot,pid:null,pts:0});
+    }
+  }
+  const bench=pool.filter(c=>!used.has(c.pid)).sort((a,b)=>b.pts-a.pts);
+  const total=start.reduce((s,x)=>s+x.pts,0);
+  return {start,bench,total};
+}
+function leagueSeason(lg){
+  const wks=weeksIn(season);
+  const byWeek=wks.map(w=>({w,total:lineupFor(lg,w).total}));
+  const played=byWeek.filter(x=>x.total>0);
+  const total=byWeek.reduce((s,x)=>s+x.total,0);
+  // best / worst single starter performance across the season
+  let best=null,worst=null;
+  for(const w of wks){
+    for(const s of lineupFor(lg,w).start){
+      if(!s.pid||!s.played) continue;
+      if(!best||s.pts>best.pts) best={...s,w};
+      if(!worst||s.pts<worst.pts) worst={...s,w};
+    }
+  }
+  return {byWeek,total,ppg:played.length?total/played.length:0,weeksPlayed:played.length,best,worst};
+}
+function renderLeagues(){
+  const host=document.getElementById("view-leagues");
+  const wks=weeksIn(season);
+  if(!leagues.length){
+    host.innerHTML='<div class="empty" style="padding:56px 20px">'
+      +'<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:24px;color:var(--chalk);margin-bottom:8px">No leagues yet</div>'
+      +'<div style="margin-bottom:18px">Add a card for each league you play in. Every card keeps its own scoring and roster slots.</div>'
+      +'<button class="ctl" id="addLg" style="font-size:14px;padding:10px 18px">+ Add a league</button></div>';
+    document.getElementById("addLg").onclick=()=>{ leagues.push(newLeague()); saveLeagues(); renderLeagues(); };
+    return;
+  }
+  let h='<div class="bar"><span class="count" style="margin:0">'+leagues.length+' league'+(leagues.length===1?'':'s')+' · '+season+'</span>'
+    +'<div class="grow"></div><button class="ctl" id="addLg">+ Add league</button></div><div class="lgrid">';
+  for(const lg of leagues){
+    const wk=leagueWeek[lg.id]||(wks.length?wks[wks.length-1]:0);
+    const lu=wks.length?lineupFor(lg,wk):{start:[],bench:[],total:0};
+    const ss=leagueSeason(lg);
+    const maxW=Math.max(...ss.byWeek.map(x=>x.total),1);
+    h+='<div class="lcard" data-lg="'+lg.id+'">'
+      +'<div class="lhead"><input class="lname" data-name="'+lg.id+'" value="'+lg.name.replace(/"/g,"&quot;")+'" spellcheck="false">'
+      +'<button class="lbtn" data-cfg="'+lg.id+'" title="League settings">⚙</button>'
+      +'<button class="lbtn" data-del="'+lg.id+'" title="Delete league">✕</button></div>';
+    // settings drawer
+    if(lg.open) h+='<div class="lcfg"><div class="flab">Scoring</div><div class="frow">'
+      +'<select data-sc="'+lg.id+'">'+[["ppr","Full PPR"],["half","Half PPR"],["std","Standard"]].map(([v,l])=>'<option value="'+v+'" '+(lg.scoring===v?'selected':'')+'>'+l+'</option>').join('')+'</select></div>'
+      +'<div class="flab" style="margin-top:10px">Starting slots</div><div class="slotgrid">'
+      +SLOT_KEYS.map(k=>'<label class="slotf"><span>'+k+'</span><input type="number" min="0" max="4" value="'+(lg.slots[k]||0)+'" data-slot="'+lg.id+'|'+k+'"></label>').join('')
+      +'</div><div class="lnote">Team defenses aren\'t in the stats feed yet, so there\'s no D/ST slot.</div></div>';
+    // KPIs
+    h+='<div class="lkpis">'
+      +'<div class="lkpi"><b>'+lu.total.toFixed(1)+'</b><span>week '+wk+'</span></div>'
+      +'<div class="lkpi"><b>'+ss.total.toFixed(0)+'</b><span>season</span></div>'
+      +'<div class="lkpi"><b>'+ss.ppg.toFixed(1)+'</b><span>ppg</span></div>'
+      +'<div class="lkpi"><b>'+lg.roster.length+'</b><span>rostered</span></div></div>';
+    // weekly chart
+    if(wks.length){
+      h+='<div class="lchart">'+ss.byWeek.map(x=>'<div class="lbar'+(x.w===wk?' on':'')+'" data-jump="'+lg.id+'|'+x.w+'" title="Week '+x.w+': '+x.total.toFixed(1)+'">'
+        +'<i style="height:'+Math.max(2,Math.round(x.total/maxW*46))+'px"></i><span>'+x.w+'</span></div>').join('')+'</div>';
+    }
+    // callouts
+    if(ss.best) h+='<div class="lcall"><span class="up">▲ '+P[ss.best.pid].n+' '+ss.best.pts.toFixed(1)+' <em>wk '+ss.best.w+'</em></span>'
+      +(ss.worst?'<span class="dn">▼ '+P[ss.worst.pid].n+' '+ss.worst.pts.toFixed(1)+' <em>wk '+ss.worst.w+'</em></span>':'')+'</div>';
+    // lineup
+    if(!lg.roster.length){
+      h+='<div class="lempty">No players yet — search below to build your roster.</div>';
+    }else{
+      h+='<div class="lineup">';
+      for(const s of lu.start){
+        h+='<div class="lrow">'+'<span class="lslot '+(s.slot==="FLEX"?"flex":"")+'">'+s.slot+'</span>'
+          +(s.pid?por(s.pid,"sm")+'<span class="lnm" data-open="'+s.pid+'">'+P[s.pid].n+'<em>'+P[s.pid].p+' · '+P[s.pid].t+'</em></span>'
+                 +'<span class="lpts'+(s.played?'':' dnp')+'">'+(s.played?s.pts.toFixed(1):'–')+'</span>'
+                 +'<button class="lx" data-drop="'+lg.id+'|'+s.pid+'" title="Remove">✕</button>'
+            : '<span class="lnm empty">empty</span><span class="lpts dnp">–</span>')
+          +'</div>';
+      }
+      if(lu.bench.length){
+        h+='<div class="lbench">Bench</div>';
+        for(const b of lu.bench){
+          h+='<div class="lrow bench"><span class="lslot bn">BN</span>'+por(b.pid,"sm")
+            +'<span class="lnm" data-open="'+b.pid+'">'+P[b.pid].n+'<em>'+P[b.pid].p+' · '+P[b.pid].t+'</em></span>'
+            +'<span class="lpts'+(b.played?'':' dnp')+'">'+(b.played?b.pts.toFixed(1):'–')+'</span>'
+            +'<button class="lx" data-drop="'+lg.id+'|'+b.pid+'" title="Remove">✕</button></div>';
+        }
+      }
+      h+='</div>';
+    }
+    // add player
+    h+='<div class="ladd"><input class="lsearch" data-add="'+lg.id+'" placeholder="Add a player…" autocomplete="off">'
+      +'<div class="lres" id="res-'+lg.id+'"></div></div>';
+    h+='</div>';
+  }
+  h+='</div>';
+  host.innerHTML=h;
+  wireLeagues(host,wks);
+}
+function wireLeagues(host,wks){
+  const L=id=>leagues.find(x=>x.id===id);
+  const add=document.getElementById("addLg");
+  if(add) add.onclick=()=>{ leagues.push(newLeague()); saveLeagues(); renderLeagues(); };
+  host.querySelectorAll("[data-name]").forEach(el=>{
+    el.onchange=()=>{ const lg=L(el.dataset.name); lg.name=el.value.trim()||"Untitled league"; saveLeagues(); };
+    el.onkeydown=e=>{ if(e.key==="Enter") el.blur(); };
+  });
+  host.querySelectorAll("[data-cfg]").forEach(b=>b.onclick=()=>{ const lg=L(b.dataset.cfg); lg.open=!lg.open; renderLeagues(); });
+  host.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
+    const lg=L(b.dataset.del);
+    if(confirm('Delete "'+lg.name+'"? This can\'t be undone.')){ leagues=leagues.filter(x=>x.id!==lg.id); saveLeagues(); renderLeagues(); }
+  });
+  host.querySelectorAll("[data-sc]").forEach(s=>s.onchange=()=>{ L(s.dataset.sc).scoring=s.value; saveLeagues(); renderLeagues(); });
+  host.querySelectorAll("[data-slot]").forEach(inp=>inp.onchange=()=>{
+    const [id,k]=inp.dataset.slot.split("|");
+    L(id).slots[k]=Math.max(0,Math.min(4,+inp.value||0)); saveLeagues(); renderLeagues();
+  });
+  host.querySelectorAll("[data-jump]").forEach(b=>b.onclick=()=>{
+    const [id,w]=b.dataset.jump.split("|"); leagueWeek[id]=+w; renderLeagues();
+  });
+  host.querySelectorAll("[data-drop]").forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    const [id,pid]=b.dataset.drop.split("|");
+    const lg=L(id); lg.roster=lg.roster.filter(x=>x!==pid); saveLeagues(); renderLeagues();
+  });
+  host.querySelectorAll("[data-open]").forEach(el=>el.onclick=()=>openSheet(el.dataset.open));
+  host.querySelectorAll("[data-add]").forEach(inp=>{
+    const id=inp.dataset.add, res=document.getElementById("res-"+id);
+    let t;
+    const draw=()=>{
+      const s=inp.value.trim().toLowerCase();
+      if(!s){ res.innerHTML=""; return; }
+      const lg=L(id);
+      const hits=Object.keys(P).filter(pid=>!lg.roster.includes(pid)&&
+        (P[pid].n.toLowerCase().includes(s)||P[pid].t.toLowerCase().includes(s))).slice(0,6);
+      res.innerHTML=hits.length
+        ? hits.map(pid=>'<button class="lhit" data-pick="'+id+'|'+pid+'">'+por(pid,"sm")
+            +'<span>'+P[pid].n+'<em>'+P[pid].p+' · '+P[pid].t+'</em></span></button>').join('')
+        : '<div class="lhit none">No active player matches.</div>';
+      res.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{
+        const [lid,pid]=b.dataset.pick.split("|");
+        const lg2=L(lid); if(!lg2.roster.includes(pid)) lg2.roster.push(pid);
+        saveLeagues(); renderLeagues();
+      });
+    };
+    inp.oninput=()=>{ clearTimeout(t); t=setTimeout(draw,140); };
+  });
+}
+
 /* =================== Player sheet =================== */
 function openSheet(pid){
   const p=P[pid]; if(!p) return;
@@ -584,7 +832,7 @@ function loadPrefs(){
     const s=JSON.parse(localStorage.getItem(LS)||"{}");
     if(s.season&&[2026,2025].includes(+s.season)) season=+s.season;
     if(["ppr","half","std"].includes(s.scoring)) scoring=s.scoring;
-    if(["players","finder"].includes(s.view)) view=s.view;
+    if(["players","finder","leagues"].includes(s.view)) view=s.view;
     if(s.posF) posF=s.posF; if(s.teamF) teamF=s.teamF; if(s.weekF) weekF=s.weekF;
     if(Array.isArray(s.filters)) filters=s.filters;
     if(s.sortKey) sortKey=s.sortKey; if(s.sortDir) sortDir=s.sortDir;
@@ -600,7 +848,10 @@ function render(){
   document.getElementById("seasonTag").textContent=season;
   document.getElementById("view-players").style.display=view==="players"?"":"none";
   document.getElementById("view-finder").style.display=view==="finder"?"":"none";
-  if(view==="players") renderPlayers(); else renderFinder();
+  document.getElementById("view-leagues").style.display=view==="leagues"?"":"none";
+  if(view==="players") renderPlayers();
+  else if(view==="finder") renderFinder();
+  else renderLeagues();
 }
 document.getElementById("viewSeg").addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
