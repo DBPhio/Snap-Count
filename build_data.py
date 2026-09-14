@@ -50,13 +50,18 @@ def build_weekly(season, valid):
         rec=i(r['receptions'])
         ppr=f(r['fantasy_points_ppr']) or kick
         std=f(r['fantasy_points']) or kick
+        # offensive fumbles only — fumbles_lost_total also counts return fumbles,
+        # which conventional fantasy scoring doesn't charge to the player
+        fumlost=i(r.get('sack_fumbles_lost',0))+i(r.get('rushing_fumbles_lost',0))+i(r.get('receiving_fumbles_lost',0))
+        two=i(r.get('passing_2pt_conversions',0))+i(r.get('rushing_2pt_conversions',0))+i(r.get('receiving_2pt_conversions',0))
+        sptd=i(r.get('special_teams_tds',0))
         row=[gid,i(r['week']),r['team'],r['opponent_team'],
              i(r['completions']),i(r['attempts']),i(r['passing_yards']),i(r['passing_tds']),i(r['passing_interceptions']),
              i(r['carries']),i(r['rushing_yards']),i(r['rushing_tds']),
              i(r['targets']),rec,i(r['receiving_yards']),i(r['receiving_tds']),
-             i(r['fumbles_lost_total']),i(r['fg_made']),i(r['pat_made']),
-             round(std,1),round(ppr,1)]
-        if any(row[4:19]): out.append(row)
+             fumlost,i(r['fg_made']),i(r['pat_made']),
+             round(std,1),round(ppr,1),sptd,two]
+        if any(row[4:19]) or sptd or two or fumlost: out.append(row)
     return out
 
 if __name__=="__main__":
@@ -71,5 +76,5 @@ if __name__=="__main__":
         json.dump({"season":s,"rows":wk},open(f"{OUT}/weekly_{s}.json","w"),separators=(',',':'))
         weeks=sorted(set(r[1] for r in wk))
         print(f"  {len(wk)} stat lines, weeks {weeks[:1]}–{weeks[-1:]}",file=sys.stderr)
-    meta={"built":__import__("datetime").datetime.utcnow().isoformat()+"Z","seasons":SEASONS,"players":len(players)}
+    meta={"built":__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),"seasons":SEASONS,"players":len(players)}
     json.dump(meta,open(f"{OUT}/meta.json","w"))
