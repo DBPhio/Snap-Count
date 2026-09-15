@@ -19,8 +19,10 @@ def i(v): return int(round(f(v)))
 def build_players():
     rows=list(csv.DictReader(get(f"{BASE}/rosters/roster_2026.csv")))
     out={}
+    KEEP={'ACT':'','RES':'IR','INA':'INA','PUP':'PUP','NON':'NFI'}
     for r in rows:
-        if r.get('status')!='ACT': continue
+        st=r.get('status','')
+        if st not in KEEP: continue
         pos=r.get('position','')
         if pos not in OFF: continue
         gid=r.get('gsis_id','').strip()
@@ -34,6 +36,7 @@ def build_players():
           "h":r.get('headshot_url','').strip(),
           "c":r.get('college','').strip(),
           "y":r.get('years_exp','').split('.')[0],
+          "s":KEEP[st],                      # "" = active, else IR / PUP / INA
         }
     return out
 
@@ -64,6 +67,40 @@ def build_weekly(season, valid):
         if any(row[4:19]) or sptd or two or fumlost: out.append(row)
     return out
 
+DST_ROW_DOC = """DST weekly row:
+[team, week, opp, pts_allowed, yds_allowed, sacks, ints, fum_rec, def_tds, safeties, st_tds]"""
+def build_dst(seasons):
+    # game scores -> points allowed
+    scores={}
+    try:
+        for g in csv.DictReader(get("https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv")):
+            if g.get('game_type')!='REG': continue
+            try: s,w=int(g['season']),int(g['week'])
+            except: continue
+            if g.get('home_score') in ('','NA',None): continue
+            scores[(s,w,g['home_team'])]=f(g['away_score'])
+            scores[(s,w,g['away_team'])]=f(g['home_score'])
+    except Exception as e:
+        print("  score fetch failed:",e,file=sys.stderr)
+    out={}
+    for season in seasons:
+        rows=[]
+        try: data=list(csv.DictReader(get(f"{BASE}/stats_team/stats_team_week_{season}.csv")))
+        except Exception as e:
+            print("  skip dst",season,e,file=sys.stderr); out[season]=[]; continue
+        for r in data:
+            if r.get('season_type')!='REG': continue
+            tm,wk=r['team'],i(r['week'])
+            pa=scores.get((season,wk,tm))
+            yds=f(r.get('passing_yards',0))+f(r.get('rushing_yards',0))
+            rows.append([tm,wk,r.get('opponent_team',''),
+                         -1 if pa is None else i(pa), i(yds),
+                         i(r.get('def_sacks',0)), i(r.get('def_interceptions',0)),
+                         i(r.get('fumble_recovery_opp',0)), i(r.get('def_tds',0)),
+                         i(r.get('def_safeties',0)), i(r.get('special_teams_tds',0))])
+        out[season]=rows
+    return out
+
 if __name__=="__main__":
     os.makedirs(OUT,exist_ok=True)
     print("building players…",file=sys.stderr)
@@ -76,5 +113,10 @@ if __name__=="__main__":
         json.dump({"season":s,"rows":wk},open(f"{OUT}/weekly_{s}.json","w"),separators=(',',':'))
         weeks=sorted(set(r[1] for r in wk))
         print(f"  {len(wk)} stat lines, weeks {weeks[:1]}–{weeks[-1:]}",file=sys.stderr)
+    print("building team defenses…",file=sys.stderr)
+    dst=build_dst(SEASONS)
+    for s in SEASONS:
+        json.dump({"season":s,"rows":dst[s]},open(f"{OUT}/dst_{s}.json","w"),separators=(',',':'))
+        print(f"  {s}: {len(dst[s])} defense lines",file=sys.stderr)
     meta={"built":__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),"seasons":SEASONS,"players":len(players)}
     json.dump(meta,open(f"{OUT}/meta.json","w"))
