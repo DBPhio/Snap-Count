@@ -188,6 +188,31 @@ button.lslot:hover{border-color:var(--chalk);color:var(--chalk)}
 .sflag{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--qb);border:1px solid color-mix(in srgb,var(--qb) 45%,transparent);border-radius:3px;padding:0 3px;vertical-align:1px;margin-left:4px}
 .mnl{color:var(--wr);font-weight:600}
 .resetwk{float:right;font-size:10px;font-family:'IBM Plex Mono',monospace;padding:0 4px}
+.ltr{color:transparent;font-size:12px;padding:2px 4px}
+.lrow:hover .ltr{color:var(--wr)}
+.ltr:hover{color:var(--chalk)}
+.sigbox{display:flex;flex-direction:column;gap:5px;padding:13px 15px;border-radius:10px;border:1px solid var(--rule);background:var(--ink)}
+.sigbox b{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:600}
+.sigbox span{font-size:13px;color:var(--mid);line-height:1.5}
+.sigbox.sell{border-color:color-mix(in srgb,var(--h3) 55%,transparent)} .sigbox.sell b{color:var(--h3)}
+.sigbox.buy{border-color:color-mix(in srgb,var(--good) 55%,transparent)} .sigbox.buy b{color:var(--good)}
+.sigbox.volatile b{color:var(--te)} .sigbox.steady b{color:var(--mid)} .sigbox.thin b{color:var(--dim)}
+.shape{display:flex;flex-direction:column;gap:7px}
+.shrow{display:flex;align-items:center;gap:10px}
+.shbar{flex:1;height:7px;background:var(--ink);border-radius:4px;overflow:hidden;border:1px solid var(--rule)}
+.shbar i{display:block;height:100%;background:var(--mid)}
+.shrow.surplus .shbar i{background:var(--good)} .shrow.need .shbar i{background:var(--qb)}
+.shnum{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--mid);min-width:58px;text-align:right}
+.shtag{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);min-width:56px;text-align:right}
+.shrow.surplus .shtag{color:var(--good)} .shrow.need .shtag{color:var(--qb)}
+.tgtlist{display:flex;flex-direction:column;gap:2px}
+.tgt{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:9px;cursor:pointer}
+.tgt:hover{background:var(--surface2)}
+.tgtmain{flex:1;min-width:0}
+.tgtn{font-size:13.5px;font-weight:600}
+.tgtm{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);margin-top:2px}
+.tgtv{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;min-width:52px;text-align:right}
+.fills{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--good);border:1px solid color-mix(in srgb,var(--good) 45%,transparent);border-radius:3px;padding:1px 4px;vertical-align:1px}
 .lbench{padding:8px 12px 4px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);border-top:1px solid var(--rule);margin-top:4px}
 .lempty{padding:20px 12px;text-align:center;color:var(--dim);font-size:12.5px}
 .lsearch{width:100%;background:var(--ink);border:1px solid var(--rule);border-radius:7px;padding:9px 11px;font-size:13px}
@@ -642,7 +667,7 @@ function saveLeagues(){
 function newLeague(){
   return {id:"L"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
           name:"League "+(leagues.length+1), score:defScore(),
-          slots:{QB:1,RB:2,WR:2,TE:1,FLEX:1,K:1,DST:1}, roster:[], lineup:{}};
+          slots:{QB:1,RB:2,WR:2,TE:1,FLEX:1,K:1,DST:1}, teams:12, roster:[], lineup:{}};
 }
 /* Fully custom scoring. Every league stores its own point values and the
    totals are derived from raw stat components, not the precomputed columns. */
@@ -707,6 +732,7 @@ function migrate(lg){
   for(const f of [...SCORE_FIELDS,...BONUS_FIELDS,...DST_FIELDS]) if(lg.score[f.k]===undefined) lg.score[f.k]=PRESETS_SC.ppr[f.k]||0;
   if(lg.score.dpa===undefined) lg.score.dpa=1;
   if(lg.slots.DST===undefined) lg.slots.DST=0;
+  if(!lg.teams) lg.teams=12;
   if(!lg.lineup) lg.lineup={};
   return lg;
 }
@@ -839,6 +865,9 @@ function renderLeagues(){
       +DST_FIELDS.map(f=>'<label class="scf"><span>'+f.label+'</span><input type="number" step="'+f.step+'" value="'+(+lg.score[f.k]||0)+'" data-sc="'+lg.id+'|'+f.k+'"></label>').join('')
       +'<label class="scf"><span>Pts-allowed ×</span><input type="number" step="0.5" value="'+(lg.score.dpa===undefined?1:+lg.score.dpa)+'" data-sc="'+lg.id+'|dpa"></label>'
       +'</div>'
+      +'<div class="flab" style="margin-top:12px">Teams in league</div><div class="frow">'
+      +'<input type="number" min="4" max="20" value="'+(lg.teams||12)+'" data-teams="'+lg.id+'" style="max-width:90px">'
+      +'<span class="lnote" style="margin:0;flex:1">Sets replacement level for trade values.</span></div>'
       +'<div class="flab" style="margin-top:12px">Starting slots</div><div class="slotgrid">'
       +SLOT_KEYS.map(k=>'<label class="slotf"><span>'+k+'</span><input type="number" min="0" max="4" value="'+(lg.slots[k]||0)+'" data-slot="'+lg.id+'|'+k+'"></label>').join('')
       +'</div><div class="lnote">Points-allowed tiers follow the standard ladder (0 pts allowed = 10, 1–6 = 7, 7–13 = 4, 14–20 = 1, 21–27 = 0, 28–34 = −1, 35+ = −4); the multiplier scales all of them. Field goals score a flat rate rather than by distance.</div></div>';
@@ -872,7 +901,8 @@ function renderLeagues(){
                  +'<span class="lnm" data-open="'+s.pid+'">'+P[s.pid].n+statusTag(s.pid)+'<em>'+P[s.pid].p+' · '+P[s.pid].t+(s.manual?' · <b class="mnl">set</b>':'')+'</em></span>'
                  +'<span class="lpts'+(s.played?'':' dnp')+'">'+(s.played?s.pts.toFixed(1):'–')+'</span>'
                  +(eligible?'<button class="swapin" data-swap-to="'+lg.id+'|'+sw.slotIdx+'|'+s.pid+'">swap</button>'
-                           :'<button class="lx" data-drop="'+lg.id+'|'+s.pid+'" title="Remove">✕</button>')
+                           :'<button class="ltr" data-trade="'+lg.id+'|'+s.pid+'" title="Trade value">⇄</button>'
+                            +'<button class="lx" data-drop="'+lg.id+'|'+s.pid+'" title="Remove">✕</button>')
             : '<span class="lnm empty">empty</span><span class="lpts dnp">–</span>')
           +'</div>';
       });
@@ -895,6 +925,7 @@ function renderLeagues(){
           h+='<div class="lrow bench"><span class="lslot bn">BN</span>'+por(b.pid,"sm")
             +'<span class="lnm" data-open="'+b.pid+'">'+P[b.pid].n+statusTag(b.pid)+'<em>'+P[b.pid].p+' · '+P[b.pid].t+'</em></span>'
             +'<span class="lpts'+(b.played?'':' dnp')+'">'+(b.played?b.pts.toFixed(1):'–')+'</span>'
+            +'<button class="ltr" data-trade="'+lg.id+'|'+b.pid+'" title="Trade value">⇄</button>'
             +'<button class="lx" data-drop="'+lg.id+'|'+b.pid+'" title="Remove">✕</button></div>';
         }
       }
@@ -923,11 +954,11 @@ function wireLeagues(host,wks){
     const [id,k]=inp.dataset.sc.split("|");
     const v=parseFloat(inp.value);
     L(id).score[k]=isNaN(v)?0:v;
-    saveLeagues(); renderLeagues();
+    _valCache=new Map(); saveLeagues(); renderLeagues();
   });
   host.querySelectorAll("[data-preset2]").forEach(b=>b.onclick=()=>{
     const [id,k]=b.dataset.preset2.split("|");
-    L(id).score={...PRESETS_SC[k]}; saveLeagues(); renderLeagues();
+    L(id).score={...PRESETS_SC[k]}; _valCache=new Map(); saveLeagues(); renderLeagues();
   });
   host.querySelectorAll("[data-slot]").forEach(inp=>inp.onchange=()=>{
     const [id,k]=inp.dataset.slot.split("|");
@@ -947,6 +978,15 @@ function wireLeagues(host,wks){
     const cur=swapping[id];
     swapping = (cur&&cur.slotIdx===+i) ? {} : {[id]:{slotIdx:+i}};
     renderLeagues();
+  });
+  host.querySelectorAll("[data-trade]").forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    const [id,pid]=b.dataset.trade.split("|");
+    openTrade(id,pid);
+  });
+  host.querySelectorAll("[data-teams]").forEach(inp=>inp.onchange=()=>{
+    L(inp.dataset.teams).teams=Math.max(4,Math.min(20,+inp.value||12));
+    _valCache=new Map(); saveLeagues(); renderLeagues();
   });
   host.querySelectorAll("[data-swap-cancel]").forEach(b=>b.onclick=()=>{ swapping={}; renderLeagues(); });
   host.querySelectorAll("[data-swap-to]").forEach(b=>b.onclick=()=>{
@@ -981,6 +1021,153 @@ function wireLeagues(host,wks){
     };
     inp.oninput=()=>{ clearTimeout(t); t=setTimeout(draw,140); };
   });
+}
+
+/* =================== Trade finder =================== */
+/* Value is production-based, not a projection: it blends 2025 and 2026 with
+   recent games weighted heavier, then measures each player against the
+   replacement level at his own position so positions can be compared. */
+const HALF_LIFE=7;                       // games; weight halves every 7 back
+const FLEX_SHARE={RB:.5,WR:.35,TE:.15};
+let _valCache=new Map();
+function scoreSig(lg){ return JSON.stringify(lg.score)+"|"+(lg.teams||12)+"|"+JSON.stringify(lg.slots); }
+
+function gameStream(pid,sc){
+  // oldest → newest across both seasons
+  const out=[];
+  for(const s of [2025,2026]){
+    const rows=pid.startsWith("DST_")?dstLog(pid,s):logOf(pid,s);
+    for(const r of rows){
+      const wk=pid.startsWith("DST_")?r[D.wk]:r[C.wk];
+      out.push({season:s,wk,pts:pid.startsWith("DST_")?scoreDst(r,sc):scoreRow(r,sc)});
+    }
+  }
+  return out;
+}
+function pct(sorted,p){
+  if(!sorted.length) return 0;
+  const i=(sorted.length-1)*p, lo=Math.floor(i), hi=Math.ceil(i);
+  return sorted[lo]+(sorted[hi]-sorted[lo])*(i-lo);
+}
+function playerValue(pid,sc){
+  const g=gameStream(pid,sc);
+  if(!g.length) return {games:0,wppg:0,ppg:0,floor:0,ceil:0,cv:1,trend:0,recent:0};
+  let wsum=0,w=0;
+  g.forEach((x,i)=>{ const back=g.length-1-i, k=Math.pow(.5,back/HALF_LIFE); wsum+=x.pts*k; w+=k; });
+  const wppg=w?wsum/w:0;
+  const vals=g.map(x=>x.pts), sorted=[...vals].sort((a,b)=>a-b);
+  const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
+  const sd=Math.sqrt(vals.reduce((a,b)=>a+(b-mean)*(b-mean),0)/vals.length);
+  const last=g.slice(-3), recent=last.reduce((a,b)=>a+b.pts,0)/last.length;
+  return {games:g.length, wppg, ppg:mean,
+          floor:pct(sorted,.25), ceil:pct(sorted,.8),
+          cv:mean>0?sd/mean:1, recent,
+          trend:wppg>0?(recent-wppg)/wppg:0,
+          lastSeason:g.filter(x=>x.season===2025).length,
+          thisSeason:g.filter(x=>x.season===2026).length};
+}
+function valueModel(lg){
+  const sig=scoreSig(lg);
+  const hit=_valCache.get(sig); if(hit) return hit;
+  const teams=lg.teams||12;
+  const vals={};
+  for(const pid in P) vals[pid]=playerValue(pid,lg.score);
+  // replacement level per position
+  const repl={};
+  for(const pos of ["QB","RB","WR","TE","K","DST"]){
+    const starters=(lg.slots[pos]||0)+(FLEX_OK.includes(pos)?(lg.slots.FLEX||0)*FLEX_SHARE[pos]:0);
+    const rank=Math.max(1,Math.round(teams*starters));
+    const pool=Object.keys(P).filter(id=>P[id].p===pos&&vals[id].games>=2)
+      .map(id=>vals[id].wppg).sort((a,b)=>b-a);
+    repl[pos]=pool.length?pool[Math.min(rank,pool.length-1)]:0;
+  }
+  for(const pid in P) vals[pid].vor=vals[pid].wppg-(repl[P[pid].p]||0);
+  const out={vals,repl,teams};
+  _valCache.set(sig,out);
+  return out;
+}
+function signalOf(v){
+  if(v.games<3) return {k:"thin",label:"Not enough games",note:"Fewer than three games on record — value here is unreliable."};
+  if(v.trend>=.25) return {k:"sell",label:"Sell high",note:"Last three games are running "+Math.round(v.trend*100)+"% above his own baseline. If you doubt the role changed, this is the window to move him."};
+  if(v.trend<=-.25) return {k:"buy",label:"Buy low",note:"Last three games are "+Math.round(Math.abs(v.trend)*100)+"% below his baseline. Cheaper now than his body of work says he's worth."};
+  if(v.cv>=.75) return {k:"volatile",label:"Volatile",label2:true,note:"Week-to-week swings are wide — his ceiling sells better than his floor plays."};
+  return {k:"steady",label:"Holding value",note:"Recent form is in line with his baseline. No obvious discount or premium right now."};
+}
+function rosterShape(lg,model){
+  const out={};
+  for(const pos of ["QB","RB","WR","TE","K","DST"]){
+    const mine=lg.roster.filter(id=>P[id]&&P[id].p===pos)
+      .map(id=>({id,v:model.vals[id]})).sort((a,b)=>b.v.wppg-a.v.wppg);
+    const need=(lg.slots[pos]||0)+(FLEX_OK.includes(pos)?(lg.slots.FLEX||0)*FLEX_SHARE[pos]:0);
+    const startable=mine.filter(m=>m.v.wppg>=(model.repl[pos]||0)).length;
+    out[pos]={count:mine.length,need:Math.round(need*10)/10,startable,
+              state: startable-need>=1 ? "surplus" : (startable<Math.floor(need)||!mine.length ? "need" : "set"),
+              top:mine.slice(0,3)};
+  }
+  return out;
+}
+function tradeTargets(lg,pid,model,shape){
+  const v=model.vals[pid];
+  const band=Math.max(1.5,Math.abs(v.vor)*0.35);
+  const needPos=Object.keys(shape).filter(p=>shape[p].state==="need");
+  const cands=Object.keys(P).filter(id=>{
+    if(id===pid||lg.roster.includes(id)) return false;
+    const c=model.vals[id];
+    if(c.games<3) return false;
+    return Math.abs(c.vor-v.vor)<=band;
+  }).map(id=>({id,v:model.vals[id],fills:needPos.includes(P[id].p)}));
+  cands.sort((a,b)=>(b.fills-a.fills)||(b.v.vor-a.v.vor));
+  return cands.slice(0,12);
+}
+function openTrade(lgId,pid){
+  const lg=leagues.find(x=>x.id===lgId); if(!lg||!P[pid]) return;
+  const model=valueModel(lg), v=model.vals[pid], shape=rosterShape(lg,model), sig=signalOf(v);
+  const targets=tradeTargets(lg,pid,model,shape);
+  const p=P[pid];
+  const fmt=n=>(n>=0?"+":"")+n.toFixed(1);
+  let h='<div class="sheet-h">'+por(pid)
+    +'<div><h2>Trade '+p.n+'</h2><div class="sheet-sub"><span class="pos" style="--pc:'+(PC[p.p]||'var(--mid)')+'">'+p.p+'</span>'
+    +'<span>'+p.t+'</span><span>'+lg.name+'</span><span>'+presetName(lg.score)+'</span></div></div>'
+    +'<button class="closeb" id="closeSheet">✕</button></div>';
+  h+='<div class="kpis">'
+    +'<div class="kpi"><b>'+v.wppg.toFixed(1)+'</b><span>weighted ppg</span></div>'
+    +'<div class="kpi"><b style="color:'+(v.vor>=0?'var(--good)':'var(--qb)')+'">'+fmt(v.vor)+'</b><span>vs replacement</span></div>'
+    +'<div class="kpi"><b>'+v.floor.toFixed(1)+'</b><span>floor (25th)</span></div>'
+    +'<div class="kpi"><b>'+v.ceil.toFixed(1)+'</b><span>ceiling (80th)</span></div>'
+    +'<div class="kpi"><b>'+Math.round((1-Math.min(v.cv,1))*100)+'%</b><span>consistency</span></div>'
+    +'<div class="kpi"><b>'+v.games+'</b><span>games used</span></div></div>';
+  h+='<div class="sect"><div class="sigbox '+sig.k+'"><b>'+sig.label+'</b><span>'+sig.note+'</span></div>'
+    +'<div class="lnote" style="margin-top:10px">Built from '+v.lastSeason+' games in 2025 and '+v.thisSeason+' in 2026, with recent games weighted heavier. This measures what he has produced, not what he will produce.</div></div>';
+  // roster shape
+  h+='<div class="sect" style="border-top:1px solid var(--rule)"><h3>Your roster in '+lg.name+'<small>startable vs slots needed</small></h3><div class="shape">';
+  for(const pos of ["QB","RB","WR","TE","K","DST"]){
+    const s=shape[pos]; if(!s.need&&!s.count) continue;
+    h+='<div class="shrow '+s.state+'"><span class="pos" style="--pc:'+(PC[pos]||'var(--mid)')+'">'+pos+'</span>'
+      +'<span class="shbar"><i style="width:'+Math.min(100,(s.startable/Math.max(s.need,1))*100)+'%"></i></span>'
+      +'<span class="shnum">'+s.startable+' / '+s.need+'</span>'
+      +'<span class="shtag">'+(s.state==="surplus"?"surplus":s.state==="need"?"thin":"set")+'</span></div>';
+  }
+  h+='</div></div>';
+  // targets
+  h+='<div class="sect" style="border-top:1px solid var(--rule)"><h3>Comparable value<small>within '+Math.round(Math.max(1.5,Math.abs(v.vor)*0.35)*10)/10+' pts/gm of him</small></h3>';
+  if(!targets.length) h+='<div class="lempty">No comparable players found — try widening your roster or check a different league.</div>';
+  else{
+    h+='<div class="tgtlist">';
+    for(const t of targets){
+      const tv=t.v, tp=P[t.id];
+      h+='<div class="tgt" data-open="'+t.id+'">'+por(t.id,"sm")
+        +'<div class="tgtmain"><div class="tgtn">'+tp.n+statusTag(t.id)+(t.fills?' <span class="fills">fills a hole</span>':'')+'</div>'
+        +'<div class="tgtm"><span class="pos" style="--pc:'+(PC[tp.p]||'var(--mid)')+'">'+tp.p+'</span> '+tp.t
+        +' · '+tv.wppg.toFixed(1)+' ppg · floor '+tv.floor.toFixed(1)+' / ceil '+tv.ceil.toFixed(1)+'</div></div>'
+        +'<div class="tgtv" style="color:'+(tv.vor>=0?'var(--good)':'var(--qb)')+'">'+fmt(tv.vor)+'</div></div>';
+    }
+    h+='</div>';
+  }
+  h+='<div class="lnote" style="margin-top:12px">Comparable value means these players have produced at a similar level above replacement — it is a starting point for an offer, not an endorsement. Snap Count does not know other managers\' rosters yet, so it cannot tell you who is available.</div></div>';
+  document.getElementById("sheet").innerHTML=h;
+  document.getElementById("veil").classList.add("show");
+  document.getElementById("closeSheet").onclick=closeSheet;
+  document.querySelectorAll(".tgt[data-open]").forEach(el=>el.onclick=()=>openSheet(el.dataset.open));
 }
 
 /* =================== Player sheet =================== */
