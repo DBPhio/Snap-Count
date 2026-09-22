@@ -37,6 +37,7 @@ def build_players():
           "c":r.get('college','').strip(),
           "y":r.get('years_exp','').split('.')[0],
           "s":KEEP[st],                      # "" = active, else IR / PUP / INA
+          "pf":r.get('pfr_id','').strip(),
         }
     return out
 
@@ -101,6 +102,72 @@ def build_dst(seasons):
         out[season]=rows
     return out
 
+def build_snaps(seasons, pfr2gsis):
+    """Snap share per player-week, keyed to gsis ids."""
+    out={}
+    for s in seasons:
+        rows=[]
+        try: data=list(csv.DictReader(get(f"{BASE}/snap_counts/snap_counts_{s}.csv")))
+        except Exception as e:
+            print("  skip snaps",s,e,file=sys.stderr); out[s]=[]; continue
+        for r in data:
+            if r.get('game_type')!='REG': continue
+            gid=pfr2gsis.get(r.get('pfr_player_id',''))
+            if not gid: continue
+            try: pctv=float(r.get('offense_pct') or 0)
+            except: pctv=0.0
+            if pctv<=0: continue
+            rows.append([gid,i(r['week']),round(pctv,3),i(r.get('offense_snaps',0))])
+        out[s]=rows
+    return out
+
+def build_injuries(season):
+    """Most recent report status per player this season."""
+    out={}
+    try: data=list(csv.DictReader(get(f"{BASE}/injuries/injuries_{season}.csv")))
+    except Exception as e:
+        print("  skip injuries:",e,file=sys.stderr); return out
+    for r in data:
+        if r.get('season_type')!='REG': continue
+        gid=r.get('gsis_id','').strip()
+        if not gid: continue
+        wk=i(r['week'])
+        st=(r.get('report_status') or '').strip()
+        prev=out.get(gid)
+        if st and (prev is None or wk>=prev[0]): out[gid]=[wk,st]
+    return {k:v for k,v in out.items()}
+
+def build_schedule(seasons):
+    """Per team-week: opponent, Vegas line, implied team total, played flag."""
+    out={s:[] for s in seasons}
+    try: games=list(csv.DictReader(get("https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv")))
+    except Exception as e:
+        print("  schedule fetch failed:",e,file=sys.stderr); return out
+    for g in games:
+        if g.get('game_type')!='REG': continue
+        try: s,w=int(g['season']),int(g['week'])
+        except: continue
+        if s not in out: continue
+        def num(k):
+            v=g.get(k,'')
+            try: return float(v)
+            except: return None
+        tot,spr=num('total_line'),num('spread_line')
+        played=g.get('home_score') not in ('','NA',None)
+        # spread_line is home-relative: positive means the home team is favored
+        for team,opp,home in ((g['home_team'],g['away_team'],1),(g['away_team'],g['home_team'],0)):
+            imp=None
+            if tot is not None and spr is not None:
+                edge=spr/2 if home else -spr/2
+                imp=round(tot/2+edge,2)
+            out[s].append([team,w,opp,home,
+                           -99 if spr is None else (spr if home else -spr),
+                           -1 if tot is None else tot,
+                           -1 if imp is None else imp,
+                           1 if played else 0,
+                           i(g.get('away_rest' if not home else 'home_rest',7))])
+    return out
+
 if __name__=="__main__":
     os.makedirs(OUT,exist_ok=True)
     print("building players…",file=sys.stderr)
@@ -113,6 +180,22 @@ if __name__=="__main__":
         json.dump({"season":s,"rows":wk},open(f"{OUT}/weekly_{s}.json","w"),separators=(',',':'))
         weeks=sorted(set(r[1] for r in wk))
         print(f"  {len(wk)} stat lines, weeks {weeks[:1]}–{weeks[-1:]}",file=sys.stderr)
+    pfr2gsis={v["pf"]:k for k,v in players.items() if v.get("pf")}
+    print("building snap shares…",file=sys.stderr)
+    snaps=build_snaps(SEASONS,pfr2gsis)
+    for s in SEASONS:
+        json.dump({"season":s,"rows":snaps[s]},open(f"{OUT}/snaps_{s}.json","w"),separators=(',',':'))
+        print(f"  {s}: {len(snaps[s])} snap lines",file=sys.stderr)
+    print("building injuries…",file=sys.stderr)
+    inj=build_injuries(2026)
+    json.dump(inj,open(f"{OUT}/injuries.json","w"),separators=(',',':'))
+    print(f"  {len(inj)} players with a report status",file=sys.stderr)
+    print("building schedule…",file=sys.stderr)
+    sched=build_schedule(SEASONS)
+    for s in SEASONS:
+        json.dump({"season":s,"rows":sched[s]},open(f"{OUT}/sched_{s}.json","w"),separators=(',',':'))
+        nxt=[r for r in sched[s] if not r[7]]
+        print(f"  {s}: {len(sched[s])} team-weeks, {len(nxt)} unplayed",file=sys.stderr)
     print("building team defenses…",file=sys.stderr)
     dst=build_dst(SEASONS)
     for s in SEASONS:
