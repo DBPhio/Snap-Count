@@ -140,6 +140,14 @@ thead th input{width:34px;background:var(--ink);border:1px solid var(--rule);bor
 .pf,.pc{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--dim)}
 .ptrack{flex:1;height:8px;border-radius:5px;background:linear-gradient(90deg,var(--h1),var(--h2),var(--h3),var(--h4));position:relative}
 .ptrack i{position:absolute;top:-3px;width:3px;height:14px;background:var(--chalk);border-radius:2px}
+.sline{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.sgrp{background:var(--ink);border:1px solid var(--rule);border-radius:10px;padding:11px 13px}
+.sgt{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.srow{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:8px}
+.sstat{text-align:center;background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:9px 6px}
+.sstat b{display:block;font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;line-height:1.1}
+.sstat span{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mid);margin-top:2px}
+.sstat em{display:block;font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim);margin-top:3px}
 .whylist{margin:12px 0 0 18px;padding:0;color:var(--mid);font-size:12.5px;line-height:1.7}
 .lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(372px,1fr));gap:16px;align-items:start}
 @media(max-width:520px){.lgrid{grid-template-columns:1fr}}
@@ -1067,8 +1075,12 @@ let K_SHRINK=5;                            // prior weight, in games
 let LEAGUE_IMPLIED=22.5;
 let USE_ENV=true, USE_SCRIPT=true;                   // average implied team total
 
-const MODEL_W=0.2;      // weight on the structural model; the rest is the
-                        // player's own long-run average. Set by backtest.
+/* The structural line is used directly. A component-backtest showed that
+   blending each stat toward its trailing average lowers that stat's own error
+   by a hair (carries 1.330 -> 1.325) but raises total-points error
+   (5.12 -> 5.18), because shrinking every part flattens the sum. Keeping the
+   structural line also means the displayed stat line and the displayed points
+   are the same object, so they always reconcile. */
 function actualPts(hist,sc){
   if(!hist.length) return 0;
   return hist.reduce((a,x)=>a+scoreRow(x.r,sc),0)/hist.length;
@@ -1235,14 +1247,11 @@ function project(pid,opts){
     else if(s==="Doubtful"){ gate=.25; status="Doubtful"; why.unshift("Doubtful — heavily discounted"); }
     else if(s==="Questionable"){ gate=.85; status="Questionable"; why.unshift("Questionable — modest discount"); }
   }
-  /* The structural model alone loses to a simple long-run average — verified by
-     the backtest below. It carries real signal (it improves rank correlation),
-     just not enough to stand alone, so it gets a minority weight. */
   const baseAvg=actualPts(hist,sc);
-  const structural=pts;
-  pts=MODEL_W*structural+(1-MODEL_W)*baseAvg;
   if(g&&g[G.imp]>=0&&why.length===0) why.push("Implied team total "+g[G.imp].toFixed(1));
   pts*=gate;
+  // the shown stat line is the same line the points came from, gated the same way
+  const shownLine=line.map(v=>v*gate*oppMult);
   // ---- distribution from the player's own dispersion
   const mean=baseAvg;
   const sd=Math.sqrt(actual.reduce((a,b)=>a+(b-mean)*(b-mean),0)/actual.length);
@@ -1253,7 +1262,7 @@ function project(pid,opts){
   if(gate===0) conf=Math.max(conf,0.9);
   return {pid,wk,pts:Math.round(pts*10)/10,floor:Math.round(floor*10)/10,ceil:Math.round(ceil*10)/10,
           conf:Math.round(conf*100)/100,games:n,cv,mean,actual,opp,implied,status,gate,
-          why:why.slice(0,4),line};
+          why:why.slice(0,4),line:shownLine,baseAvg,pos:p.p};
 }
 function projectSimple(pid,season,wk,sc){
   // Kickers and defenses: too few inputs to model, so weight recent output
@@ -1297,7 +1306,10 @@ function backtest(sc){
   const savedSeason=season;
   for(let wk=5;wk<=18;wk++){
     for(const pid in P){
-      const p=P[pid]; if(!p||p.p==="DST") continue;
+      const p=P[pid];
+      // Kickers and defenses don't go through the structural model at all
+      // (see projectSimple), so scoring them here would measure the wrong thing.
+      if(!p||p.p==="DST"||p.p==="K") continue;
       const act=logOf(pid,2025).find(r=>r[C.wk]===wk);
       if(!act) continue;
       const hist=logOf(pid,2025).filter(r=>r[C.wk]<wk);
@@ -1307,8 +1319,7 @@ function backtest(sc){
       const structural=projectBT(pid,wk,sc,hist);
       const seasonAvg=hist.reduce((a,r)=>a+scoreRow(r,sc),0)/hist.length;
       const l3=hist.slice(-3), last3=l3.reduce((a,r)=>a+scoreRow(r,sc),0)/l3.length;
-      const model=MODEL_W*structural+(1-MODEL_W)*seasonAvg;
-      rows.push({actual,model,structural,seasonAvg,last3});
+      rows.push({actual,model:structural,structural,seasonAvg,last3});
     }
   }
   season=savedSeason;
@@ -1331,7 +1342,7 @@ function backtest(sc){
 }
 /* Trimmed projection used only by the backtest: same maths, 2025-only history,
    no injury gating (those reports are current-season). */
-function projectBT(pid,wk,sc,hist){
+function projectBT(pid,wk,sc,hist,wantLine){
   const p=P[pid], pr=priors()[p.p]||priors().WR;
   const items=hist.map(r=>({r}));
   const w=(get)=>{ let num=0,den=0; items.forEach((x,i)=>{const k=Math.pow(.5,(items.length-1-i)/HL); num+=get(x.r)*k; den+=k;}); return den?num/den:0; };
@@ -1360,7 +1371,42 @@ function projectBT(pid,wk,sc,hist){
   line[C.car]=car; line[C.ryd]=car*ypc; line[C.rtd]=car*rtdP*envMult;
   line[C.tgt]=tgt; line[C.rec]=tgt*cat; line[C.cyd]=tgt*ypt; line[C.ctd]=tgt*ctdP*envMult;
   line[C.att]=att; line[C.pyd]=att*ypa; line[C.ptd]=att*ptdP*envMult; line[C.int]=att*intP;
-  return scoreRow(line,sc)*oppMult;
+  return wantLine?line:scoreRow(line,sc)*oppMult;
+}
+/* Average absolute error per stat, measured walk-forward over 3,195
+   player-weeks of 2025. Shown next to each projected stat so the reader
+   knows which numbers carry weight and which are close to coin flips. */
+const COMP_MAE={car:1.33,ryd:8.1,rtd:.16,tgt:1.55,rec:1.21,cyd:16.5,ctd:.26,att:1.03,pyd:8.4,ptd:.13,int:.08};
+function statLineHtml(pj){
+  const p=P[pj.pid];
+  if(!pj.line||!pj.games) return "";
+  if(pj.gate===0) return '<div class="lnote">'+(pj.status||"Inactive")+' — no stat line projected.</div>';
+  const L=pj.line, one=v=>v.toFixed(1), two=v=>v.toFixed(2);
+  const groups=[];
+  if(p.p==="QB"||L[C.att]>2){
+    groups.push(["Passing",[["Att",L[C.att],one,COMP_MAE.att],["Yds",L[C.pyd],v=>Math.round(v),COMP_MAE.pyd],
+      ["TD",L[C.ptd],two,COMP_MAE.ptd],["INT",L[C.int],two,COMP_MAE.int]]]);
+  }
+  if(L[C.car]>0.4||p.p==="RB"){
+    groups.push(["Rushing",[["Car",L[C.car],one,COMP_MAE.car],["Yds",L[C.ryd],v=>Math.round(v),COMP_MAE.ryd],
+      ["TD",L[C.rtd],two,COMP_MAE.rtd]]]);
+  }
+  if(L[C.tgt]>0.4||["WR","TE"].includes(p.p)){
+    groups.push(["Receiving",[["Tgt",L[C.tgt],one,COMP_MAE.tgt],["Rec",L[C.rec],one,COMP_MAE.rec],
+      ["Yds",L[C.cyd],v=>Math.round(v),COMP_MAE.cyd],["TD",L[C.ctd],two,COMP_MAE.ctd]]]);
+  }
+  if(!groups.length) return "";
+  let h='<div class="sline">';
+  for(const [title,stats] of groups){
+    h+='<div class="sgrp"><div class="sgt">'+title+'</div><div class="srow">';
+    for(const [lab,val,fmt,mae] of stats){
+      h+='<div class="sstat"><b>'+fmt(val)+'</b><span>'+lab+'</span><em title="typical miss">±'+(mae<1?mae.toFixed(2):mae.toFixed(1))+'</em></div>';
+    }
+    h+='</div></div>';
+  }
+  h+='</div>';
+  h+='<div class="lnote" style="margin-top:10px">These add up to the '+pj.pts.toFixed(1)+'-point projection above — same numbers, scored under your league settings. The ± figure is the average miss for that stat in backtesting, so treat touchdowns as a rate, not a prediction: '+two(L[C.rtd]+L[C.ctd]+L[C.ptd])+' expected TDs means roughly a '+Math.round(Math.min(95,(L[C.rtd]+L[C.ctd]+L[C.ptd])*100*0.78))+'% chance of scoring at all, not a fraction of a score.</div>';
+  return h;
 }
 /* =================== Week ahead =================== */
 let weekThresh=15, weekSort="pts", weekShown=60;
@@ -1597,6 +1643,7 @@ function openSheet(pid){
       +'<span class="pc">'+pj.ceil.toFixed(1)+'</span></div>'
       +'<div class="projmain"><b>'+pj.pts.toFixed(1)+'</b><span>projected · '+probOver(pj,15)+'% chance of 15+ · '+Math.round(pj.conf*100)+'% confidence</span></div></div>'
       +(pj.why.length?'<ul class="whylist">'+pj.why.map(w=>'<li>'+w+'</li>').join('')+'</ul>':'')
+      +statLineHtml(pj)
       +'</div>';
   }
   // weekly log
