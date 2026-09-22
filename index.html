@@ -4,20 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Snap Count — NFL player stats</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%231B6B45'/><g stroke='%23ffffff' stroke-width='4' stroke-linecap='round'><path d='M16 20v24'/><path d='M32 13v38'/><path d='M48 20v24'/></g><circle cx='32' cy='32' r='5.5' fill='%23ffffff'/></svg>">
+<meta name="theme-color" content="#1B6B45">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* Light by default — a printed box score: cool paper, chalk rules, turf green.
+   Dark is kept as a preference, not the starting point. */
 :root{
+  --ink:#F7F8F6; --surface:#FFFFFF; --surface2:#F0F3F0; --rule:#DDE3DE; --rule2:#C2CCC5;
+  --chalk:#16201A; --mid:#54655B; --dim:#7D8C83;
+  --turf:#1B6B45;
+  --qb:#C33646; --rb:#12795A; --wr:#1F62B8; --te:#A66412; --k:#6B45B0; --dst:#56665C;
+  --h0:#E8ECE9; --h1:#7AA6C2; --h2:#3E8DA8; --h3:#D97B28; --h4:#C6402A;
+  --good:#12795A; --warn:#A66412;
+  --shadow:0 1px 2px rgba(22,32,26,.06),0 1px 1px rgba(22,32,26,.04);
+  --cardbg:#FFFFFF;
+}
+:root[data-theme="dark"]{
   --ink:#0F1216; --surface:#171C22; --surface2:#1D242C; --rule:#252D37; --rule2:#333E4B;
   --chalk:#EAEEF3; --mid:#93A3B4; --dim:#5E6E80;
-  --qb:#F4646E; --rb:#3FD0A0; --wr:#4C9AFF; --te:#FFB03A; --k:#B98CFF;
+  --turf:#3FD0A0;
+  --qb:#F4646E; --rb:#3FD0A0; --wr:#4C9AFF; --te:#FFB03A; --k:#B98CFF; --dst:#95A3B8;
   --h0:#1C2531; --h1:#274C63; --h2:#2C6A8C; --h3:#D98A32; --h4:#FF5A36;
   --good:#3FD0A0; --warn:#FFB03A;
+  --shadow:none; --cardbg:#171C22;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
-body{background:var(--ink);color:var(--chalk);font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{background:var(--ink);color:var(--chalk);font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
 button,input,select{font:inherit;color:inherit}
 button{background:none;border:none;cursor:pointer}
 .mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
@@ -25,18 +41,18 @@ button{background:none;border:none;cursor:pointer}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 /* ---------- masthead ---------- */
-header{position:sticky;top:0;z-index:40;background:#0F1216;border-bottom:1px solid var(--rule)}
+header{position:sticky;top:0;z-index:40;background:var(--surface);border-bottom:1px solid var(--rule)}
 .mast{display:flex;align-items:center;gap:18px;padding:12px 20px;flex-wrap:wrap}
 .wordmark{display:flex;align-items:baseline;gap:9px;font-family:'Barlow Condensed',sans-serif}
 .wordmark b{font-size:26px;font-weight:700;letter-spacing:.01em;line-height:1}
 .wordmark span{font-size:12px;color:var(--dim);font-family:'IBM Plex Mono',monospace;letter-spacing:.04em}
 .hashes{display:flex;gap:3px;align-items:flex-end;height:20px}
-.hashes i{width:2px;background:var(--rule2);display:block}
+.hashes i{width:2.5px;background:var(--turf);display:block;border-radius:1px}
 .grow{flex:1}
 .seg{display:flex;border:1px solid var(--rule);border-radius:7px;overflow:hidden}
-.seg button{padding:7px 13px;font-size:12.5px;color:var(--mid);font-weight:500}
+.seg button{padding:8px 14px;font-size:13.5px;color:var(--mid);font-weight:600}
 .seg button+button{border-left:1px solid var(--rule)}
-.seg button.on{background:var(--surface2);color:var(--chalk)}
+.seg button.on{background:var(--turf);color:#fff}
 .seg button:hover:not(.on){color:var(--chalk)}
 .ctl{background:var(--surface);border:1px solid var(--rule);border-radius:7px;padding:7px 11px;font-size:13px}
 .ctl:hover{border-color:var(--rule2)}
@@ -56,11 +72,56 @@ main{max-width:1560px;margin:0 auto;padding:20px}
 .count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);margin-left:auto}
 
 /* ---------- player tiles ---------- */
+/* ---------- home ---------- */
+.finderintro{font-size:14.5px;color:var(--mid);margin-bottom:14px;max-width:72ch}
+.empty b{display:block;font-size:15.5px;color:var(--chalk);margin-bottom:5px;font-weight:600}
+.empty span{font-size:13.5px}
+.preset{font-size:14px;color:var(--chalk);border:1px solid var(--rule);margin-bottom:5px;background:var(--surface)}
+.preset:hover{border-color:var(--turf);color:var(--turf);background:var(--surface2)}
+.flab{font-weight:600;color:var(--chalk)}
+.hero{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:40px;align-items:center;padding:42px 0 34px;border-bottom:1px solid var(--rule)}
+@media(max-width:860px){.hero{grid-template-columns:1fr;gap:26px;padding:28px 0}}
+.hero h1{font-family:'Barlow Condensed',sans-serif;font-size:clamp(34px,5vw,54px);font-weight:700;line-height:1.02;letter-spacing:-.01em;max-width:13ch}
+.lede{margin-top:14px;font-size:16.5px;line-height:1.6;color:var(--mid);max-width:58ch}
+.herocta{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+.btn{border-radius:8px;padding:11px 18px;font-size:14.5px;font-weight:600;border:1px solid var(--rule)}
+.btn.primary{background:var(--turf);color:#fff;border-color:var(--turf)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:var(--surface);color:var(--chalk)}
+.btn.ghost:hover{border-color:var(--chalk)}
+.herostats{display:flex;flex-direction:column;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.herostats>div{background:var(--surface);padding:15px 18px;display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:4px}
+.herostats dt{font-size:13.5px;color:var(--mid)}
+.herostats dd{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;grid-row:1;grid-column:2;text-align:right}
+.herostats span{font-size:11.5px;color:var(--dim);grid-column:1/-1}
+.doing{padding:34px 0}
+.doing h2,.proof h2,.trust h2{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:600;margin-bottom:16px}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(248px,1fr));gap:12px}
+.dcard{text-align:left;background:var(--cardbg);border:1px solid var(--rule);border-radius:12px;padding:18px;box-shadow:var(--shadow);transition:border-color .12s}
+.dcard:hover{border-color:var(--turf)}
+.dcard b{display:block;font-size:16px;font-weight:600;margin-bottom:7px}
+.dcard span{display:block;font-size:13.5px;line-height:1.55;color:var(--mid)}
+.proof{padding:10px 0 34px}
+.proofh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px}
+.proofh h2{margin:0}
+.linkish{color:var(--turf);font-size:13.5px;font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(252px,1fr));gap:10px}
+.pcardh{display:flex;align-items:center;gap:11px;text-align:left;background:var(--cardbg);border:1px solid var(--rule);border-radius:11px;padding:11px 13px;box-shadow:var(--shadow)}
+.pcardh:hover{border-color:var(--turf)}
+.phn{flex:1;min-width:0}
+.phn b{display:block;font-size:14px;font-weight:600}
+.phn span{font-size:12px;color:var(--mid)}
+.phv{text-align:right}
+.phv b{display:block;font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--turf)}
+.phv span{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim)}
+.trust{padding:24px 0 10px;border-top:1px solid var(--rule);max-width:70ch}
+.trust p{color:var(--mid);font-size:14px;line-height:1.65;margin-bottom:10px}
+.trust a{color:var(--turf)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:11px}
-.tile{content-visibility:auto;contain-intrinsic-size:214px;position:relative;background:var(--surface);border:1px solid var(--rule);border-radius:11px;padding:15px 10px 10px;text-align:center;cursor:pointer;transition:border-color .12s,background .12s}
+.tile{content-visibility:auto;contain-intrinsic-size:214px;position:relative;background:var(--cardbg);border:1px solid var(--rule);border-radius:11px;box-shadow:var(--shadow);padding:15px 10px 10px;text-align:center;cursor:pointer;transition:border-color .12s,background .12s}
 .tile:hover{background:var(--surface2);border-color:var(--rule2)}
 .tile::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:var(--pc);border-radius:11px 11px 0 0}
-.por{width:74px;height:74px;margin:0 auto;border-radius:50%;overflow:hidden;background:#202935;border:2px solid var(--pc);display:flex;align-items:center;justify-content:center}
+.por{width:74px;height:74px;margin:0 auto;border-radius:50%;overflow:hidden;background:var(--surface2);border:2px solid var(--pc);display:flex;align-items:center;justify-content:center}
 .por img{width:100%;height:100%;object-fit:cover;object-position:top center}
 .por .ini{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:26px;color:var(--mid)}
 .t-name{margin-top:9px;font-weight:600;font-size:13px;line-height:1.25;overflow-wrap:anywhere}
@@ -69,16 +130,23 @@ main{max-width:1560px;margin:0 auto;padding:20px}
 .t-line{margin-top:9px;padding-top:8px;border-top:1px solid var(--rule);font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim)}
 .t-line b{color:var(--chalk);font-size:13px;font-weight:600}
 /* heat strip — the signature element */
-.strip{display:flex;gap:1.5px;margin-top:9px;height:16px}
-.strip i{flex:1;border-radius:2px;background:var(--h0);display:block}
-.strip i[data-h="1"]{background:var(--h1)} .strip i[data-h="2"]{background:var(--h2)}
-.strip i[data-h="3"]{background:var(--h3)} .strip i[data-h="4"]{background:var(--h4)}
-.strip i.dnp{background:repeating-linear-gradient(45deg,#1A2029,#1A2029 2px,transparent 2px,transparent 4px)}
+.strip{display:flex;gap:1px;margin-top:9px;justify-content:center;flex-wrap:nowrap}
+.strip i{flex:0 1 auto;font-style:normal;font-size:11px;line-height:1.3;color:var(--h0);display:block;min-width:9px;text-align:center}
+.strip i[data-h="1"]{color:var(--h1)} .strip i[data-h="2"]{color:var(--h2)}
+.strip i[data-h="3"]{color:var(--h3)} .strip i[data-h="4"]{color:var(--h4);font-size:12.5px}
+.strip i.dnp{color:var(--rule2)}
+.hlegend{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;color:var(--dim)}
+.hlegend i{font-style:normal;font-size:12.5px}
+.hlegend i[data-h="1"]{color:var(--h1)} .hlegend i[data-h="2"]{color:var(--h2)}
+.hlegend i[data-h="3"]{color:var(--h3)} .hlegend i[data-h="4"]{color:var(--h4)}
+.hlegend span{margin-left:5px}
+.iconbtn{padding:7px 10px;font-size:14px;line-height:1}
+
 
 /* ---------- data table ---------- */
 .tbl-wrap{border:1px solid var(--rule);border-radius:11px;overflow:auto;background:var(--surface)}
 table{border-collapse:collapse;width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;font-variant-numeric:tabular-nums}
-thead th{position:sticky;top:0;background:var(--surface2);color:var(--mid);font-weight:600;font-size:12px;text-align:right;padding:11px 12px;border-bottom:1px solid var(--rule);white-space:nowrap;cursor:pointer;z-index:2}
+thead th{position:sticky;top:0;background:var(--surface2);color:var(--chalk);font-weight:600;font-size:12.5px;text-align:right;padding:11px 12px;border-bottom:1px solid var(--rule);white-space:nowrap;cursor:pointer;z-index:2}
 thead th:first-child,thead th.l{text-align:left}
 thead th:hover{color:var(--chalk)}
 thead th.sorted{color:var(--chalk);box-shadow:inset 0 -2px 0 var(--wr)}
@@ -92,14 +160,14 @@ tbody tr:last-child td{border-bottom:none}
 .tbl-wrap{contain:content}
 .who-cell .por .ini{font-size:16px}
 .who-cell b{font-weight:600;font-size:15.5px;line-height:1.25}
-.sub{color:var(--mid);font-size:12px;font-family:'IBM Plex Mono',monospace;margin-top:2px}
+.sub{color:var(--mid);font-size:12.5px;font-family:'IBM Plex Mono',monospace;margin-top:2px}
 td.hot{color:var(--h4);font-weight:600}
-td.zero{color:#3C4854}
+td.zero{color:var(--dim);opacity:.6}
 
 /* ---------- filter workbench ---------- */
 .work{display:grid;grid-template-columns:268px 1fr;gap:18px;align-items:start}
 @media(max-width:900px){.work{grid-template-columns:1fr}}
-.panel{background:var(--surface);border:1px solid var(--rule);border-radius:11px;overflow:hidden}
+.panel{background:var(--cardbg);border:1px solid var(--rule);border-radius:11px;overflow:hidden;box-shadow:var(--shadow)}
 .panel-h{padding:11px 14px;border-bottom:1px solid var(--rule);font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:600;letter-spacing:.01em;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .panel-h small{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);font-weight:400}
 .fgroup{padding:12px 14px;border-bottom:1px solid var(--rule)}
@@ -142,7 +210,7 @@ thead th input{width:34px;background:var(--ink);border:1px solid var(--rule);bor
 .ptrack i{position:absolute;top:-3px;width:3px;height:14px;background:var(--chalk);border-radius:2px}
 .sline{display:flex;flex-direction:column;gap:10px;margin-top:14px}
 .sgrp{background:var(--ink);border:1px solid var(--rule);border-radius:10px;padding:11px 13px}
-.sgt{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.sgt{font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:600;color:var(--mid);margin-bottom:8px}
 .srow{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:8px}
 .sstat{text-align:center;background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:9px 6px}
 .sstat b{display:block;font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;line-height:1.1}
@@ -151,7 +219,7 @@ thead th input{width:34px;background:var(--ink);border:1px solid var(--rule);bor
 .whylist{margin:12px 0 0 18px;padding:0;color:var(--mid);font-size:12.5px;line-height:1.7}
 .lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(372px,1fr));gap:16px;align-items:start}
 @media(max-width:520px){.lgrid{grid-template-columns:1fr}}
-.lcard{background:var(--surface);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.lcard{background:var(--cardbg);border:1px solid var(--rule);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
 .lhead{display:flex;align-items:center;gap:6px;padding:11px 12px;border-bottom:1px solid var(--rule)}
 .lname{flex:1;min-width:0;background:none;border:1px solid transparent;border-radius:6px;padding:4px 7px;font-family:'Barlow Condensed',sans-serif;font-size:21px;font-weight:600}
 .lname:hover{border-color:var(--rule)}
@@ -204,7 +272,7 @@ thead th input{width:34px;background:var(--ink);border:1px solid var(--rule);bor
 .lnm:hover{color:var(--wr)}
 .lnm.empty{color:var(--dim);font-weight:400;font-style:italic;cursor:default}
 .lpts{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;min-width:42px;text-align:right}
-.lpts.dnp{color:#3C4854;font-weight:400}
+.lpts.dnp{color:var(--dim);opacity:.65;font-weight:400}
 .lx{color:transparent;font-size:11px;padding:2px 4px}
 .lrow:hover .lx{color:var(--dim)}
 .lx:hover{color:var(--qb)}
@@ -256,9 +324,9 @@ button.lslot:hover{border-color:var(--chalk);color:var(--chalk)}
 .lhit .por .ini{font-size:10px}
 .lhit em{display:block;font-style:normal;font-size:10.5px;color:var(--dim);font-family:'IBM Plex Mono',monospace}
 .lhit.none{color:var(--dim);font-size:12px;padding:8px}
-.veil{position:fixed;inset:0;background:rgba(8,10,13,.88);display:none;align-items:center;justify-content:center;padding:20px;z-index:60}
+.veil{position:fixed;inset:0;background:rgba(22,32,26,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:60}
 .veil.show{display:flex}
-.sheet{background:var(--surface);border:1px solid var(--rule2);border-radius:14px;max-width:880px;width:100%;max-height:88vh;overflow:auto}
+.sheet{background:var(--surface);border:1px solid var(--rule2);border-radius:14px;box-shadow:0 20px 50px rgba(22,32,26,.22);max-width:880px;width:100%;max-height:88vh;overflow:auto}
 .sheet-h{display:flex;gap:15px;align-items:center;padding:18px 20px;border-bottom:1px solid var(--rule);position:sticky;top:0;background:var(--surface);z-index:2}
 .sheet-h .por{width:64px;height:64px}
 .sheet-h h2{font-family:'Barlow Condensed',sans-serif;font-size:27px;font-weight:700;line-height:1.05}
@@ -273,8 +341,6 @@ button.lslot:hover{border-color:var(--chalk);color:var(--chalk)}
 .sect h3{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:600;margin-bottom:11px;display:flex;justify-content:space-between;align-items:baseline}
 .sect h3 small{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--dim);font-weight:400}
 .empty{padding:34px 20px;text-align:center;color:var(--dim);font-size:13px}
-.legend{display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim)}
-.legend i{width:15px;height:9px;border-radius:2px;display:block}
 .loading{padding:44px;text-align:center;color:var(--mid);font-family:'IBM Plex Mono',monospace;font-size:13px}
 footer{max-width:1560px;margin:0 auto;padding:22px 20px 40px;color:var(--dim);font-size:11.5px;border-top:1px solid var(--rule);margin-top:30px;line-height:1.7}
 footer a{color:var(--mid)}
@@ -287,12 +353,13 @@ footer a{color:var(--mid)}
       <div class="hashes" aria-hidden="true"><i style="height:9px"></i><i style="height:15px"></i><i style="height:20px"></i><i style="height:13px"></i></div>
       <b>SNAP COUNT</b><span id="seasonTag">2026</span>
     </div>
-    <div class="seg" id="viewSeg">
-      <button data-v="players" class="on">Players</button>
+    <nav class="seg" id="viewSeg" aria-label="Sections">
+      <button data-v="home" class="on">Home</button>
+      <button data-v="week">This week</button>
+      <button data-v="players">Players</button>
       <button data-v="finder">Stat finder</button>
       <button data-v="leagues">My leagues</button>
-      <button data-v="week">Week ahead</button>
-    </div>
+    </nav>
     <div class="grow"></div>
     <select class="ctl" id="seasonSel"><option value="2026">2026 season</option><option value="2025">2025 season</option></select>
     <div class="seg" id="scoreSeg">
@@ -300,11 +367,13 @@ footer a{color:var(--mid)}
       <button data-s="half">Half</button>
       <button data-s="std">Std</button>
     </div>
+    <button class="ctl iconbtn" id="themeBtn" title="Switch between light and dark">◐</button>
     <span class="savedot" id="saveDot" title="Not saved yet"></span>
   </div>
 </header>
 <main>
-  <div id="view-players"></div>
+  <div id="view-home"></div>
+  <div id="view-players" style="display:none"></div>
   <div id="view-finder" style="display:none"></div>
   <div id="view-leagues" style="display:none"></div>
   <div id="view-week" style="display:none"></div>
@@ -339,7 +408,7 @@ const PC={QB:"var(--qb)",RB:"var(--rb)",WR:"var(--wr)",TE:"var(--te)",K:"var(--k
 const D={tm:0,wk:1,opp:2,pa:3,ya:4,sk:5,int:6,fr:7,td:8,saf:9,sptd:10};
 const C={id:0,wk:1,tm:2,opp:3,cmp:4,att:5,pyd:6,ptd:7,int:8,car:9,ryd:10,rtd:11,tgt:12,rec:13,cyd:14,ctd:15,fum:16,fg:17,pat:18,std:19,ppr:20,sptd:21,two:22};
 
-let season=2026, scoring="ppr", view="players";
+let season=2026, scoring="ppr", view="home";
 let P={}, W={};                       // players keyed by gsis, weekly rows by season
 let idx={};                           // season -> {pid: [rows]}
 let q="", posF="ALL", teamF="ALL";
@@ -436,7 +505,15 @@ function por(pid,cls){
 }
 
 /* ---------- heat ---------- */
-function heatOf(v,max){ if(v<=0) return 0; const r=v/(max||1); return r<.25?1:r<.5?2:r<.75?3:4; }
+/* Cold-to-hot as an ordinal symbol scale rather than colour blocks: the shape
+   carries the meaning, so it survives greyscale and colour blindness. */
+const HEAT_SYM=["·","○","◐","●","★"];
+const HEAT_WORD=["did not play","quiet","steady","strong","best of the season"];
+function heatOf(v,max){ if(v<=0) return 0; const r=v/(max||1); return r<.3?1:r<.55?2:r<.85?3:4; }
+function heatLegend(){
+  return '<span class="hlegend">'+HEAT_SYM.slice(1).map((s,i)=>'<i data-h="'+(i+1)+'">'+s+'</i>').join('')
+    +'<span>quiet to best</span></span>';
+}
 let _stripCache=new Map();
 function stripHtml(pid){
   const k=pid+"|"+season+"|"+scoring;
@@ -454,10 +531,67 @@ function computeStrip(pid){
   const by={}; log.forEach(r=>by[r[C.wk]]=fp(r));
   let h='<div class="strip">';
   for(const w of wks){
-    if(w in by) h+='<i data-h="'+heatOf(by[w],max)+'" title="Week '+w+': '+by[w].toFixed(1)+'"></i>';
-    else h+='<i class="dnp" title="Week '+w+': did not play"></i>';
+    if(w in by){
+      const t=heatOf(by[w],max);
+      h+='<i data-h="'+t+'" title="Week '+w+': '+by[w].toFixed(1)+' pts — '+HEAT_WORD[t]+'">'+HEAT_SYM[t]+'</i>';
+    } else h+='<i class="dnp" title="Week '+w+': did not play">·</i>';
   }
   return h+'</div>';
+}
+
+/* =================== Home =================== */
+function goTo(v){
+  view=v;
+  document.querySelectorAll("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  render(); savePrefs(); window.scrollTo({top:0});
+}
+function renderHome(){
+  const host=document.getElementById("view-home");
+  const wk=nextWeek(), sc=projScore(), wks=weeksIn(season);
+  const nPlayers=Object.keys(P).filter(id=>!id.startsWith("DST_")).length;
+  // this week's best bets, straight from the projection engine
+  const top=Object.keys(P).filter(id=>!id.startsWith("DST_"))
+    .map(id=>project(id,{wk,score:sc})).filter(x=>x&&x.games>=3&&x.gate>0)
+    .sort((a,b)=>b.pts-a.pts).slice(0,6);
+  const games=(SCHED[2026]||[]).filter(r=>r[G.wk]===wk).length/2;
+  let h='<section class="hero">'
+    +'<div class="heroleft">'
+    +'<h1>Every offensive player, every week.</h1>'
+    +'<p class="lede">Snap Count keeps the full box score for all '+nPlayers+' players on an NFL roster — what they did last week, what they have done all season, and what to expect from them next. No sign-up, nothing to install.</p>'
+    +'<div class="herocta"><button class="btn primary" data-go="week">See week '+wk+' projections</button>'
+    +'<button class="btn ghost" data-go="players">Browse players</button></div>'
+    +'</div>'
+    +'<dl class="herostats">'
+    +'<div><dt>Up next</dt><dd>Week '+wk+'</dd><span>'+games+' games</span></div>'
+    +'<div><dt>Players tracked</dt><dd>'+nPlayers+'</dd><span>plus 32 defenses</span></div>'
+    +'<div><dt>Weeks of history</dt><dd>'+(wks.length+18)+'</dd><span>2025 and 2026</span></div>'
+    +'</dl></section>';
+  // what you can do — plain language, each links somewhere
+  h+='<section class="doing"><h2>What you can do here</h2><div class="dgrid">'
+    +[["week","Check who to start","Projections for the week ahead with a floor, a ceiling, and the odds of hitting the number you need. Every projection shows its own reasoning."],
+      ["players","Look up a player","Search anyone on a roster and get their full game log, season totals, and how their snap share is trending."],
+      ["finder","Answer a stat question","Who scored a touchdown in week 2? Every 100-yard rushing game this season? Build the filter and sort the answer."],
+      ["leagues","Track your teams","Add a card per league, set its exact scoring rules, and watch your lineup score itself week by week."]]
+      .map(([v,t,d])=>'<button class="dcard" data-go="'+v+'"><b>'+t+'</b><span>'+d+'</span></button>').join('')
+    +'</div></section>';
+  // live proof: this week's top projections
+  if(top.length){
+    h+='<section class="proof"><div class="proofh"><h2>Highest projections for week '+wk+'</h2>'
+      +'<button class="linkish" data-go="week">See all players</button></div><div class="pgrid">';
+    for(const pj of top){
+      const p=P[pj.pid];
+      h+='<button class="pcardh" data-open="'+pj.pid+'">'+por(pj.pid,"sm")
+        +'<div class="phn"><b>'+p.n+'</b><span>'+p.p+' · '+p.t+(pj.opp?' vs '+pj.opp:'')+'</span></div>'
+        +'<div class="phv"><b>'+pj.pts.toFixed(1)+'</b><span>'+pj.floor.toFixed(1)+'–'+pj.ceil.toFixed(1)+'</span></div></button>';
+    }
+    h+='</div></section>';
+  }
+  h+='<section class="trust"><h2>Where the numbers come from</h2>'
+    +'<p>Rosters, box scores, snap counts and injury reports come from <a href="https://github.com/nflverse/nflverse-data" target="_blank" rel="noopener">nflverse</a>, refreshed every Tuesday once Monday night is final. Betting lines set each team\'s implied point total.</p>'
+    +'<p>Projections are tested the honest way: every week of last season was predicted using only the games before it, then measured against what actually happened. Those accuracy numbers are published on the projections page rather than hidden.</p></section>';
+  host.innerHTML=h;
+  host.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>goTo(b.dataset.go));
+  host.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openSheet(b.dataset.open));
 }
 
 /* =================== Players view =================== */
@@ -600,18 +734,18 @@ function finderRows(){
   return out;
 }
 const COLS=[
-  {k:"wk",label:"Wk",get:r=>r[C.wk]},
-  {k:"fp",label:"FP",get:fp,fx:1},
-  {k:"td",label:"TD",get:tds},
-  {k:"pyd",label:"Pass",get:r=>r[C.pyd]},
-  {k:"ptd",label:"PTD",get:r=>r[C.ptd]},
-  {k:"car",label:"Car",get:r=>r[C.car]},
-  {k:"ryd",label:"Rush",get:r=>r[C.ryd]},
-  {k:"rtd",label:"RTD",get:r=>r[C.rtd]},
-  {k:"tgt",label:"Tgt",get:r=>r[C.tgt]},
-  {k:"rec",label:"Rec",get:r=>r[C.rec]},
-  {k:"cyd",label:"RecYd",get:r=>r[C.cyd]},
-  {k:"ctd",label:"RTD",get:r=>r[C.ctd]}
+  {k:"wk",label:"Week",get:r=>r[C.wk]},
+  {k:"fp",label:"Points",get:fp,fx:1},
+  {k:"td",label:"Total TD",get:tds},
+  {k:"pyd",label:"Pass yd",get:r=>r[C.pyd]},
+  {k:"ptd",label:"Pass TD",get:r=>r[C.ptd]},
+  {k:"car",label:"Carries",get:r=>r[C.car]},
+  {k:"ryd",label:"Rush yd",get:r=>r[C.ryd]},
+  {k:"rtd",label:"Rush TD",get:r=>r[C.rtd]},
+  {k:"tgt",label:"Targets",get:r=>r[C.tgt]},
+  {k:"rec",label:"Catches",get:r=>r[C.rec]},
+  {k:"cyd",label:"Rec yd",get:r=>r[C.cyd]},
+  {k:"ctd",label:"Rec TD",get:r=>r[C.ctd]}
 ];
 function renderFinder(){
   const host=document.getElementById("view-finder");
@@ -623,11 +757,15 @@ function renderFinder(){
     +['ALL','QB','RB','WR','TE','K'].map(x=>'<button class="chip '+(posF===x?'on':'')+'" data-p="'+x+'">'+(x==='ALL'?'All':x)+'</button>').join('')
     +'<select class="ctl" id="fteam"><option value="ALL">All teams</option>'+teams.map(t=>'<option '+(teamF===t?'selected':'')+'>'+t+'</option>').join('')+'</select>'
     +'<span class="count">'+rows.length+' stat line'+(rows.length===1?'':'s')+'</span></div>';
+  h+='<div class="finderintro">Each row below is one player in one game. Start with a question on the left, or add your own conditions.</div>';
   h+='<div class="work"><div class="panel">'
-    +'<div class="panel-h">Filters<small>'+rows.length+' lines</small></div>'
+    +'<div class="panel-h">Narrow it down<small>'+rows.length+' results</small></div>'
     +'<div class="fgroup"><div class="flab">Week</div><div class="frow"><select id="weekF"><option value="all">All weeks</option>'
       +wks.map(w=>'<option value="'+w+'" '+(weekF==String(w)?'selected':'')+'>Week '+w+'</option>').join('')+'</select></div></div>'
-    +'<div class="fgroup"><div class="flab">Conditions</div>';
+    +'<div class="fgroup"><div class="flab">Ask a question</div>'
+    +PRESETS.map((pp,i)=>'<button class="preset" data-preset="'+i+'">'+pp.n+'</button>').join('')
+    +'</div>'
+    +'<div class="fgroup"><div class="flab">Or build your own</div>';
   filters.forEach((f,i)=>{
     h+='<div class="frow"><select data-fi="'+i+'" data-fp="k">'+FIELDS.map(x=>'<option value="'+x.k+'" '+(f.k===x.k?'selected':'')+'>'+x.label+'</option>').join('')+'</select>'
       +'<select data-fi="'+i+'" data-fp="op" style="flex:0 0 52px">'+['>=','<=','=='].map(o=>'<option '+(f.op===o?'selected':'')+'>'+o+'</option>').join('')+'</select>'
@@ -635,13 +773,11 @@ function renderFinder(){
       +'<button class="x" data-del="'+i+'" title="Remove">✕</button></div>';
   });
   h+='<button class="addbtn" id="addF">+ add condition</button></div>'
-    +'<div class="fgroup"><div class="flab">Quick views</div>'
-    +PRESETS.map((p,i)=>'<button class="preset" data-preset="'+i+'">'+p.n+'</button>').join('')
-    +'</div></div>';
+    +'</div>';
   // results
   h+='<div class="panel"><div class="panel-h">Results<small>sorted by '+(F(sortKey)||{label:"Fantasy points"}).label.toLowerCase()+'</small></div>';
-  if(!wks.length) h+='<div class="empty">No '+season+' games are in the books yet. Switch to 2025 for a full season of data.</div>';
-  else if(!rows.length) h+='<div class="empty">No stat lines match. Loosen a condition or pick a different week.</div>';
+  if(!wks.length) h+='<div class="empty"><b>No '+season+' games are in the books yet.</b><span>Switch the season to 2025 for a full 18 weeks to explore.</span></div>';
+  else if(!rows.length) h+='<div class="empty"><b>Nothing matches that combination.</b><span>Try a lower number, a different week, or clear a condition.</span></div>';
   else{
     h+='<div class="tbl-wrap"><table><thead><tr><th class="l">Player</th>'
       +COLS.map(c=>'<th data-sort="'+c.k+'" class="'+(sortKey===c.k?'sorted':'')+'">'+c.label+'</th>').join('')+'</tr></thead><tbody>';
@@ -1666,7 +1802,7 @@ function openSheet(pid){
     h+='</tbody><tfoot><tr style="border-top:1px solid var(--rule2)">'+sum+'</tr></tfoot></table></div>';
     h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px;flex-wrap:wrap">'
       +stripHtml(pid)
-      +'<div class="legend">cold<i style="background:var(--h1)"></i><i style="background:var(--h2)"></i><i style="background:var(--h3)"></i><i style="background:var(--h4)"></i>hot</div></div>';
+      +heatLegend()+'</div>';
   }
   h+='</div>';
   if(oLog.length){
@@ -1689,7 +1825,7 @@ const LS="snapcount.prefs";
 function savePrefs(){
   if(!loaded) return;
   const dot=document.getElementById("saveDot"); dot.className="savedot busy";
-  try{ localStorage.setItem(LS,JSON.stringify({season,scoring,view,posF,teamF,weekF,filters,sortKey,sortDir}));
+  try{ localStorage.setItem(LS,JSON.stringify({season,scoring,view,posF,teamF,weekF,filters,sortKey,sortDir,theme}));
        dot.className="savedot on"; dot.title="Preferences saved in this browser";
   }catch(e){ dot.className="savedot err"; dot.title="Couldn't save preferences"; }
 }
@@ -1698,25 +1834,38 @@ function loadPrefs(){
     const s=JSON.parse(localStorage.getItem(LS)||"{}");
     if(s.season&&[2026,2025].includes(+s.season)) season=+s.season;
     if(["ppr","half","std"].includes(s.scoring)) scoring=s.scoring;
-    if(["players","finder","leagues","week"].includes(s.view)) view=s.view;
+    if(["home","players","finder","leagues","week"].includes(s.view)) view=s.view;
+    if(s.theme==="dark"||s.theme==="light") theme=s.theme;
     if(s.posF) posF=s.posF; if(s.teamF) teamF=s.teamF; if(s.weekF) weekF=s.weekF;
     if(Array.isArray(s.filters)) filters=s.filters;
     if(s.sortKey) sortKey=s.sortKey; if(s.sortDir) sortDir=s.sortDir;
     document.getElementById("saveDot").className="savedot on";
   }catch(e){}
+  applyTheme(theme);
   document.getElementById("seasonSel").value=season;
   document.querySelectorAll("#scoreSeg button").forEach(b=>b.classList.toggle("on",b.dataset.s===scoring));
   document.querySelectorAll("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
 }
 
+/* =================== Theme =================== */
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light");
+  const b=document.getElementById("themeBtn");
+  if(b){ b.textContent=t==="dark"?"☀":"◐"; b.title=t==="dark"?"Switch to light":"Switch to dark"; }
+}
+let theme="light";
+document.getElementById("themeBtn").onclick=()=>{ theme=theme==="dark"?"light":"dark"; applyTheme(theme); savePrefs(); };
+
 /* =================== Wiring =================== */
 function render(){
   document.getElementById("seasonTag").textContent=season;
+  document.getElementById("view-home").style.display=view==="home"?"":"none";
   document.getElementById("view-players").style.display=view==="players"?"":"none";
   document.getElementById("view-finder").style.display=view==="finder"?"":"none";
   document.getElementById("view-leagues").style.display=view==="leagues"?"":"none";
   document.getElementById("view-week").style.display=view==="week"?"":"none";
-  if(view==="players") renderPlayers();
+  if(view==="home") renderHome();
+  else if(view==="players") renderPlayers();
   else if(view==="finder") renderFinder();
   else if(view==="leagues") renderLeagues();
   else renderWeek();
