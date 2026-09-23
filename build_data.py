@@ -64,7 +64,18 @@ def build_weekly(season, valid):
              i(r['carries']),i(r['rushing_yards']),i(r['rushing_tds']),
              i(r['targets']),rec,i(r['receiving_yards']),i(r['receiving_tds']),
              fumlost,i(r['fg_made']),i(r['pat_made']),
-             round(std,1),round(ppr,1),sptd,two]
+             round(std,1),round(ppr,1),sptd,two,
+             # advanced: role and efficiency
+             i(r.get('receiving_air_yards',0)),
+             round(f(r.get('target_share',0)),3),
+             round(f(r.get('air_yards_share',0)),3),
+             round(f(r.get('wopr',0)),3),
+             i(r.get('passing_air_yards',0)),
+             round(f(r.get('passing_epa',0)),2),
+             round(f(r.get('rushing_epa',0)),2),
+             round(f(r.get('receiving_epa',0)),2),
+             round(f(r.get('passing_cpoe',0)),2),
+             i(r.get('passing_first_downs',0))+i(r.get('rushing_first_downs',0))+i(r.get('receiving_first_downs',0))]
         if any(row[4:19]) or sptd or two or fumlost: out.append(row)
     return out
 
