@@ -912,7 +912,10 @@ function renderFinder(){
 
 /* =================== My leagues =================== */
 const LS_L="snapcount.leagues";
-let leagues=[], leagueWeek={}, swapping={};   // leagueWeek[id]=week shown; swapping[id]={slotIdx}
+let leagues=[], leagueWeek={}, swapping={}, cfgOpen={};
+// leagueWeek[id]=week shown; swapping[id]={slotIdx}; cfgOpen[id]=settings drawer.
+// These are view state, deliberately kept off the league object so they never
+// get written to storage and reappear on refresh.
 /* One badge, used everywhere a player's name appears. Roster status (IR, PUP)
    outranks a weekly designation; practice-only concerns show in amber. */
 function statusTag(pid,wk){
@@ -936,7 +939,12 @@ function loadLeagues(){
 }
 function saveLeagues(){
   const dot=document.getElementById("saveDot"); dot.className="savedot busy";
-  try{ localStorage.setItem(LS_L,JSON.stringify(leagues)); dot.className="savedot on"; dot.title="Leagues saved in this browser"; }
+  try{
+    // persist league data only — never view state
+    const clean=leagues.map(({open,...rest})=>rest);
+    localStorage.setItem(LS_L,JSON.stringify(clean));
+    dot.className="savedot on"; dot.title="Leagues saved in this browser";
+  }
   catch(e){ dot.className="savedot err"; dot.title="Couldn't save leagues"; }
 }
 function newLeague(){
@@ -1009,6 +1017,7 @@ function migrate(lg){
   if(lg.slots.DST===undefined) lg.slots.DST=0;
   if(!lg.teams) lg.teams=12;
   if(!lg.lineup) lg.lineup={};
+  delete lg.open;                    // legacy: drawer state used to be stored here
   return lg;
 }
 function presetName(sc){
@@ -1164,12 +1173,12 @@ function renderLeagues(){
     h+='<div class="lcard" data-lg="'+lg.id+'">'
       +'<div class="lhead"><input class="lname" data-name="'+lg.id+'" value="'+lg.name.replace(/"/g,"&quot;")+'" spellcheck="false">'
       +'<span class="lfmt">'+presetName(lg.score)+'</span>'
-      +'<button class="lbtn'+(lg.open?' on':'')+'" data-cfg="'+lg.id+'" title="League settings">⚙</button>'
+      +'<button class="lbtn'+(cfgOpen[lg.id]?' on':'')+'" data-cfg="'+lg.id+'" title="League settings">⚙</button>'
       +'<button class="lbtn" data-del="'+lg.id+'" title="Delete league">✕</button></div>'
       +'<div class="ladd"><input class="lsearch" data-add="'+lg.id+'" placeholder="Add a player to this roster…" autocomplete="off">'
       +'<div class="lres" id="res-'+lg.id+'"></div></div>';
     // settings drawer
-    if(lg.open) h+='<div class="lcfg">'
+    if(cfgOpen[lg.id]) h+='<div class="lcfg">'
       +'<div class="flab">Start from a preset</div><div class="presetrow">'
       +[["ppr","Full PPR"],["half","Half PPR"],["std","Standard"]].map(([v,l])=>'<button class="pbtn" data-preset2="'+lg.id+'|'+v+'">'+l+'</button>').join('')
       +'</div>'
@@ -1281,7 +1290,7 @@ function wireLeagues(host,wks){
     el.onchange=()=>{ const lg=L(el.dataset.name); lg.name=el.value.trim()||"Untitled league"; saveLeagues(); };
     el.onkeydown=e=>{ if(e.key==="Enter") el.blur(); };
   });
-  host.querySelectorAll("[data-cfg]").forEach(b=>b.onclick=()=>{ const lg=L(b.dataset.cfg); lg.open=!lg.open; renderLeagues(); });
+  host.querySelectorAll("[data-cfg]").forEach(b=>b.onclick=()=>{ cfgOpen[b.dataset.cfg]=!cfgOpen[b.dataset.cfg]; renderLeagues(); });
   host.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
     const lg=L(b.dataset.del);
     if(confirm('Delete "'+lg.name+'"? This can\'t be undone.')){ leagues=leagues.filter(x=>x.id!==lg.id); saveLeagues(); renderLeagues(); }
