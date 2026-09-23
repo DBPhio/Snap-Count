@@ -557,8 +557,8 @@ function por(pid,cls){
 }
 
 /* ---------- heat ---------- */
-/* Cold-to-hot as an ordinal symbol scale rather than colour blocks: the shape
-   carries the meaning, so it survives greyscale and colour blindness. */
+/* Cold-to-hot as an ordinal symbol scale rather than color blocks: the shape
+   carries the meaning, so it survives grayscale and color blindness. */
 const HEAT_SYM=["·","○","◐","●","★"];
 const HEAT_WORD=["did not play","quiet","steady","strong","best of the season"];
 function heatOf(v,max){ if(v<=0) return 0; const r=v/(max||1); return r<.3?1:r<.55?2:r<.85?3:4; }
@@ -1000,7 +1000,7 @@ function lineupFor(lg,wk){
   const slots=slotList(lg);
   const manual=(lg.lineup||{})[wk]||{};        // {slotIndex: pid}
   const used=new Set(), start=new Array(slots.length).fill(null);
-  // 1. honour manual placements that are still legal
+  // 1. honor manual placements that are still legal
   for(const k in manual){
     const i=+k, pid=manual[k];
     if(!slots[i]||!pool[pid]||used.has(pid)) continue;
@@ -1316,11 +1316,11 @@ function priors(){
   }
   return _priors;
 }
-/* How a defence performs against each kind of play, as a RATE rather than as
+/* How a defense performs against each kind of play, as a RATE rather than as
    fantasy points allowed. Points allowed is confounded by schedule; rates are
    not. Tested walk-forward on 2025: the points-based version was worth nothing
    (-0.02% error), this one is worth +0.29%. That is the honest size of a
-   matchup edge — defences vary only 8-10% in yards allowed per carry or per
+   matchup edge — defenses vary only 8-10% in yards allowed per carry or per
    target, and those rates persist weakly across a season (r=0.42 rushing,
    r=0.22 receiving), so the adjustment is shrunk hard and stays near 1.0. */
 const DVP_K=200;
@@ -1822,7 +1822,7 @@ function renderWeek(){
     +'<div class="accbox"><b>'+bt.seasonAvg.mae.toFixed(2)+'</b><span>season average</span></div>'
     +'<div class="accbox"><b>'+bt.last3.mae.toFixed(2)+'</b><span>last 3 games</span></div>'
     +'<div class="accbox"><b>'+bt.model.r.toFixed(2)+'</b><span>correlation with actual</span></div></div>'
-    +'<div class="accnote">Beats a last-three-games average by '+better.toFixed(0)+'% and a plain season average by '+vsAvg.toFixed(1)+'%. Average error is still about '+bt.model.mae.toFixed(1)+' points either way, so lean on the range and the hit rate rather than the single number. Matchup is included but deliberately small: defences vary only 8–10% in what they give up per carry or per target, and those rates hold up weakly from one half of a season to the next.</div></div>';
+    +'<div class="accnote">Beats a last-three-games average by '+better.toFixed(0)+'% and a plain season average by '+vsAvg.toFixed(1)+'%. Average error is still about '+bt.model.mae.toFixed(1)+' points either way, so lean on the range and the hit rate rather than the single number. Matchup is included but deliberately small: defenses vary only 8–10% in what they give up per carry or per target, and those rates hold up weakly from one half of a season to the next.</div></div>';
   h+='<div class="tbl-wrap"><table><thead><tr><th class="pickcell"></th><th class="l">Player</th><th>Opp</th><th>Proj</th><th>Floor</th><th>Ceil</th>'
     +'<th>P(<input id="wth" value="'+weekThresh+'" inputmode="numeric">+)</th><th>Conf</th><th class="l">Why</th></tr></thead><tbody>';
   for(const pj of list.slice(0,weekShown)){
@@ -2077,7 +2077,7 @@ function renderTrends(){
         const r=roleOf(id,s); return r&&r.games>=4&&(r.tshare>0.12||r.epaPlay!==0);})
       .map(id=>({id,r:roleOf(id,s),t:seasonTotals(id)}))
       .sort((a,b)=>b.r.wopr-a.r.wopr).slice(0,60);
-    h+='<div class="finderintro">WOPR combines target share and air-yards share into one measure of how much of an offence a receiver commands. EPA per play measures what he does with it. High WOPR with low EPA is a volume player; the reverse is someone being wasted.</div>'
+    h+='<div class="finderintro">WOPR combines target share and air-yards share into one measure of how much of an offense a receiver commands. EPA per play measures what he does with it. High WOPR with low EPA is a volume player; the reverse is someone being wasted.</div>'
       +'<div class="tbl-wrap"><table><thead><tr><th class="l">Player</th><th>Target share</th><th>Air yds share</th><th>WOPR</th><th>aDOT</th><th>EPA/play</th><th>Points/gm</th></tr></thead><tbody>';
     for(const x of rows){
       const p=P[x.id];
@@ -2156,7 +2156,7 @@ function openSheet(pid){
     const cells=[];
     if(role.tshare>0) cells.push(["Target share",(role.tshare*100).toFixed(1)+"%","of his team's throws"]);
     if(role.ayshare>0) cells.push(["Air yards share",(role.ayshare*100).toFixed(1)+"%","of the ball in the air"]);
-    if(role.wopr>0) cells.push(["WOPR",role.wopr.toFixed(2),"claim on the offence"]);
+    if(role.wopr>0) cells.push(["WOPR",role.wopr.toFixed(2),"claim on the offense"]);
     if(role.adot>0) cells.push(["aDOT",role.adot.toFixed(1),"avg depth of target"]);
     if(p.p==="QB"&&role.cpoe) cells.push(["CPOE",(role.cpoe>0?"+":"")+role.cpoe.toFixed(1),"completions over expected"]);
     cells.push(["EPA per play",role.epaPlay.toFixed(3),"value added"]);
