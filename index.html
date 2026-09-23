@@ -298,6 +298,15 @@ tbody tr.picked td{background:color-mix(in srgb,var(--turf) 7%,transparent)}
 .lbar span{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--dim)}
 .lbar:hover i{background:var(--h3)}
 .lbar.on i{background:var(--h4)} .lbar.on span{color:var(--chalk)}
+.lweekbar{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.lweeks{display:flex;gap:3px;flex-wrap:wrap;flex:1;min-width:0}
+.lw{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mid);border:1px solid var(--rule);border-radius:5px;padding:3px 7px}
+.lw:hover{border-color:var(--chalk);color:var(--chalk)}
+.lw.on{background:var(--turf);border-color:var(--turf);color:#fff;font-weight:600}
+.lw.up{border-style:dashed}
+.lbest{font-size:12px;padding:6px 11px;white-space:nowrap}
+.lpts.proj{color:var(--turf)}
+.lpts.proj em{display:block;font-style:normal;font-size:8.5px;color:var(--dim);font-family:'IBM Plex Mono',monospace;line-height:1;margin-top:1px}
 .lcall{display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--rule);font-family:'IBM Plex Mono',monospace;font-size:11px}
 .lcall .up{color:var(--good)} .lcall .dn{color:var(--qb)}
 .lcall em{color:var(--dim);font-style:normal}
@@ -990,13 +999,28 @@ const slotOk=(slot,pos)=>slot==="FLEX"?FLEX_OK.includes(pos):pos===slot;
 /* Auto-fills the best legal lineup, then applies any manual placements the
    user has made for this week. Manual picks win; everything else re-optimizes
    around them. */
-function lineupFor(lg,wk){
+/* A week is "live" once its games have been played. Before that there are no
+   actual points, so the lineup has to be sorted on projections instead —
+   otherwise auto-fill is ranking a roster of zeroes. */
+function weekPlayed(team,wk){
+  const g=gameOf(team,season,wk);
+  return g?!!g[G.played]:false;
+}
+function lineupFor(lg,wk,opts){
+  const useProj=(opts&&opts.useProj)!==undefined?opts.useProj:null;
   const pool={};
+  let anyPlayed=false;
   for(const pid of lg.roster){
     const p=P[pid]; if(!p) continue;
     const {pts,played}=ptsFor(pid,wk,lg.score);
-    pool[pid]={pid,pos:p.p,pts,played};
+    if(played) anyPlayed=true;
+    const pj=project(pid,{wk,score:lg.score});
+    pool[pid]={pid,pos:p.p,pts,played,proj:pj?pj.pts:0,conf:pj?pj.conf:0,
+               opp:pj?pj.opp:null,status:pj?pj.status:"",gate:pj?pj.gate:1};
   }
+  // rank on projections for an upcoming week, on what actually happened otherwise
+  const byProj = useProj===null ? !anyPlayed : useProj;
+  const rank=c=>byProj?c.proj:c.pts;
   const slots=slotList(lg);
   const manual=(lg.lineup||{})[wk]||{};        // {slotIndex: pid}
   const used=new Set(), start=new Array(slots.length).fill(null);
@@ -1011,13 +1035,14 @@ function lineupFor(lg,wk){
   // 2. auto-fill the rest, best first
   slots.forEach((slot,i)=>{
     if(start[i]) return;
-    const best=Object.values(pool).filter(c=>!used.has(c.pid)&&slotOk(slot,c.pos)).sort((a,b)=>b.pts-a.pts)[0];
+    const best=Object.values(pool).filter(c=>!used.has(c.pid)&&slotOk(slot,c.pos)).sort((a,b)=>rank(b)-rank(a))[0];
     if(best){ used.add(best.pid); start[i]={slot,...best}; }
     else start[i]={slot,pid:null,pts:0,played:false};
   });
-  const bench=Object.values(pool).filter(c=>!used.has(c.pid)).sort((a,b)=>b.pts-a.pts);
+  const bench=Object.values(pool).filter(c=>!used.has(c.pid)).sort((a,b)=>rank(b)-rank(a));
   const total=start.reduce((s,x)=>s+x.pts,0);
-  return {start,bench,total,slots};
+  const projTotal=start.reduce((s,x)=>s+(x.proj||0),0);
+  return {start,bench,total,projTotal,slots,byProj,anyPlayed};
 }
 /* Swap: put pid into slot i for this week. Anyone displaced goes to bench,
    unless we're swapping with a starter, in which case they trade places. */
@@ -1038,6 +1063,23 @@ function placeIn(lg,wk,slotIdx,pid){
   lg.lineup[wk]=wkMap;
 }
 function clearWeek(lg,wk){ if(lg.lineup) delete lg.lineup[wk]; }
+/* Writes the projection-optimal lineup into this week's manual placements, so
+   it sticks even if projections shift later in the week. */
+function setBestLineup(lg,wk){
+  const slots=slotList(lg);
+  const cands=lg.roster.map(pid=>{
+    const p=P[pid]; if(!p) return null;
+    const pj=project(pid,{wk,score:lg.score});
+    return {pid,pos:p.p,proj:pj?pj.pts:0};
+  }).filter(Boolean);
+  const used=new Set(), map={};
+  slots.forEach((slot,i)=>{
+    const best=cands.filter(c=>!used.has(c.pid)&&slotOk(slot,c.pos)).sort((a,b)=>b.proj-a.proj)[0];
+    if(best){ used.add(best.pid); map[i]=best.pid; }
+  });
+  lg.lineup=lg.lineup||{};
+  lg.lineup[wk]=map;
+}
 function leagueSeason(lg){
   const wks=weeksIn(season);
   const byWeek=wks.map(w=>({w,total:lineupFor(lg,w).total}));
@@ -1054,6 +1096,14 @@ function leagueSeason(lg){
   }
   return {byWeek,total,ppg:played.length?total/played.length:0,weeksPlayed:played.length,best,worst};
 }
+/* One cell that shows the projection before kickoff and the real number after,
+   never silently swapping which is which. */
+function lptsHtml(x,live){
+  if(live&&x.played) return '<span class="lpts">'+x.pts.toFixed(1)+'</span>';
+  if(live&&!x.played) return '<span class="lpts dnp" title="Did not play">–</span>';
+  if(!x.gate) return '<span class="lpts dnp" title="'+(x.status||"Out")+'">out</span>';
+  return '<span class="lpts proj" title="Projected">'+x.proj.toFixed(1)+'<em>proj</em></span>';
+}
 function renderLeagues(){
   const host=document.getElementById("view-leagues");
   const wks=weeksIn(season);
@@ -1068,8 +1118,10 @@ function renderLeagues(){
   let h='<div class="bar"><span class="count" style="margin:0">'+leagues.length+' league'+(leagues.length===1?'':'s')+' · '+season+'</span>'
     +'<div class="grow"></div><button class="ctl" id="addLg">+ Add league</button></div><div class="lgrid">';
   for(const lg of leagues){
-    const wk=leagueWeek[lg.id]||(wks.length?wks[wks.length-1]:0);
-    const lu=wks.length?lineupFor(lg,wk):{start:[],bench:[],total:0};
+    const up=nextWeek();
+    const lwks=wks.includes(up)?wks:wks.concat([up]);
+    const wk=leagueWeek[lg.id]||up;
+    const lu=lineupFor(lg,wk);
     const ss=leagueSeason(lg);
     const maxW=Math.max(...ss.byWeek.map(x=>x.total),1);
     h+='<div class="lcard" data-lg="'+lg.id+'">'
@@ -1101,8 +1153,9 @@ function renderLeagues(){
       +SLOT_KEYS.map(k=>'<label class="slotf"><span>'+k+'</span><input type="number" min="0" max="4" value="'+(lg.slots[k]||0)+'" data-slot="'+lg.id+'|'+k+'"></label>').join('')
       +'</div><div class="lnote">Points-allowed tiers follow the standard ladder (0 pts allowed = 10, 1–6 = 7, 7–13 = 4, 14–20 = 1, 21–27 = 0, 28–34 = −1, 35+ = −4); the multiplier scales all of them. Field goals score a flat rate rather than by distance.</div></div>';
     // KPIs
+    const live=lu.anyPlayed;
     h+='<div class="lkpis">'
-      +'<div class="lkpi"><b>'+lu.total.toFixed(1)+'</b><span>week '+wk+'</span></div>'
+      +'<div class="lkpi"><b>'+(live?lu.total.toFixed(1):lu.projTotal.toFixed(1))+'</b><span>'+(live?'week '+wk:'projected wk '+wk)+'</span></div>'
       +'<div class="lkpi"><b>'+ss.total.toFixed(0)+'</b><span>season</span></div>'
       +'<div class="lkpi"><b>'+ss.ppg.toFixed(1)+'</b><span>ppg</span></div>'
       +'<div class="lkpi"><b>'+lg.roster.length+'</b><span>rostered</span></div></div>';
@@ -1111,6 +1164,11 @@ function renderLeagues(){
       h+='<div class="lchart">'+ss.byWeek.map(x=>'<div class="lbar'+(x.w===wk?' on':'')+'" data-jump="'+lg.id+'|'+x.w+'" title="Week '+x.w+': '+x.total.toFixed(1)+'">'
         +'<i style="height:'+Math.max(2,Math.round(x.total/maxW*46))+'px"></i><span>'+x.w+'</span></div>').join('')+'</div>';
     }
+    // week picker + lineup tools
+    h+='<div class="lweekbar"><div class="lweeks">'
+      +lwks.map(w=>'<button class="lw'+(w===wk?' on':'')+(w===up?' up':'')+'" data-wkpick="'+lg.id+'|'+w+'">'+(w===up?'Wk '+w+' ▸':w)+'</button>').join('')
+      +'</div>'
+      +'<button class="ctl lbest" data-best="'+lg.id+'|'+wk+'">Set best lineup</button></div>';
     // callouts
     if(ss.best) h+='<div class="lcall"><span class="up">▲ '+P[ss.best.pid].n+' '+ss.best.pts.toFixed(1)+' <em>wk '+ss.best.w+'</em></span>'
       +(ss.worst?'<span class="dn">▼ '+P[ss.worst.pid].n+' '+ss.worst.pts.toFixed(1)+' <em>wk '+ss.worst.w+'</em></span>':'')+'</div>';
@@ -1128,7 +1186,7 @@ function renderLeagues(){
           +'<button class="lslot '+(s.slot==="FLEX"?"flex":"")+(armed?' on':'')+'" data-slot-swap="'+lg.id+'|'+i+'" title="Swap this spot">'+s.slot+'</button>'
           +(s.pid?por(s.pid,"sm")
                  +'<span class="lnm" data-open="'+s.pid+'">'+P[s.pid].n+statusTag(s.pid)+'<em>'+P[s.pid].p+' · '+P[s.pid].t+(s.manual?' · <b class="mnl">set</b>':'')+'</em></span>'
-                 +'<span class="lpts'+(s.played?'':' dnp')+'">'+(s.played?s.pts.toFixed(1):'–')+'</span>'
+                 +lptsHtml(s,live)
                  +(eligible?'<button class="swapin" data-swap-to="'+lg.id+'|'+sw.slotIdx+'|'+s.pid+'">swap</button>'
                            :'<button class="ltr" data-trade="'+lg.id+'|'+s.pid+'" title="Trade value">⇄</button>'
                             +'<button class="lx" data-drop="'+lg.id+'|'+s.pid+'" title="Remove">✕</button>')
@@ -1144,7 +1202,7 @@ function renderLeagues(){
         for(const b of cands){
           h+='<div class="lrow elig"><span class="lslot bn">BN</span>'+por(b.pid,"sm")
             +'<span class="lnm">'+P[b.pid].n+statusTag(b.pid)+'<em>'+P[b.pid].p+' · '+P[b.pid].t+'</em></span>'
-            +'<span class="lpts'+(b.played?'':' dnp')+'">'+(b.played?b.pts.toFixed(1):'–')+'</span>'
+            +lptsHtml(b,live)
             +'<button class="swapin" data-swap-to="'+lg.id+'|'+sw.slotIdx+'|'+b.pid+'">swap</button></div>';
         }
       }
@@ -1153,7 +1211,7 @@ function renderLeagues(){
         for(const b of lu.bench){
           h+='<div class="lrow bench"><span class="lslot bn">BN</span>'+por(b.pid,"sm")
             +'<span class="lnm" data-open="'+b.pid+'">'+P[b.pid].n+statusTag(b.pid)+'<em>'+P[b.pid].p+' · '+P[b.pid].t+'</em></span>'
-            +'<span class="lpts'+(b.played?'':' dnp')+'">'+(b.played?b.pts.toFixed(1):'–')+'</span>'
+            +lptsHtml(b,live)
             +'<button class="ltr" data-trade="'+lg.id+'|'+b.pid+'" title="Trade value">⇄</button>'
             +'<button class="lx" data-drop="'+lg.id+'|'+b.pid+'" title="Remove">✕</button></div>';
         }
@@ -1192,6 +1250,16 @@ function wireLeagues(host,wks){
   host.querySelectorAll("[data-slot]").forEach(inp=>inp.onchange=()=>{
     const [id,k]=inp.dataset.slot.split("|");
     L(id).slots[k]=Math.max(0,Math.min(4,+inp.value||0)); saveLeagues(); renderLeagues();
+  });
+  host.querySelectorAll("[data-wkpick]").forEach(b=>b.onclick=()=>{
+    const [id,w]=b.dataset.wkpick.split("|"); leagueWeek[id]=+w; swapping={}; renderLeagues();
+  });
+  host.querySelectorAll("[data-best]").forEach(b=>b.onclick=()=>{
+    const [id,w]=b.dataset.best.split("|");
+    const lg=L(id);
+    if(!lg.roster.length){ alert("Add some players to this roster first."); return; }
+    setBestLineup(lg,+w);
+    saveLeagues(); renderLeagues();
   });
   host.querySelectorAll("[data-jump]").forEach(b=>b.onclick=()=>{
     const [id,w]=b.dataset.jump.split("|"); leagueWeek[id]=+w; renderLeagues();
