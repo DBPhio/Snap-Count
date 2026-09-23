@@ -7,9 +7,43 @@ SEASONS=[2026,2025]
 OFF={'QB','RB','FB','WR','TE','K'}
 OUT=os.path.join(os.path.dirname(os.path.abspath(__file__)),"data")
 
-def get(url):
-    print("  fetch",url.split("/")[-1],file=sys.stderr)
-    with urllib.request.urlopen(url) as r: return io.StringIO(r.read().decode("utf-8","replace"))
+# ---- conditional fetching -------------------------------------------------
+# nflverse serves ETag/Last-Modified, so unchanged files cost one 304 instead
+# of a full download. Etags live beside the data and are committed with it.
+ETAG_PATH=os.path.join(os.path.dirname(os.path.abspath(__file__)),"data","etags.json")
+try: ETAGS=json.load(open(ETAG_PATH))
+except Exception: ETAGS={}
+FORCE=os.environ.get("FORCE_REFRESH")=="1"
+BYTES=[0]
+
+class NotModified(Exception): pass
+
+def get(url, conditional=False):
+    name=url.split("/")[-1]
+    req=urllib.request.Request(url,headers={"User-Agent":"snap-count-data-builder"})
+    if conditional and not FORCE and url in ETAGS:
+        req.add_header("If-None-Match",ETAGS[url])
+    try:
+        with urllib.request.urlopen(req) as r:
+            raw=r.read()
+            BYTES[0]+=len(raw)
+            tag=r.headers.get("ETag")
+            if tag: ETAGS[url]=tag
+            print(f"  fetch {name} ({len(raw)/1048576:.1f} MB)",file=sys.stderr)
+            return io.StringIO(raw.decode("utf-8","replace"))
+    except urllib.error.HTTPError as e:
+        if e.code==304:
+            print(f"  unchanged {name}",file=sys.stderr)
+            raise NotModified(url)
+        raise
+
+def save_etags():
+    try: json.dump(ETAGS,open(ETAG_PATH,"w"),indent=0)
+    except Exception as e: print("  etag save failed:",e,file=sys.stderr)
+
+def out_path(name): return os.path.join(OUT,name)
+def is_current_season(s): return s==max(SEASONS)
+def have(name): return os.path.exists(out_path(name))
 
 def f(v):
     try: return float(v)
@@ -17,7 +51,9 @@ def f(v):
 def i(v): return int(round(f(v)))
 
 def build_players():
-    rows=list(csv.DictReader(get(f"{BASE}/rosters/roster_2026.csv")))
+    try: rows=list(csv.DictReader(get(f"{BASE}/rosters/roster_2026.csv",conditional=True)))
+    except NotModified:
+        return json.load(open(out_path("players.json")))
     out={}
     KEEP={'ACT':'','RES':'IR','INA':'INA','PUP':'PUP','NON':'NFI'}
     for r in rows:
@@ -42,7 +78,13 @@ def build_players():
     return out
 
 def build_weekly(season, valid):
-    try: rows=list(csv.DictReader(get(f"{BASE}/stats_player/stats_player_week_{season}.csv")))
+    # a finished season never changes; keep what is already on disk
+    if not is_current_season(season) and have(f"weekly_{season}.json") and not FORCE:
+        print(f"  reusing weekly_{season}.json (season complete)",file=sys.stderr)
+        return None
+    try: rows=list(csv.DictReader(get(f"{BASE}/stats_player/stats_player_week_{season}.csv",conditional=True)))
+    except NotModified:
+        return None
     except Exception as e:
         print("  skip",season,e,file=sys.stderr); return []
     out=[]
@@ -85,7 +127,7 @@ def build_dst(seasons):
     # game scores -> points allowed
     scores={}
     try:
-        for g in csv.DictReader(get("https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv")):
+        for g in games_rows():
             if g.get('game_type')!='REG': continue
             try: s,w=int(g['season']),int(g['week'])
             except: continue
@@ -97,9 +139,13 @@ def build_dst(seasons):
     out={}
     for season in seasons:
         rows=[]
-        try: data=list(csv.DictReader(get(f"{BASE}/stats_team/stats_team_week_{season}.csv")))
+        if not is_current_season(season) and have(f"dst_{season}.json") and not FORCE:
+            print(f"  reusing dst_{season}.json (season complete)",file=sys.stderr); out[season]=None; continue
+        try: data=list(csv.DictReader(get(f"{BASE}/stats_team/stats_team_week_{season}.csv",conditional=True)))
+        except NotModified:
+            out[season]=None; continue            # keep what is already on disk
         except Exception as e:
-            print("  skip dst",season,e,file=sys.stderr); out[season]=[]; continue
+            print("  skip dst",season,e,file=sys.stderr); out[season]=None; continue
         for r in data:
             if r.get('season_type')!='REG': continue
             tm,wk=r['team'],i(r['week'])
@@ -113,12 +159,28 @@ def build_dst(seasons):
         out[season]=rows
     return out
 
+GAMES_CACHE=None
+def games_rows():
+    """games.csv is needed twice per run; only pull it once."""
+    global GAMES_CACHE
+    if GAMES_CACHE is not None: return GAMES_CACHE
+    try:
+        GAMES_CACHE=list(csv.DictReader(get("https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv",conditional=True)))
+    except NotModified:
+        GAMES_CACHE=[]
+    except Exception as e:
+        print("  games fetch failed:",e,file=sys.stderr); GAMES_CACHE=[]
+    return GAMES_CACHE
+
 def build_snaps(seasons, pfr2gsis):
     """Snap share per player-week, keyed to gsis ids."""
     out={}
     for s in seasons:
         rows=[]
-        try: data=list(csv.DictReader(get(f"{BASE}/snap_counts/snap_counts_{s}.csv")))
+        if not is_current_season(s) and have(f"snaps_{s}.json") and not FORCE:
+            print(f"  reusing snaps_{s}.json (season complete)",file=sys.stderr); out[s]=None; continue
+        try: data=list(csv.DictReader(get(f"{BASE}/snap_counts/snap_counts_{s}.csv",conditional=True)))
+        except NotModified: out[s]=None; continue
         except Exception as e:
             print("  skip snaps",s,e,file=sys.stderr); out[s]=[]; continue
         for r in data:
@@ -142,10 +204,14 @@ def clean_injury(s):
     return s
 
 def build_injuries(season):
+    # a 304 here means no new report since the last run
     """Every injury-report entry this season, keyed by player then week, so the
     app can show what a designation actually is rather than just its label."""
     out={}
-    try: data=list(csv.DictReader(get(f"{BASE}/injuries/injuries_{season}.csv")))
+    try: data=list(csv.DictReader(get(f"{BASE}/injuries/injuries_{season}.csv",conditional=True)))
+    except NotModified:
+        try: return json.load(open(out_path("injuries.json")))
+        except Exception: return out
     except Exception as e:
         print("  skip injuries:",e,file=sys.stderr); return out
     for r in data:
@@ -169,9 +235,12 @@ def build_injuries(season):
 def build_schedule(seasons):
     """Per team-week: opponent, Vegas line, implied team total, played flag."""
     out={s:[] for s in seasons}
-    try: games=list(csv.DictReader(get("https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv")))
-    except Exception as e:
-        print("  schedule fetch failed:",e,file=sys.stderr); return out
+    games=games_rows()
+    if not games:
+        for s in seasons:
+            try: out[s]=json.load(open(out_path(f"sched_{s}.json")))["rows"]
+            except Exception: pass
+        return out
     for g in games:
         if g.get('game_type')!='REG': continue
         try: s,w=int(g['season']),int(g['week'])
@@ -206,6 +275,7 @@ if __name__=="__main__":
     for s in SEASONS:
         print(f"building weekly {s}…",file=sys.stderr)
         wk=build_weekly(s,players)
+        if wk is None: continue                      # unchanged; existing file stands
         json.dump({"season":s,"rows":wk},open(f"{OUT}/weekly_{s}.json","w"),separators=(',',':'))
         weeks=sorted(set(r[1] for r in wk))
         print(f"  {len(wk)} stat lines, weeks {weeks[:1]}–{weeks[-1:]}",file=sys.stderr)
@@ -213,6 +283,7 @@ if __name__=="__main__":
     print("building snap shares…",file=sys.stderr)
     snaps=build_snaps(SEASONS,pfr2gsis)
     for s in SEASONS:
+        if snaps.get(s) is None: continue
         json.dump({"season":s,"rows":snaps[s]},open(f"{OUT}/snaps_{s}.json","w"),separators=(',',':'))
         print(f"  {s}: {len(snaps[s])} snap lines",file=sys.stderr)
     print("building injuries…",file=sys.stderr)
@@ -228,7 +299,10 @@ if __name__=="__main__":
     print("building team defenses…",file=sys.stderr)
     dst=build_dst(SEASONS)
     for s in SEASONS:
+        if dst.get(s) is None: continue
         json.dump({"season":s,"rows":dst[s]},open(f"{OUT}/dst_{s}.json","w"),separators=(',',':'))
         print(f"  {s}: {len(dst[s])} defense lines",file=sys.stderr)
     meta={"built":__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),"seasons":SEASONS,"players":len(players)}
     json.dump(meta,open(f"{OUT}/meta.json","w"))
+    save_etags()
+    print(f"\ndownloaded {BYTES[0]/1048576:.1f} MB this run",file=sys.stderr)
