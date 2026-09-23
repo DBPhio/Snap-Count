@@ -2,9 +2,25 @@ name: Refresh NFL data
 
 on:
   schedule:
-    # Tuesdays 09:00 UTC — after Monday Night Football is final
-    - cron: "0 9 * * 2"
-  workflow_dispatch:        # lets you run it by hand any time
+    # Times are UTC; US Eastern is UTC-4 during the season.
+    # Game windows — check often while results are landing:
+    - cron: "*/20 18-23 * * 0"    # Sunday afternoon slate
+    - cron: "*/20 0-5 * * 1"      # Sunday night into the small hours
+    - cron: "*/20 0-5 * * 2"      # Monday night football
+    - cron: "*/20 0-5 * * 5"      # Thursday night football
+    # Quiet periods — injury reports and betting lines still move:
+    - cron: "17 12-23 * * 1-6"    # weekday daytime, offset off the hour
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Re-download everything, ignoring caches"
+        type: boolean
+        default: false
+
+# Never let two runs fight over the same commit.
+concurrency:
+  group: nfl-data
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -17,12 +33,26 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+
       - name: Rebuild data files
+        env:
+          FORCE_REFRESH: ${{ inputs.force && '1' || '0' }}
         run: python build_data.py
-      - name: Commit if changed
+
+      - name: Commit only if something actually changed
         run: |
           git config user.name  "snap-count-bot"
           git config user.email "actions@github.com"
           git add data/
-          git diff --staged --quiet || git commit -m "Refresh NFL data ($(date -u +%Y-%m-%d))"
-          git push
+          if git diff --staged --quiet; then
+            echo "No change upstream — nothing to commit."
+            exit 0
+          fi
+          git commit -m "Refresh NFL data ($(date -u '+%Y-%m-%d %H:%M UTC'))"
+          # Another run may have pushed while this one was working.
+          for i in 1 2 3; do
+            git pull --rebase --autostash && git push && exit 0
+            sleep 5
+          done
+          echo "Could not push after 3 attempts" >&2
+          exit 1
