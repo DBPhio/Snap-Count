@@ -132,8 +132,18 @@ def build_snaps(seasons, pfr2gsis):
         out[s]=rows
     return out
 
+# practice participation, shortened for display
+PRAC={'Did Not Participate In Practice':'DNP',
+      'Limited Participation in Practice':'Limited',
+      'Full Participation in Practice':'Full'}
+def clean_injury(s):
+    s=(s or '').strip()
+    if not s or s.lower().startswith('not injury related'): return ''
+    return s
+
 def build_injuries(season):
-    """Most recent report status per player this season."""
+    """Every injury-report entry this season, keyed by player then week, so the
+    app can show what a designation actually is rather than just its label."""
     out={}
     try: data=list(csv.DictReader(get(f"{BASE}/injuries/injuries_{season}.csv")))
     except Exception as e:
@@ -143,10 +153,18 @@ def build_injuries(season):
         gid=r.get('gsis_id','').strip()
         if not gid: continue
         wk=i(r['week'])
-        st=(r.get('report_status') or '').strip()
-        prev=out.get(gid)
-        if st and (prev is None or wk>=prev[0]): out[gid]=[wk,st]
-    return {k:v for k,v in out.items()}
+        status=(r.get('report_status') or '').strip()
+        prac=PRAC.get((r.get('practice_status') or '').strip(),(r.get('practice_status') or '').strip())
+        parts=[clean_injury(r.get('report_primary_injury')),clean_injury(r.get('report_secondary_injury')),
+               clean_injury(r.get('practice_primary_injury')),clean_injury(r.get('practice_secondary_injury'))]
+        seen=[]
+        for p in parts:
+            if p and p not in seen: seen.append(p)
+        if not (status or prac or seen): continue
+        # [week, game-day designation, practice participation, body part(s)]
+        out.setdefault(gid,[]).append([wk,status,prac,", ".join(seen[:2])])
+    for gid in out: out[gid].sort(key=lambda x:x[0])
+    return out
 
 def build_schedule(seasons):
     """Per team-week: opponent, Vegas line, implied team total, played flag."""
