@@ -1109,14 +1109,20 @@ function placeIn(lg,wk,slotIdx,pid){
   lg.lineup[wk]=wkMap;
 }
 function clearWeek(lg,wk){ if(lg.lineup) delete lg.lineup[wk]; }
-/* Writes the projection-optimal lineup into this week's manual placements, so
-   it sticks even if projections shift later in the week. */
+/* Writes the best lineup into this week's manual placements so it sticks even
+   if projections shift later in the week.
+   Which "best" depends on the week: before kickoff the only information is the
+   projection; once the games are played, the best lineup is the one that
+   actually scored most, which is what you want when reviewing a past week. */
 function setBestLineup(lg,wk){
   const slots=slotList(lg);
+  const lu=lineupFor(lg,wk);
+  const byProj=lu.byProj;
   const cands=lg.roster.map(pid=>{
     const p=P[pid]; if(!p) return null;
+    const {pts}=ptsFor(pid,wk,lg.score);
     const pj=project(pid,{wk,score:lg.score});
-    return {pid,pos:p.p,proj:pj?pj.pts:0};
+    return {pid,pos:p.p,proj:byProj?(pj?pj.pts:0):pts};
   }).filter(Boolean);
   const used=new Set(), map={};
   slots.forEach((slot,i)=>{
@@ -1226,7 +1232,10 @@ function renderLeagues(){
     h+='<div class="lweekbar"><div class="lweeks">'
       +lwks.map(w=>'<button class="lw'+(w===wk?' on':'')+(w===up?' up':'')+'" data-wkpick="'+lg.id+'|'+w+'">'+(w===up?'Wk '+w+' ▸':w)+'</button>').join('')
       +'</div>'
-      +'<button class="ctl lbest" data-best="'+lg.id+'|'+wk+'">Set best lineup</button></div>';
+      +'<button class="ctl lbest" data-best="'+lg.id+'|'+wk+'" title="'+(lu.byProj
+          ?'Fill every slot with the highest projected player'
+          :'Fill every slot with whoever actually scored most that week')+'">'
+      +(lu.byProj?'Set best lineup':'Show best possible')+'</button></div>';
     // callouts
     if(ss.best) h+='<div class="lcall"><span class="up">▲ '+P[ss.best.pid].n+' '+ss.best.pts.toFixed(1)+' <em>wk '+ss.best.w+'</em></span>'
       +(ss.worst?'<span class="dn">▼ '+P[ss.worst.pid].n+' '+ss.worst.pts.toFixed(1)+' <em>wk '+ss.worst.w+'</em></span>':'')+'</div>';
