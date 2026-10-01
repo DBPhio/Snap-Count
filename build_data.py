@@ -121,6 +121,113 @@ def build_weekly(season, valid):
         if any(row[4:19]) or sptd or two or fumlost: out.append(row)
     return out
 
+def build_adv(seasons, pfr2gsis):
+    """Pro Football Reference weekly advanced stats, joined to gsis ids.
+    These describe HOW a player produced: yards after contact, drops,
+    pressure faced. Rows: [gsis, week, ybc, yac, broken, drops, drop_pct,
+    rat_when_targeted, pressured, blitzed, hurried, hit, bad_throw_pct, sacked]"""
+    out={}
+    for s in seasons:
+        if not is_current_season(s) and have(f"adv_{s}.json") and not FORCE:
+            print(f"  reusing adv_{s}.json (season complete)",file=sys.stderr); out[s]=None; continue
+        acc={}
+        for kind in ("rush","rec","pass"):
+            try: rows=list(csv.DictReader(get(f"{BASE}/pfr_advstats/advstats_week_{kind}_{s}.csv",conditional=True)))
+            except NotModified: continue
+            except Exception as e:
+                print(f"  skip adv {kind} {s}:",e,file=sys.stderr); continue
+            for r in rows:
+                if r.get('game_type')!='REG': continue
+                gid=pfr2gsis.get(r.get('pfr_player_id',''))
+                if not gid: continue
+                k=(gid,i(r['week']))
+                a=acc.setdefault(k,{'ybc':0,'yac':0,'brk':0,'drp':0,'drppct':0,
+                                    'rat':0,'prs':0,'blz':0,'hur':0,'hit':0,'bad':0,'sk':0})
+                if kind=="rush":
+                    a['ybc']+=f(r.get('rushing_yards_before_contact',0))
+                    a['yac']+=f(r.get('rushing_yards_after_contact',0))
+                    a['brk']+=f(r.get('rushing_broken_tackles',0))+f(r.get('receiving_broken_tackles',0))
+                elif kind=="rec":
+                    a['drp']+=f(r.get('receiving_drop',0))
+                    a['rat']+=f(r.get('receiving_rat',0)); a['ratn']=a.get('ratn',0)+1
+                    a['brk']=max(a['brk'],f(r.get('receiving_broken_tackles',0)))
+                else:
+                    a['prs']+=f(r.get('times_pressured',0)); a['blz']+=f(r.get('times_blitzed',0))
+                    a['hur']+=f(r.get('times_hurried',0));   a['hit']+=f(r.get('times_hit',0))
+                    # store the raw count; PFR's _pct columns are fractions and
+                    # can't be averaged across weeks without weighting
+                    a['bad']+=f(r.get('passing_bad_throws',0))
+                    a['sk']+=f(r.get('times_sacked',0))
+        if not acc: out[s]=None; continue
+        out[s]=[[g,w,round(a['ybc'],1),round(a['yac'],1),i(a['brk']),i(a['drp']),0,
+                 round(a['rat']/a['ratn'],1) if a.get('ratn') else 0,
+                 i(a['prs']),i(a['blz']),i(a['hur']),i(a['hit']),i(a['bad']),i(a['sk'])]
+                for (g,w),a in sorted(acc.items())]
+    return out
+
+def build_defprofile(seasons):
+    """Team defensive profile per week, aggregated from defender-level PFR data.
+    Coverage scheme (man vs zone) is not in open data, but completion rate,
+    yards per target, passer rating and depth of target allowed describe
+    coverage quality well enough to test against.
+    Rows: [team, week, tgts, cmp_pct, ypt, rating, adot, missed_tkl_pct, pressures, blitzes]"""
+    out={}
+    for s in seasons:
+        if not is_current_season(s) and have(f"defprof_{s}.json") and not FORCE:
+            print(f"  reusing defprof_{s}.json (season complete)",file=sys.stderr); out[s]=None; continue
+        try: rows=list(csv.DictReader(get(f"{BASE}/pfr_advstats/advstats_week_def_{s}.csv",conditional=True)))
+        except NotModified: out[s]=None; continue
+        except Exception as e:
+            print(f"  skip defprof {s}:",e,file=sys.stderr); out[s]=None; continue
+        acc={}
+        for r in rows:
+            if r.get('game_type')!='REG': continue
+            k=(r['team'],i(r['week']))
+            a=acc.setdefault(k,{'tgt':0,'cmp':0,'yds':0,'ay':0,'tkl':0,'miss':0,'prs':0,'blz':0,'td':0})
+            a['tgt']+=f(r.get('def_targets',0)); a['cmp']+=f(r.get('def_completions_allowed',0))
+            a['yds']+=f(r.get('def_yards_allowed',0)); a['td']+=f(r.get('def_receiving_td_allowed',0))
+            a['ay']+=f(r.get('def_adot',0))*f(r.get('def_targets',0))
+            a['tkl']+=f(r.get('def_tackles_combined',0)); a['miss']+=f(r.get('def_missed_tackles',0))
+            a['prs']+=f(r.get('def_pressures',0)); a['blz']+=f(r.get('def_times_blitzed',0))
+        out[s]=[[t,w,i(a['tgt']),
+                 round(a['cmp']/a['tgt']*100,1) if a['tgt'] else 0,
+                 round(a['yds']/a['tgt'],2) if a['tgt'] else 0,
+                 i(a['td']),
+                 round(a['ay']/a['tgt'],2) if a['tgt'] else 0,
+                 round(a['miss']/(a['tkl']+a['miss'])*100,1) if (a['tkl']+a['miss']) else 0,
+                 i(a['prs']), i(a['blz'])]
+                for (t,w),a in sorted(acc.items())]
+    return out
+
+def build_bio(players):
+    """Age, size and draft capital for the players we already track."""
+    try: rows=list(csv.DictReader(get(f"{BASE}/players/players.csv",conditional=True)))
+    except NotModified: return None
+    except Exception as e:
+        print("  skip bio:",e,file=sys.stderr); return None
+    picks={}
+    try:
+        for d in csv.DictReader(get(f"{BASE}/draft_picks/draft_picks.csv",conditional=True)):
+            g=d.get('gsis_id','').strip()
+            if g: picks[g]=[i(d.get('round',0)),i(d.get('pick',0)),d.get('season','')]
+    except Exception: pass
+    n=0
+    for r in rows:
+        gid=r.get('gsis_id','').strip()
+        if gid not in players: continue
+        p=players[gid]
+        bd=(r.get('birth_date') or '').strip()
+        if bd: p['bd']=bd
+        if r.get('height'): p['ht']=i(r['height'])
+        if r.get('weight'): p['wt']=i(r['weight'])
+        if r.get('draft_year'): p['dy']=i(r['draft_year'])
+        pk=picks.get(gid)
+        if pk and pk[0]: p['dr']=pk[0]; p['dp']=pk[1]
+        elif r.get('draft_round'): p['dr']=i(r['draft_round']); p['dp']=i(r.get('draft_pick',0))
+        n+=1
+    print(f"  bio attached to {n} players",file=sys.stderr)
+    return True
+
 DST_ROW_DOC = """DST weekly row:
 [team, week, opp, pts_allowed, yds_allowed, sacks, ints, fum_rec, def_tds, safeties, st_tds]"""
 def build_dst(seasons):
@@ -296,6 +403,21 @@ if __name__=="__main__":
         json.dump({"season":s,"rows":sched[s]},open(f"{OUT}/sched_{s}.json","w"),separators=(',',':'))
         nxt=[r for r in sched[s] if not r[7]]
         print(f"  {s}: {len(sched[s])} team-weeks, {len(nxt)} unplayed",file=sys.stderr)
+    print("building advanced stats…",file=sys.stderr)
+    adv=build_adv(SEASONS,pfr2gsis)
+    for s in SEASONS:
+        if adv.get(s) is None: continue
+        json.dump({"season":s,"rows":adv[s]},open(f"{OUT}/adv_{s}.json","w"),separators=(',',':'))
+        print(f"  {s}: {len(adv[s])} advanced lines",file=sys.stderr)
+    print("building defensive profiles…",file=sys.stderr)
+    dp=build_defprofile(SEASONS)
+    for s in SEASONS:
+        if dp.get(s) is None: continue
+        json.dump({"season":s,"rows":dp[s]},open(f"{OUT}/defprof_{s}.json","w"),separators=(',',':'))
+        print(f"  {s}: {len(dp[s])} team-weeks",file=sys.stderr)
+    print("building bios…",file=sys.stderr)
+    if build_bio(players):
+        json.dump(players,open(f"{OUT}/players.json","w"),separators=(',',':'))
     print("building team defenses…",file=sys.stderr)
     dst=build_dst(SEASONS)
     for s in SEASONS:
