@@ -199,6 +199,33 @@ def build_defprofile(seasons):
                 for (t,w),a in sorted(acc.items())]
     return out
 
+def build_depth(players):
+    """Current depth-chart rank per player. The projection model needs to know
+    a backup quarterback is a backup; production history alone cannot tell it."""
+    try: rows=list(csv.DictReader(get(f"{BASE}/depth_charts/depth_charts_2026.csv",conditional=True)))
+    except NotModified: return None
+    except Exception as e:
+        print("  skip depth charts:",e,file=sys.stderr); return None
+    latest={}
+    for r in rows:
+        t=r.get('team','')
+        dt=r.get('dt','')
+        if dt>latest.get(t,''): latest[t]=dt
+    keep={'QB':'QB','RB':'RB','FB':'RB','WR':'WR','TE':'TE','PK':'K'}
+    out={}
+    for r in rows:
+        if r.get('dt')!=latest.get(r.get('team','')): continue
+        ab=r.get('pos_abb','')
+        if ab not in keep: continue
+        gid=r.get('gsis_id','').strip()
+        if not gid or gid not in players: continue
+        try: rank=int(float(r.get('pos_rank') or 99))
+        except: rank=99
+        prev=out.get(gid)
+        if prev is None or rank<prev: out[gid]=rank
+    print(f"  depth rank for {len(out)} players",file=sys.stderr)
+    return out
+
 def build_bio(players):
     """Age, size and draft capital for the players we already track."""
     try: rows=list(csv.DictReader(get(f"{BASE}/players/players.csv",conditional=True)))
@@ -415,6 +442,11 @@ if __name__=="__main__":
         if dp.get(s) is None: continue
         json.dump({"season":s,"rows":dp[s]},open(f"{OUT}/defprof_{s}.json","w"),separators=(',',':'))
         print(f"  {s}: {len(dp[s])} team-weeks",file=sys.stderr)
+    print("building depth charts…",file=sys.stderr)
+    depth=build_depth(players)
+    if depth:
+        for gid,rk in depth.items():
+            if gid in players: players[gid]['dc']=rk
     print("building bios…",file=sys.stderr)
     if build_bio(players):
         json.dump(players,open(f"{OUT}/players.json","w"),separators=(',',':'))
