@@ -216,6 +216,49 @@ td.up{color:var(--good);font-weight:600} td.dn{color:var(--qb)}
 .pick:hover{border-color:var(--turf);color:var(--turf)}
 .pick.on{background:var(--turf);border-color:var(--turf);color:#fff}
 tbody tr.picked td{background:color-mix(in srgb,var(--turf) 7%,transparent)}
+.betcell{width:38px;padding-left:0!important}
+.slip{width:24px;height:24px;border-radius:7px;border:1px solid var(--rule2);color:var(--mid);font-size:12px;font-family:'IBM Plex Mono',monospace;line-height:1}
+.slip:hover{border-color:var(--turf);color:var(--turf)}
+.slip.has{background:var(--turf);border-color:var(--turf);color:#fff;font-weight:600}
+.openbets{background:var(--cardbg);border:1px solid var(--rule2);border-radius:12px;margin-bottom:16px;box-shadow:var(--shadow)}
+.obh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:13px 15px;border-bottom:1px solid var(--rule)}
+.obh b{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:600}
+.obrows{display:flex;flex-direction:column}
+.obrow{display:flex;align-items:center;gap:12px;padding:10px 15px;text-align:left;width:100%}
+.obrow+.obrow{border-top:1px solid var(--rule)}
+.obrow:hover{background:var(--surface2)}
+.obn{flex:1;min-width:0}
+.obn b{display:block;font-size:14px;font-weight:600}
+.obn span{font-size:12px;color:var(--mid);font-family:'IBM Plex Mono',monospace}
+.obp{text-align:right;min-width:74px}
+.obp b{display:block;font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600}
+.obp span{font-size:10px;color:var(--dim);font-family:'IBM Plex Mono',monospace}
+.betform{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.bf{display:flex;flex-direction:column;gap:5px}
+.bf span{font-size:12px;color:var(--mid)}
+.bf select,.bf input{background:var(--ink);border:1px solid var(--rule);border-radius:7px;padding:9px 10px;font-size:14px;font-family:'IBM Plex Mono',monospace}
+.bf select:focus,.bf input:focus{border-color:var(--turf);outline:none}
+.betmodel{margin-top:16px;padding:14px 15px;border:1px solid var(--rule);border-radius:10px;background:var(--ink)}
+.bmrow{display:flex;align-items:baseline;gap:14px}
+.bmrow b{font-family:'IBM Plex Mono',monospace;font-size:27px;font-weight:600;color:var(--turf);min-width:70px}
+.bmrow span{font-size:13px;color:var(--mid);line-height:1.5}
+.bmrow.warn b{color:var(--qb);font-size:17px;font-family:'Barlow Condensed',sans-serif}
+.betmodel .lnote{margin-top:11px}
+.betkpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:12px;overflow:hidden;margin-bottom:18px}
+.bk{background:var(--cardbg);padding:14px 16px}
+.bk b{display:block;font-family:'IBM Plex Mono',monospace;font-size:23px;font-weight:600}
+.bk span{font-size:11px;color:var(--dim);font-family:'IBM Plex Mono',monospace}
+.bk.up b{color:var(--good)} .bk.dn b{color:var(--qb)}
+.profitchart{display:flex;align-items:center;gap:2px;padding:16px 14px;min-height:76px}
+.pb{flex:1;display:flex;flex-direction:column;justify-content:center;height:60px}
+.pb i{display:block;width:100%;border-radius:2px}
+.pb i.up{background:var(--good);align-self:flex-end}
+.pb i.dn{background:var(--qb)}
+.grade{font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:2px 7px;border-radius:4px;border:1px solid var(--rule2);color:var(--mid);text-transform:capitalize}
+.grade.win{color:var(--good);border-color:color-mix(in srgb,var(--good) 45%,transparent);background:color-mix(in srgb,var(--good) 10%,transparent)}
+.grade.loss{color:var(--qb);border-color:color-mix(in srgb,var(--qb) 45%,transparent);background:color-mix(in srgb,var(--qb) 10%,transparent)}
+.grade.push{color:var(--te);border-color:color-mix(in srgb,var(--te) 45%,transparent)}
+.grade.void{color:var(--dim)}
 .cmp{margin-top:18px;background:var(--cardbg);border:1px solid var(--rule2);border-radius:12px;box-shadow:var(--shadow)}
 .cmph{display:flex;align-items:baseline;gap:12px;padding:14px 16px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
 .cmph b{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:600}
@@ -443,6 +486,7 @@ footer a{color:var(--mid)}
       <button data-v="home" class="on">Home</button>
       <button data-v="week">This week</button>
       <button data-v="trends">Trends</button>
+      <button data-v="bets">Bets</button>
       <button data-v="players">Players</button>
       <button data-v="finder">Stat finder</button>
       <button data-v="leagues">My leagues</button>
@@ -466,6 +510,7 @@ footer a{color:var(--mid)}
   <div id="view-leagues" style="display:none"></div>
   <div id="view-week" style="display:none"></div>
   <div id="view-trends" style="display:none"></div>
+  <div id="view-bets" style="display:none"></div>
 </main>
 <footer>
   <div>Snap Count — active-roster offensive players and kickers, every week of the season.</div>
@@ -510,7 +555,7 @@ let loaded=false;
 /* ---------- data loading ---------- */
 async function boot(){
   P=PLAYERS; W=WK;
-  reindex(); loaded=true; loadPrefs(); loadLeagues();
+  reindex(); loaded=true; loadPrefs(); loadLeagues(); loadBets();
   readUrl();                         // a shared link wins over saved preferences
   document.querySelectorAll("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
   document.getElementById("seasonSel").value=season;
@@ -2085,8 +2130,25 @@ function renderWeek(){
     +'<div class="accbox"><b>'+bt.last3.mae.toFixed(2)+'</b><span>last 3 games</span></div>'
     +'<div class="accbox"><b>'+bt.model.r.toFixed(2)+'</b><span>correlation with actual</span></div></div>'
     +'<div class="accnote">Beats a last-three-games average by '+better.toFixed(0)+'% and a plain season average by '+vsAvg.toFixed(1)+'%. Average error is still about '+bt.model.mae.toFixed(1)+' points either way, so lean on the range and the hit rate rather than the single number. Matchup is included but deliberately small: defenses vary only 8–10% in what they give up per carry or per target, and those rates hold up weakly from one half of a season to the next.</div></div>';
+  const open=bets.filter(b=>b.week===wk&&gradeBet(b)==="pending");
+  if(open.length){
+    h+='<div class="openbets"><div class="obh"><b>Your open bets this week</b>'
+      +'<button class="linkish" id="obAll">See all bets</button></div><div class="obrows">';
+    for(const b of open){
+      const p=P[b.pid], mk=MK(b.market);
+      const pr=propProb(b.pid,b.week,mk,b.line,b.side,sc);
+      const pj=project(b.pid,{wk:b.week,score:sc});
+      const sideTxt=mk.kind==="td"?(b.side==="under"?"No TD":"Anytime TD"):(b.side==="under"?"Under ":"Over ")+b.line;
+      h+='<button class="obrow" data-open="'+b.pid+'">'+por(b.pid,"sm")
+        +'<div class="obn"><b>'+p.n+statusTag(b.pid,b.week)+'</b><span>'+mk.label+' · '+sideTxt+' · '+fmtOdds(b.odds)+'</span></div>'
+        +'<div class="obp"><b>'+(pr?Math.round(pr.p*100)+'%':'—')+'</b><span>our read</span></div>'
+        +'<div class="obp"><b>'+(pj&&pj.line?(projOf(pj,mk)||0).toFixed(1):'—')+'</b><span>projected</span></div>'
+        +'</button>';
+    }
+    h+='</div></div>';
+  }
   h+='<div class="tbl-wrap"><table><thead><tr><th class="pickcell"></th><th class="l">Player</th><th>Opp</th><th>Proj</th><th>Floor</th><th>Ceil</th>'
-    +'<th>P(<input id="wth" value="'+weekThresh+'" inputmode="numeric">+)</th><th>Conf</th><th class="l">Why</th></tr></thead><tbody>';
+    +'<th>P(<input id="wth" value="'+weekThresh+'" inputmode="numeric">+)</th><th>Conf</th><th class="l">Why</th><th class="betcell"></th></tr></thead><tbody>';
   for(const pj of list.slice(0,weekShown)){
     const p=P[pj.pid];
     const cf=pj.conf>=.75?"hi":pj.conf>=.5?"mid":"lo";
@@ -2099,7 +2161,9 @@ function renderWeek(){
       +'<td class="sub">'+pj.ceil.toFixed(1)+'</td>'
       +'<td>'+probOver(pj,weekThresh)+'%</td>'
       +'<td><span class="cf '+cf+'">'+Math.round(pj.conf*100)+'</span></td>'
-      +'<td class="l whycell">'+(pj.why[0]||'—')+'</td></tr>';
+      +'<td class="l whycell">'+(pj.why[0]||'—')+'</td>'
+      +'<td class="betcell"><button class="slip'+(betsFor(pj.pid,pj.wk).length?' has':'')+'" data-slip="'+pj.pid+'|'+pj.wk+'" title="Log a bet on '+p.n+'">'
+      +(betsFor(pj.pid,pj.wk).length?betsFor(pj.pid,pj.wk).length:'+')+'</button></td></tr>';
   }
   h+='</tbody></table></div>';
   if(list.length>weekShown) h+='<div style="text-align:center;padding:14px"><button class="ctl" id="wmore">Show more ('+(list.length-weekShown)+' left)</button></div>';
@@ -2114,7 +2178,7 @@ function renderWeek(){
   document.getElementById("wth").onchange=e=>{weekThresh=Math.max(0,+e.target.value||15);renderWeek();};
   const mb=document.getElementById("wmore"); if(mb) mb.onclick=()=>{weekShown+=60;renderWeek();};
   host.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{posF=c.dataset.p;weekShown=60;renderWeek();savePrefs();});
-  host.querySelectorAll("tbody tr").forEach(tr=>tr.onclick=e=>{ if(e.target.closest(".pick")) return; openSheet(tr.dataset.id); });
+  host.querySelectorAll("tbody tr").forEach(tr=>tr.onclick=e=>{ if(e.target.closest(".pick")||e.target.closest(".slip")) return; openSheet(tr.dataset.id); });
   host.querySelectorAll("[data-pick]").forEach(b=>b.onclick=e=>{
     e.stopPropagation();
     const id=b.dataset.pick;
@@ -2126,6 +2190,14 @@ function renderWeek(){
   if(cc) cc.onclick=()=>{ compare=[]; renderWeek(); };
   const ce=document.getElementById("csvWeek");
   if(ce) ce.onclick=()=>exportTable(host.querySelector("table"),"snapcount-week"+wk);
+  host.querySelectorAll("[data-slip]").forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    const [pid,w]=b.dataset.slip.split("|");
+    openBetSlip(pid,+w);
+  });
+  const ob=document.getElementById("obAll");
+  if(ob) ob.onclick=()=>goTo("bets");
+  host.querySelectorAll(".obrow").forEach(b=>b.onclick=()=>openSheet(b.dataset.open));
 }
 /* Start/sit comparator — the projection engine already returns everything this
    needs, so this is a presentation layer, not a second model. */
@@ -2153,6 +2225,288 @@ function compareBar(wk,sc){
       :'A gap of '+gap.toFixed(1)+' points. Average error is around 5 points, so anything under a couple of points is close to a coin flip.')
     +'</div></div>';
   return h;
+}
+/* =================== Bet tracker =================== */
+/* Records player prop bets and settles them from real stat lines. There is no
+   edge or "+EV" calculation here on purpose: this model's average error is
+   about five points a week, while prop lines are priced to within about one,
+   so it is in no position to tell anyone a number is mispriced. What it can
+   do honestly is grade every bet, and show a real record. */
+const LS_B="snapcount.bets";
+let bets=[], betDraft=null, betFilter="all";
+
+const MARKETS=[
+  {k:"rec_yds",  label:"Receiving yards", get:r=>r[C.cyd], kind:"count"},
+  {k:"rush_yds", label:"Rushing yards",   get:r=>r[C.ryd], kind:"count"},
+  {k:"pass_yds", label:"Passing yards",   get:r=>r[C.pyd], kind:"count"},
+  {k:"scrim_yds",label:"Rush + rec yards",get:r=>r[C.ryd]+r[C.cyd], kind:"count"},
+  {k:"receptions",label:"Receptions",     get:r=>r[C.rec], kind:"count"},
+  {k:"rush_att", label:"Carries",         get:r=>r[C.car], kind:"count"},
+  {k:"pass_tds", label:"Passing TDs",     get:r=>r[C.ptd], kind:"count"},
+  {k:"anytime_td",label:"Anytime TD",     get:r=>r[C.rtd]+r[C.ctd], kind:"td"}
+];
+const MK=k=>MARKETS.find(m=>m.k===k);
+// what the projected stat line says this market should come to
+function projOf(pj,mk){
+  if(!pj||!pj.line) return null;
+  const L=pj.line;
+  switch(mk.k){
+    case "rec_yds": return L[C.cyd];
+    case "rush_yds": return L[C.ryd];
+    case "pass_yds": return L[C.pyd];
+    case "scrim_yds": return L[C.ryd]+L[C.cyd];
+    case "receptions": return L[C.rec];
+    case "rush_att": return L[C.car];
+    case "pass_tds": return L[C.ptd];
+    case "anytime_td": return L[C.rtd]+L[C.ctd];
+  }
+  return null;
+}
+/* Our probability of clearing a line.
+   Touchdowns are modelled as a Poisson draw on expected TDs; everything else
+   uses the player's own spread of outcomes, rescaled to the projection. */
+function propProb(pid,wk,mk,line,side,sc){
+  const pj=project(pid,{wk,score:sc||PRESETS_SC.ppr});
+  if(!pj||!pj.games) return null;
+  if(pj.gate===0) return {p:0,note:"not expected to play"};
+  const proj=projOf(pj,mk);
+  if(proj===null) return null;
+  if(mk.kind==="td"){
+    const lam=Math.max(0,proj);
+    const pOver=Math.min(.95,Math.max(.03,1-Math.exp(-lam)));   // keep off 0 and 1
+    return {p:side==="under"?1-pOver:pOver,proj,n:pj.games};
+  }
+  const hist=history(pid,season,wk).map(x=>mk.get(x.r));
+  if(!hist.length) return null;
+  const mean=hist.reduce((a,b)=>a+b,0)/hist.length;
+  const k=mean>0?proj/mean:1;
+  const scaled=hist.map(v=>v*k);
+  const over=scaled.filter(v=>v>line).length;
+  /* Laplace smoothing. A player with 18 games who cleared a low line every
+     time is not a 100% proposition — that is small-sample certainty, and
+     displaying it on a betting screen would be the most misleading number on
+     the site. (over+1)/(n+2) keeps the estimate off the rails at both ends. */
+  const p=(over+1)/(scaled.length+2);
+  return {p:side==="under"?1-p:p,proj,n:scaled.length};
+}
+// American odds -> profit on a 1-unit stake
+function payout(odds){ const o=+odds||0; return o>0?o/100:100/Math.abs(o); }
+function fmtOdds(o){ const n=+o||0; return (n>0?"+":"")+n; }
+
+/* Settle a bet from the real stat line, once that week has been played. */
+function gradeBet(b){
+  if(b.manual) return b.manual;                 // user overrode the result
+  const mk=MK(b.market); if(!mk) return "pending";
+  const p=P[b.pid]; if(!p) return "pending";
+  const played=weekPlayedFor(p.t,b.season,b.week);
+  const row=(logOf(b.pid,b.season)||[]).find(r=>r[C.wk]===b.week);
+  if(!row) return played?"void":"pending";      // played but no stats = inactive
+  const actual=mk.get(row);
+  if(mk.kind==="td"){
+    const hit=actual>=1;
+    return (b.side==="under")?(hit?"loss":"win"):(hit?"win":"loss");
+  }
+  if(actual===b.line) return "push";
+  const over=actual>b.line;
+  return (b.side==="under")?(over?"loss":"win"):(over?"win":"loss");
+}
+function weekPlayedFor(team,s,wk){
+  const g=((schedIdx[s]||{})[team]||{})[wk];
+  return g?!!g[G.played]:false;
+}
+function actualOf(b){
+  const mk=MK(b.market); if(!mk) return null;
+  const row=(logOf(b.pid,b.season)||[]).find(r=>r[C.wk]===b.week);
+  return row?mk.get(row):null;
+}
+function betProfit(b){
+  const g=gradeBet(b);
+  const stake=+b.stake||0;
+  if(g==="win") return stake*payout(b.odds);
+  if(g==="loss") return -stake;
+  return 0;                                      // push, void, pending
+}
+function betSummary(list){
+  const settled=list.filter(b=>["win","loss","push"].includes(gradeBet(b)));
+  const w=settled.filter(b=>gradeBet(b)==="win").length;
+  const l=settled.filter(b=>gradeBet(b)==="loss").length;
+  const pu=settled.filter(b=>gradeBet(b)==="push").length;
+  const staked=settled.filter(b=>gradeBet(b)!=="push").reduce((a,b)=>a+(+b.stake||0),0);
+  const profit=settled.reduce((a,b)=>a+betProfit(b),0);
+  return {w,l,pu,n:settled.length,staked,profit,
+          roi:staked?profit/staked*100:0,
+          rate:(w+l)?w/(w+l)*100:0,
+          pending:list.filter(b=>gradeBet(b)==="pending").length,
+          voided:list.filter(b=>gradeBet(b)==="void").length};
+}
+function saveBets(){
+  const dot=document.getElementById("saveDot"); if(dot) dot.className="savedot busy";
+  try{ localStorage.setItem(LS_B,JSON.stringify(bets)); if(dot){dot.className="savedot on";dot.title="Bets saved in this browser";} }
+  catch(e){ if(dot){dot.className="savedot err";} }
+}
+function loadBets(){
+  try{ const v=JSON.parse(localStorage.getItem(LS_B)||"[]"); if(Array.isArray(v)) bets=v; }catch(e){}
+}
+/* ---- bet slip, opened from anywhere a player appears ---- */
+function openBetSlip(pid,wk){
+  const p=P[pid]; if(!p) return;
+  betDraft=betDraft&&betDraft.pid===pid?betDraft:
+    {pid,week:wk||nextWeek(),season:2026,market:defaultMarket(p.p),side:"over",line:"",odds:-110,stake:10};
+  renderBetSlip();
+}
+function defaultMarket(pos){
+  return pos==="QB"?"pass_yds":pos==="RB"?"rush_yds":"rec_yds";
+}
+function renderBetSlip(){
+  const b=betDraft; if(!b) return;
+  const p=P[b.pid], mk=MK(b.market);
+  const pj=project(b.pid,{wk:b.week,score:projScore()});
+  const suggested=projOf(pj,mk);
+  const lineVal=b.line===""?null:parseFloat(b.line);
+  const pr=(lineVal!==null&&!isNaN(lineVal))?propProb(b.pid,b.week,mk,lineVal,b.side,projScore()):null;
+  const wks=[...new Set((SCHED[2026]||[]).map(r=>r[G.wk]))].sort((a,c)=>a-c);
+  let h='<div class="sheet-h">'+por(b.pid)
+    +'<div><h2>Log a bet</h2><div class="sheet-sub"><span class="pos" style="--pc:'+(PC[p.p]||'var(--mid)')+'">'+p.p+'</span>'
+    +'<span>'+p.n+'</span><span>'+p.t+(pj&&pj.opp?' vs '+pj.opp:'')+'</span></div></div>'
+    +'<button class="closeb" id="closeSheet">✕</button></div>';
+  h+='<div class="sect"><div class="betform">'
+    +'<label class="bf"><span>Week</span><select id="bfWeek">'+wks.map(w=>'<option value="'+w+'" '+(+b.week===w?'selected':'')+'>Week '+w+'</option>').join('')+'</select></label>'
+    +'<label class="bf"><span>Market</span><select id="bfMarket">'+MARKETS.map(m=>'<option value="'+m.k+'" '+(b.market===m.k?'selected':'')+'>'+m.label+'</option>').join('')+'</select></label>'
+    +'<label class="bf"><span>Side</span><select id="bfSide">'
+      +(mk.kind==="td"
+        ?'<option value="over" '+(b.side==="over"?'selected':'')+'>Yes</option><option value="under" '+(b.side==="under"?'selected':'')+'>No</option>'
+        :'<option value="over" '+(b.side==="over"?'selected':'')+'>Over</option><option value="under" '+(b.side==="under"?'selected':'')+'>Under</option>')
+      +'</select></label>'
+    +(mk.kind==="td"?'':'<label class="bf"><span>Line</span><input id="bfLine" inputmode="decimal" value="'+(b.line===""?"":b.line)+'" placeholder="'+(suggested!==null?suggested.toFixed(1):"")+'"></label>')
+    +'<label class="bf"><span>Odds</span><input id="bfOdds" inputmode="numeric" value="'+b.odds+'"></label>'
+    +'<label class="bf"><span>Stake</span><input id="bfStake" inputmode="decimal" value="'+b.stake+'"></label>'
+    +'</div>';
+  // what our model says — context only
+  h+='<div class="betmodel">';
+  if(pj&&pj.gate===0){
+    h+='<div class="bmrow warn"><b>Not expected to play</b><span>'+(pj.status||"ruled out")+' — most books void yardage props if he is inactive.</span></div>';
+  } else if(pr){
+    h+='<div class="bmrow"><b>'+Math.round(pr.p*100)+'%</b>'
+      +'<span>our estimate that this '+(mk.kind==="td"?(b.side==="under"?"does not hit":"hits"):(b.side==="under"?"stays under":"goes over"))+', '
+      +'from '+pr.n+' games of his own outcomes rescaled to a projection of '+(suggested!==null?suggested.toFixed(1):"—")+'. '
+      +'With '+pr.n+' games to go on, treat anything past roughly 85% or below 15% as "likely" rather than a number to trust precisely.</span></div>';
+  } else if(suggested!==null){
+    h+='<div class="bmrow"><b>'+suggested.toFixed(1)+'</b><span>what we project for this market. Enter a line to see a probability.</span></div>';
+  }
+  h+='<div class="lnote">This is our read, not a recommendation, and it is not compared against the book\'s number. The projection misses by about five points a week on average while prop lines are priced to within about one — nowhere near sharp enough to call a line wrong. Use it as one input to your own judgement.</div></div>';
+  h+='<div class="m-actions"><button class="btn ghost" id="bfCancel">Cancel</button>'
+    +'<button class="btn primary" id="bfSave">Save bet</button></div></div>';
+  document.getElementById("sheet").innerHTML=h;
+  document.getElementById("veil").classList.add("show");
+  document.getElementById("closeSheet").onclick=()=>{betDraft=null;closeSheet();};
+  document.getElementById("bfCancel").onclick=()=>{betDraft=null;closeSheet();};
+  const bind=(id,key,num)=>{const el=document.getElementById(id); if(!el) return;
+    el.onchange=()=>{ betDraft[key]=num?el.value:el.value; renderBetSlip(); };};
+  bind("bfWeek","week"); bind("bfMarket","market"); bind("bfSide","side");
+  bind("bfLine","line"); bind("bfOdds","odds"); bind("bfStake","stake");
+  document.getElementById("bfSave").onclick=()=>{
+    const d=betDraft, m=MK(d.market);
+    const line=m.kind==="td"?0.5:parseFloat(d.line);
+    if(m.kind!=="td"&&(isNaN(line))){ alert("Enter the line you took."); return; }
+    if(!(+d.stake>0)){ alert("Enter a stake."); return; }
+    bets.push({id:"B"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+      pid:d.pid,season:2026,week:+d.week,market:d.market,side:d.side,
+      line,odds:+d.odds||-110,stake:+d.stake,placed:new Date().toISOString().slice(0,10)});
+    betDraft=null; saveBets(); closeSheet();
+    if(view==="bets") renderBets(); else { view="bets";
+      document.querySelectorAll("#viewSeg button").forEach(x=>x.classList.toggle("on",x.dataset.v==="bets")); render(); }
+  };
+}
+
+/* =================== Bets view =================== */
+const betsFor=(pid,wk)=>bets.filter(b=>b.pid===pid&&(!wk||b.week===wk));
+function renderBets(){
+  const host=document.getElementById("view-bets");
+  const s=betSummary(bets);
+  let h='';
+  if(!bets.length){
+    h='<div class="empty" style="padding:56px 20px">'
+      +'<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:24px;color:var(--chalk);margin-bottom:8px">No bets logged yet</div>'
+      +'<div style="margin-bottom:18px;max-width:52ch;margin-inline:auto">Log a player prop from the This week tab — every row has a slip button — and it settles itself once the game is played. The point is an honest record: real win rate, real return, no rounding in your favour.</div>'
+      +'<button class="ctl" id="goWeek" style="font-size:14px;padding:10px 18px">Go to this week</button></div>';
+    host.innerHTML=h;
+    document.getElementById("goWeek").onclick=()=>goTo("week");
+    return;
+  }
+  // headline record
+  const cls=s.profit>0?"up":s.profit<0?"dn":"";
+  h+='<div class="betkpis">'
+    +'<div class="bk"><b>'+s.w+'–'+s.l+(s.pu?'–'+s.pu:'')+'</b><span>record</span></div>'
+    +'<div class="bk"><b>'+(s.n?s.rate.toFixed(1)+'%':'—')+'</b><span>win rate</span></div>'
+    +'<div class="bk '+cls+'"><b>'+(s.profit>=0?'+':'')+s.profit.toFixed(2)+'</b><span>units</span></div>'
+    +'<div class="bk '+cls+'"><b>'+(s.staked?(s.roi>=0?'+':'')+s.roi.toFixed(1)+'%':'—')+'</b><span>return on stake</span></div>'
+    +'<div class="bk"><b>'+s.pending+'</b><span>pending</span></div>'
+    +'</div>';
+  // profit over time
+  const settled=bets.filter(b=>["win","loss","push"].includes(gradeBet(b)))
+    .sort((a,b)=>(a.week-b.week)||(a.placed<b.placed?-1:1));
+  if(settled.length>1){
+    let run=0; const pts=settled.map(b=>{run+=betProfit(b);return run;});
+    const max=Math.max(...pts,0.01), min=Math.min(...pts,0);
+    const span=Math.max(max-min,0.01);
+    h+='<div class="panel" style="margin-bottom:16px"><div class="panel-h">Running profit<small>'+settled.length+' settled bets, in units</small></div>'
+      +'<div class="profitchart">'+pts.map((v,i)=>{
+        const hgt=Math.max(2,Math.abs(v)/span*52);
+        const up=v>=0;
+        return '<div class="pb" title="after bet '+(i+1)+': '+(v>=0?'+':'')+v.toFixed(2)+'"><i class="'+(up?'up':'dn')+'" style="height:'+hgt+'px"></i></div>';
+      }).join('')+'</div>'
+      +'<div class="lnote" style="padding:0 14px 12px">Ends at '+(run>=0?'+':'')+run.toFixed(2)+' units.</div></div>';
+  }
+  // breakdowns
+  h+='<div class="twocol">'+breakdown("By market",b=>MK(b.market)?MK(b.market).label:b.market)
+    +breakdown("By position",b=>P[b.pid]?P[b.pid].p:"—")+'</div>';
+  // the bets themselves
+  h+='<div class="bar" style="margin-top:18px"><div class="seg" id="betSeg">'
+    +[["all","All"],["pending","Pending"],["win","Won"],["loss","Lost"]].map(([v,l])=>'<button data-bf="'+v+'" class="'+(betFilter===v?'on':'')+'">'+l+'</button>').join('')
+    +'</div><div class="grow"></div><button class="ctl" id="csvBets">Export CSV</button></div>';
+  const list=bets.filter(b=>betFilter==="all"||gradeBet(b)===betFilter)
+    .sort((a,b)=>(b.week-a.week)||(a.placed<b.placed?1:-1));
+  h+='<div class="tbl-wrap"><table><thead><tr><th class="l">Player</th><th>Wk</th><th class="l">Bet</th><th>Odds</th><th>Stake</th><th>Actual</th><th>Result</th><th>P/L</th><th></th></tr></thead><tbody>';
+  for(const b of list){
+    const p=P[b.pid]||{n:"Unknown",p:"",t:""}, mk=MK(b.market), g=gradeBet(b);
+    const act=actualOf(b), prof=betProfit(b);
+    const sideTxt=mk&&mk.kind==="td"?(b.side==="under"?"No TD":"Anytime TD"):(b.side==="under"?"Under ":"Over ")+b.line;
+    h+='<tr><td class="l"><div class="who-cell">'+por(b.pid,"sm")
+      +'<div><b>'+p.n+statusTag(b.pid,b.week)+'</b><div class="sub">'+p.p+' · '+p.t+'</div></div></div></td>'
+      +'<td class="sub">'+b.week+'</td>'
+      +'<td class="l">'+(mk?mk.label:b.market)+' <b>'+sideTxt+'</b></td>'
+      +'<td class="sub">'+fmtOdds(b.odds)+'</td><td class="sub">'+(+b.stake).toFixed(2)+'</td>'
+      +'<td>'+(act===null?'—':act)+'</td>'
+      +'<td><span class="grade '+g+'">'+g+'</span></td>'
+      +'<td class="'+(prof>0?'up':prof<0?'dn':'')+'">'+(g==="pending"||g==="void"?'—':(prof>=0?'+':'')+prof.toFixed(2))+'</td>'
+      +'<td><button class="lx" data-delbet="'+b.id+'" title="Remove">✕</button></td></tr>';
+  }
+  h+='</tbody></table></div>';
+  h+='<div class="lnote" style="max-width:70ch;margin:16px auto 0">Bets settle from the same stat lines the rest of the site uses. A player who is inactive settles as void and is left out of the return figure, matching how most books handle it — change it by hand if yours differs.</div>';
+  host.innerHTML=h;
+  host.querySelectorAll("#betSeg button").forEach(b=>b.onclick=()=>{betFilter=b.dataset.bf;renderBets();});
+  host.querySelectorAll("[data-delbet]").forEach(b=>b.onclick=()=>{
+    bets=bets.filter(x=>x.id!==b.dataset.delbet); saveBets(); renderBets();
+  });
+  document.getElementById("csvBets").onclick=()=>exportTable(host.querySelector("table"),"snapcount-bets");
+}
+function breakdown(title,keyFn){
+  const groups={};
+  for(const b of bets){
+    const k=keyFn(b)||"—";
+    (groups[k]=groups[k]||[]).push(b);
+  }
+  const rows=Object.entries(groups).map(([k,list])=>({k,s:betSummary(list),n:list.length}))
+    .sort((a,b)=>b.s.profit-a.s.profit);
+  let h='<div class="panel"><div class="panel-h">'+title+'</div><div class="tbl-wrap" style="border:none"><table>'
+    +'<thead><tr><th class="l">'+title.replace("By ","")+'</th><th>W–L</th><th>Win %</th><th>Units</th></tr></thead><tbody>';
+  for(const r of rows){
+    const cls=r.s.profit>0?"up":r.s.profit<0?"dn":"";
+    h+='<tr><td class="l">'+r.k+'</td><td class="sub">'+r.s.w+'–'+r.s.l+'</td>'
+      +'<td>'+(r.s.w+r.s.l?r.s.rate.toFixed(0)+'%':'—')+'</td>'
+      +'<td class="'+cls+'">'+(r.s.n?(r.s.profit>=0?'+':'')+r.s.profit.toFixed(2):'—')+'</td></tr>';
+  }
+  return h+'</tbody></table></div></div>';
 }
 /* =================== Trade finder =================== */
 /* Value is production-based, not a projection: it blends 2025 and 2026 with
@@ -2567,7 +2921,7 @@ function loadPrefs(){
     const s=JSON.parse(localStorage.getItem(LS)||"{}");
     if(s.season&&[2026,2025].includes(+s.season)) season=+s.season;
     if(["ppr","half","std"].includes(s.scoring)) scoring=s.scoring;
-    if(["home","players","finder","leagues","week","trends"].includes(s.view)) view=s.view;
+    if(["home","players","finder","leagues","week","trends","bets"].includes(s.view)) view=s.view;
     if(s.theme==="dark"||s.theme==="light") theme=s.theme;
     if(s.posF) posF=s.posF; if(s.teamF) teamF=s.teamF; if(s.weekF) weekF=s.weekF;
     if(Array.isArray(s.filters)) filters=s.filters;
@@ -2641,11 +2995,13 @@ function render(){
   document.getElementById("view-leagues").style.display=view==="leagues"?"":"none";
   document.getElementById("view-week").style.display=view==="week"?"":"none";
   document.getElementById("view-trends").style.display=view==="trends"?"":"none";
+  document.getElementById("view-bets").style.display=view==="bets"?"":"none";
   if(view==="home") renderHome();
   else if(view==="players") renderPlayers();
   else if(view==="finder") renderFinder();
   else if(view==="leagues") renderLeagues();
   else if(view==="trends") renderTrends();
+  else if(view==="bets") renderBets();
   else renderWeek();
 }
 document.getElementById("viewSeg").addEventListener("click",e=>{
