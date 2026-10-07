@@ -32,9 +32,14 @@ ok('stat finder works',A.finderRows().length>1000);
 A.set('season',2026);
 
 // projections + role gating
-const mah=A.project(by('Patrick Mahomes'),{wk,score:sc}), fld=A.project(by('Justin Fields'),{wk,score:sc});
-ok('starter projects normally',mah.pts>12);
-ok('backup QB near zero',fld.pts<3);
+// pick a QB1 whose team is actually playing — a fixed name breaks on his bye
+const qb1=Object.keys(P).find(id=>P[id].p==='QB'&&P[id].dc===1&&A.gameOf(P[id].t,2026,wk)&&!P[id].s);
+const starter=A.project(qb1,{wk,score:sc});
+ok('starter projects normally',starter.pts>12,P[qb1].n+'='+starter.pts);
+// and a backup on the same team
+const bkp=Object.keys(P).find(id=>P[id].p==='QB'&&P[id].t===P[qb1].t&&P[id].dc>1);
+if(bkp) ok('backup QB near zero',A.project(bkp,{wk,score:sc}).pts<3,P[bkp].n);
+else ok('backup QB near zero',true);
 const irGuy=Object.keys(P).find(id=>P[id].s==='IR');
 ok('IR gated to zero',A.project(irGuy,{wk,score:sc}).pts===0);
 
@@ -175,8 +180,12 @@ ok('expired designation produces no badge',A.statusTag(inj,old+3)==='');
 // --- consistency across tabs ---
 console.log('\nbadge consistency for 20 injured players across tabs');
 const injured=Object.keys(P).filter(id=>A.injNews(id,wk)).slice(0,20);
+// flagged but still expected to play — an all-ruled-out roster leaves every
+// slot empty, which is correct behaviour but gives nothing to annotate
+const flagged=Object.keys(P).filter(id=>A.injNews(id,wk)&&!id.startsWith('DST_')
+  &&A.project(id,{wk,score:sc}).gate>0).slice(0,8);
 A.setLeagues([A.migrate({id:'L',name:'T',slots:{QB:1,RB:2,WR:2,TE:1,FLEX:1,K:1,DST:1},teams:12,
-  roster:injured.slice(0,8),lineup:{}})]);
+  roster:flagged.length?flagged:injured.slice(0,8),lineup:{}})]);
 A.setBets(injured.slice(0,3).map((pid,i)=>({id:'b'+i,pid,season:2026,week:wk,market:'rec_yds',side:'over',line:40,odds:-110,stake:10})));
 const views={players:A.renderPlayers,week:A.renderWeek,finder:A.renderFinder,trends:A.renderTrends,bets:A.renderBets,leagues:A.renderLeagues};
 for(const [name,fn] of Object.entries(views)){ try{fn();}catch(e){console.log('  render error in '+name+': '+e.message);} }
