@@ -12,7 +12,7 @@ global.document={getElementById:id=>els[id]||(els[id]=mk(id)),querySelectorAll:(
 global.localStorage={getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=v;}};
 global.fetch=()=>Promise.reject('x');global.window={scrollTo(){}};
 const body=s.replace('boot();','')+`;module.exports={PLAYERS,WK,reindex,project,logOf,nextWeek,PRESETS_SC,C,
- gradeBet,betProfit,betSummary,propProb,MK,payout,lineupFor,setBestLineup,placeIn,clearWeek,migrate,gameOf,statusTag,SCHED,G,weekPlayed,
+ gradeBet,betProfit,betSummary,propProb,MK,payout,lineupFor,setBestLineup,placeIn,clearWeek,migrate,gameOf,statusTag,SCHED,G,weekPlayed,injStatus,injRows,injNews,openSheet,renderLeagues,setLeagues:v=>{leagues=v;},
  renderHome,renderWeek,renderFinder,renderPlayers,renderTrends,renderBets,injStatus,scoreRow,finderRows,seasonTotals,
  setBets:v=>{bets=v;},getBets:()=>bets,set:(k,v)=>{if(k==='P')P=v;if(k==='W')W=v;if(k==='season')season=v;if(k==='filters')filters=v;if(k==='sortKey')sortKey=v;if(k==='weekF')weekF=v;if(k==='posF')posF=v;},get:()=>P};`;
 const m={exports:{}};new Function('module','document','localStorage','fetch',body)(m,global.document,global.localStorage,global.fetch);
@@ -159,6 +159,49 @@ nl.start.forEach(x=>console.log('   ',x.slot.padEnd(5),(x.pid?P[x.pid].n:'—').
 console.log('\nWednesday state — box scores published');
 const luDone=A.lineupFor(lg,before,{useProj:false});
 ok('finished week ranks on real points once stats land',luDone.byProj===false);
+}
+// injury report (own scope)
+{
+// --- aging rule ---
+const inj=Object.keys(P).find(id=>{const r=A.injRows(id);return r.length&&r[r.length-1][1]==='Out'&&!P[id].s;});
+console.log('reference player:',P[inj].n,'latest entry week',A.injRows(inj).slice(-1)[0][0],'\n');
+ok('current-week report shows',!!A.injStatus(inj,A.injRows(inj).slice(-1)[0][0]));
+const old=A.injRows(inj).slice(-1)[0][0];
+ok('one week later still shows (report not yet out)',!!A.injStatus(inj,old+1));
+ok('flagged as not current',A.injStatus(inj,old+1).current===false);
+ok('three weeks later it has expired',A.injStatus(inj,old+3)===null);
+ok('expired designation produces no badge',A.statusTag(inj,old+3)==='');
+
+// --- consistency across tabs ---
+console.log('\nbadge consistency for 20 injured players across tabs');
+const injured=Object.keys(P).filter(id=>A.injNews(id,wk)).slice(0,20);
+A.setLeagues([A.migrate({id:'L',name:'T',slots:{QB:1,RB:2,WR:2,TE:1,FLEX:1,K:1,DST:1},teams:12,
+  roster:injured.slice(0,8),lineup:{}})]);
+A.setBets(injured.slice(0,3).map((pid,i)=>({id:'b'+i,pid,season:2026,week:wk,market:'rec_yds',side:'over',line:40,odds:-110,stake:10})));
+const views={players:A.renderPlayers,week:A.renderWeek,finder:A.renderFinder,trends:A.renderTrends,bets:A.renderBets,leagues:A.renderLeagues};
+for(const [name,fn] of Object.entries(views)){ try{fn();}catch(e){console.log('  render error in '+name+': '+e.message);} }
+const html=Object.fromEntries(Object.keys(views).map(v=>[v,store['view-'+v]||'']));
+for(const v of ['players','week','finder','trends','bets','leagues']){
+  const found=injured.filter(id=>{const nm=P[id].n; const i=html[v].indexOf(nm); if(i<0) return null;
+    return html[v].slice(i,i+400).includes('sflag');}).length;
+  const present=injured.filter(id=>html[v].includes(P[id].n)).length;
+  console.log(`  ${v.padEnd(9)} shows ${present} of these players, ${found} carry an injury badge`);
+  if(present>0) ok(v+' tab flags injured players',found>0,`${found}/${present}`);
+}
+// --- news line present ---
+ok('players tab carries a news line',/t-news/.test(html.players));
+ok('this week carries a news line',/rownews/.test(html.week));
+ok('league rows carry a news line',/class="inl/.test(html.leagues));
+// --- sheet detail ---
+A.openSheet(inj);
+const sheet=store['sheet']||'';
+ok('player sheet shows the injury report',/Injury report/.test(sheet));
+ok('sheet shows the body part',/injnow/.test(sheet));
+ok('sheet shows week-by-week history',/injlog/.test(sheet));
+// --- projections agree with the badge ---
+const outGuys=Object.keys(P).filter(id=>{const s2=A.injStatus(id,wk);return s2&&s2.status==='Out'&&!P[id].s;});
+ok('every "Out" player projects zero',outGuys.every(id=>A.project(id,{wk,score:A.PRESETS_SC.ppr}).pts===0),
+  outGuys.filter(id=>A.project(id,{wk,score:A.PRESETS_SC.ppr}).pts>0).map(id=>P[id].n).join(','));
 }
 // views render
 const views=[['home',A.renderHome],['week',A.renderWeek],['finder',A.renderFinder],['players',A.renderPlayers],['trends',A.renderTrends],['bets',A.renderBets]];
