@@ -354,6 +354,7 @@ tbody tr:hover .lx{color:var(--mid)}
 .lbar span{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--dim)}
 .lbar:hover i{background:var(--h3)}
 .lbar.on i{background:var(--h4)} .lbar.on span{color:var(--chalk)}
+.awaiting{padding:9px 12px;border-bottom:1px solid var(--rule);background:color-mix(in srgb,var(--te) 9%,transparent);font-size:12.5px;color:var(--chalk)}
 .lweekbar{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
 .lweeks{display:flex;gap:3px;flex-wrap:wrap;flex:1;min-width:0}
 .lw{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mid);border:1px solid var(--rule);border-radius:5px;padding:3px 7px}
@@ -398,6 +399,7 @@ button.lslot:hover{border-color:var(--chalk);color:var(--chalk)}
 .sflag.q{color:var(--te);border-color:color-mix(in srgb,var(--te) 50%,transparent);background:color-mix(in srgb,var(--te) 12%,transparent)}
 .sflag.prac{color:var(--mid);border-color:var(--rule2)}
 .sflag.bkp{color:var(--dim);border-color:var(--rule2);background:var(--surface2);font-size:8.5px}
+.sflag.bye{color:var(--k);border-color:color-mix(in srgb,var(--k) 50%,transparent);background:color-mix(in srgb,var(--k) 10%,transparent)}
 .injbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid var(--rule);background:color-mix(in srgb,var(--te) 7%,transparent)}
 .injbar>b{font-size:11.5px;font-weight:600;color:var(--mid);margin-right:2px}
 .injchip{font-size:11.5px;border:1px solid var(--rule2);border-radius:20px;padding:3px 9px;background:var(--surface)}
@@ -994,6 +996,10 @@ function statusTag(pid,wk){
   return "";
 }
 /* Separate from injury: is he the starter? Shown wherever a projection is. */
+function byeTag(pid,wk){
+  const p=P[pid]; if(!p) return "";
+  return gameOf(p.t,season,wk||nextWeek())?"":' <span class="sflag bye" title="'+p.t+' are on a bye">BYE</span>';
+}
 function roleTag(pid,wk){
   const p=P[pid]; if(!p||["K","DST"].includes(p.p)) return "";
   const pj=project(pid,{wk:wk||nextWeek(),score:projScore()});
@@ -1124,17 +1130,22 @@ function weekPlayed(team,wk){
 function lineupFor(lg,wk,opts){
   const useProj=(opts&&opts.useProj)!==undefined?opts.useProj:null;
   const pool={};
-  let anyPlayed=false;
+  let anyPlayed=false, anyKicked=false;
   for(const pid of lg.roster){
     const p=P[pid]; if(!p) continue;
     const {pts,played}=ptsFor(pid,wk,lg.score);
     if(played) anyPlayed=true;
+    if(weekPlayed(p.t,wk)) anyKicked=true;      // his game is final, per the schedule
     const pj=project(pid,{wk,score:lg.score});
     pool[pid]={pid,pos:p.p,pts,played,proj:pj?pj.pts:0,conf:pj?pj.conf:0,
                opp:pj?pj.opp:null,status:pj?pj.status:"",gate:pj?pj.gate:1};
   }
-  // rank on projections for an upcoming week, on what actually happened otherwise
-  const byProj = useProj===null ? !anyPlayed : useProj;
+  /* Whether to rank on projections or on real points is decided by the
+     SCHEDULE, not by whether stat lines have arrived. On a Tuesday morning the
+     games are over but nflverse may not have published yet — going by stat
+     availability would leave a finished week sitting in projection mode. */
+  const byProj = useProj===null ? !anyKicked : useProj;
+  const awaitingStats = anyKicked && !anyPlayed;
   const rank=c=>byProj?c.proj:c.pts;
   const slots=slotList(lg);
   const manual=(lg.lineup||{})[wk]||{};        // {slotIndex: pid}
@@ -1150,14 +1161,18 @@ function lineupFor(lg,wk,opts){
   // 2. auto-fill the rest, best first
   slots.forEach((slot,i)=>{
     if(start[i]) return;
-    const best=Object.values(pool).filter(c=>!used.has(c.pid)&&slotOk(slot,c.pos)).sort((a,b)=>rank(b)-rank(a))[0];
+    /* For an upcoming week, skip anyone who cannot play — bye, out, inactive.
+       Leaving the slot empty is honest and prompts a pickup; filling it with a
+       guaranteed zero just looks like a recommendation. */
+    const elig=Object.values(pool).filter(c=>!used.has(c.pid)&&slotOk(slot,c.pos)&&!(byProj&&c.gate===0));
+    const best=elig.sort((a,b)=>rank(b)-rank(a))[0];
     if(best){ used.add(best.pid); start[i]={slot,...best}; }
     else start[i]={slot,pid:null,pts:0,played:false};
   });
   const bench=Object.values(pool).filter(c=>!used.has(c.pid)).sort((a,b)=>rank(b)-rank(a));
   const total=start.reduce((s,x)=>s+x.pts,0);
   const projTotal=start.reduce((s,x)=>s+(x.proj||0),0);
-  return {start,bench,total,projTotal,slots,byProj,anyPlayed};
+  return {start,bench,total,projTotal,slots,byProj,anyPlayed,awaitingStats};
 }
 /* Swap: put pid into slot i for this week. Anyone displaced goes to bench,
    unless we're swapping with a starter, in which case they trade places. */
@@ -1191,6 +1206,7 @@ function setBestLineup(lg,wk){
     const p=P[pid]; if(!p) return null;
     const {pts}=ptsFor(pid,wk,lg.score);
     const pj=project(pid,{wk,score:lg.score});
+    if(byProj&&pj&&pj.gate===0) return null;      // on a bye, out, or inactive
     return {pid,pos:p.p,proj:byProj?(pj?pj.pts:0):pts};
   }).filter(Boolean);
   const used=new Set(), map={};
@@ -1275,6 +1291,7 @@ function renderLeagues(){
       +'</div><div class="lnote">Points-allowed tiers follow the standard ladder (0 pts allowed = 10, 1–6 = 7, 7–13 = 4, 14–20 = 1, 21–27 = 0, 28–34 = −1, 35+ = −4); the multiplier scales all of them. Field goals score a flat rate rather than by distance.</div></div>';
     // KPIs
     const live=lu.anyPlayed;
+    if(lu.awaitingStats) h+='<div class="awaiting">Week '+wk+' is final but the box scores have not landed yet — showing projections until they do.</div>';
     h+='<div class="lkpis">'
       +'<div class="lkpi"><b>'+(live?lu.total.toFixed(1):lu.projTotal.toFixed(1))+'</b><span>'+(live?'week '+wk:'projected wk '+wk)+'</span></div>'
       +'<div class="lkpi"><b>'+ss.total.toFixed(0)+'</b><span>season</span></div>'
@@ -1299,7 +1316,7 @@ function renderLeagues(){
       +(flagged.length>6?'<span class="injmore">+'+(flagged.length-6)+' more</span>':'')+'</div>';
     // week picker + lineup tools
     h+='<div class="lweekbar"><div class="lweeks">'
-      +lwks.map(w=>'<button class="lw'+(w===wk?' on':'')+(w===up?' up':'')+'" data-wkpick="'+lg.id+'|'+w+'">'+(w===up?'Wk '+w+' ▸':w)+'</button>').join('')
+      +lwks.map(w=>'<button class="lw'+(w===wk?' on':'')+(w===up?' up':'')+'" data-wkpick="'+lg.id+'|'+w+'" title="'+(w===up?'Upcoming week':'Week '+w)+'">'+(w===up?'Wk '+w+' · next':w)+'</button>').join('')
       +'</div>'
       +'<button class="ctl lbest" data-best="'+lg.id+'|'+wk+'" title="'+(lu.byProj
           ?'Fill every slot with the highest projected player'
@@ -1326,7 +1343,7 @@ function renderLeagues(){
                  +(eligible?'<button class="swapin" data-swap-to="'+lg.id+'|'+sw.slotIdx+'|'+s.pid+'">swap</button>'
                            :'<button class="ltr" data-trade="'+lg.id+'|'+s.pid+'" title="Trade value">⇄</button>'
                             +'<button class="lx" data-drop="'+lg.id+'|'+s.pid+'" title="Remove">✕</button>')
-            : '<span class="lnm empty">empty</span><span class="lpts dnp">–</span>')
+            : '<span class="lnm empty">'+(live?'empty':'nobody available')+'</span><span class="lpts dnp">–</span>')
           +'</div>';
       });
       if(sw){
@@ -1706,7 +1723,7 @@ function project(pid,opts){
   car*=roleMult; tgt*=roleMult; att*=roleMult;
   // ---- game environment
   const g=gameOf(p.t,season,wk);
-  let envMult=1, oppMult=1, opp=null, implied=null, matchupTbl=null;
+  let envMult=1, oppMult=1, opp=null, implied=null, matchupTbl=null, bye=false;
   if(g){
     opp=g[G.opp];
     if(g[G.imp]>=0){
@@ -1728,7 +1745,7 @@ function project(pid,opts){
     if(rel>1.04) why.push(opp+" gives up more than most on "+(p.p==="RB"?"the ground":"throws")+" (+"+Math.round((rel-1)*100)+"%)");
     if(rel<0.96) why.push(opp+" holds up well against "+(p.p==="RB"?"the run":"the pass")+" ("+Math.round((rel-1)*100)+"%)");
     matchupTbl=tbl;
-  } else why.push("No scheduled game found for week "+wk);
+  } else bye=true;
   // ---- assemble the expected stat line
   const line=[...Array(23).fill(0)];
   line[C.car]=car; line[C.ryd]=car*ypc; line[C.rtd]=car*rtdP*envMult;
@@ -1774,8 +1791,12 @@ function project(pid,opts){
     else if(inj.practice==="DNP"){ gate=.9; status="DNP"; why.unshift("Did not practise"+part+" — no designation yet"); }
     else if(inj.practice==="Limited"){ status="Limited"; why.unshift("Limited in practice"+part); }
   }
+  /* A bye outranks everything else: no game, no points. The model used to
+     note "no scheduled game" and then project him anyway, which put players
+     on bye at the top of lineup suggestions. */
+  if(bye){ gate=0; status="BYE"; why.length=0; why.push(p.t+" are on a bye in week "+wk); }
   // role gating applies on top of, and never overrides, an injury gate
-  if(role&&gate>0){
+  if(role&&gate>0&&!bye){
     gate=Math.min(gate,role.gate);
     if(role.status&&!status) status=role.status;
     why.unshift(role.why);
@@ -1839,9 +1860,8 @@ function projectDst(pid,season,wk,sc){
   const why=[];
   if(!g){
     const rows=log.map(r=>scoreDst(r,sc));
-    const avg=rows.length?rows.reduce((a,b)=>a+b,0)/rows.length:0;
-    return {pid,wk,pts:Math.round(avg*10)/10,floor:Math.max(0,avg-4),ceil:avg+5,conf:.2,games:rows.length,
-            cv:.6,mean:avg,actual:rows,opp:null,status:"",gate:1,why:["No scheduled game found"]};
+    return {pid,wk,pts:0,floor:0,ceil:0,conf:.95,games:rows.length,cv:0,mean:0,actual:rows,
+            opp:null,status:"BYE",gate:0,why:[team+" are on a bye in week "+wk]};
   }
   const opp=g[G.opp];
   const oppImplied=(g[G.total]>=0&&g[G.imp]>=0)?g[G.total]-g[G.imp]:22.5;
@@ -1887,6 +1907,10 @@ function projectSimple(pid,season,wk,sc){
   const cv=mean>0?Math.min(sd/mean,1.2):.6;
   const p=P[pid], g=p?gameOf(p.t,season,wk):null;
   const why=[isD?"Defense projections use recent scoring only":"Kicker projections use recent scoring only"];
+  if(p&&!g){
+    return {pid,wk,pts:0,floor:0,ceil:0,conf:.95,games:0,cv:0,mean:0,actual:[],
+            opp:null,status:"BYE",gate:0,why:[p.t+" are on a bye in week "+wk]};
+  }
   // kickers get the same availability gate as everyone else
   let gate=1, status="";
   if(!isD&&p){
@@ -2196,7 +2220,7 @@ function renderWeek(){
     const cf=pj.conf>=.75?"hi":pj.conf>=.5?"mid":"lo";
     h+='<tr data-id="'+pj.pid+'" class="'+(compare.includes(pj.pid)?'picked':'')+'">'
       +'<td class="pickcell"><button class="pick '+(compare.includes(pj.pid)?'on':'')+'" data-pick="'+pj.pid+'" title="Add to comparison">'+(compare.includes(pj.pid)?'✓':'+')+'</button></td>'
-      +'<td class="l"><div class="who-cell">'+por(pj.pid,"sm")+'<div><b>'+p.n+statusTag(pj.pid,pj.wk)+(pj.status==="Backup"?' <span class="sflag bkp" title="'+(pj.why[0]||"")+'">BACKUP</span>':'')+'</b><div class="sub">'+p.p+' · '+p.t+(injStatus(pj.pid,pj.wk)&&injStatus(pj.pid,pj.wk).part?' · '+injStatus(pj.pid,pj.wk).part.toLowerCase():'')+'</div></div></div></td>'
+      +'<td class="l"><div class="who-cell">'+por(pj.pid,"sm")+'<div><b>'+p.n+statusTag(pj.pid,pj.wk)+(pj.status==="BYE"?' <span class="sflag bye" title="'+(pj.why[0]||"")+'">BYE</span>':pj.status==="Backup"?' <span class="sflag bkp" title="'+(pj.why[0]||"")+'">BACKUP</span>':'')+'</b><div class="sub">'+p.p+' · '+p.t+(injStatus(pj.pid,pj.wk)&&injStatus(pj.pid,pj.wk).part?' · '+injStatus(pj.pid,pj.wk).part.toLowerCase():'')+'</div></div></div></td>'
       +'<td class="sub">'+(pj.opp||'—')+'</td>'
       +'<td style="font-size:15px;font-weight:600">'+pj.pts.toFixed(1)+'</td>'
       +'<td class="sub">'+pj.floor.toFixed(1)+'</td>'
@@ -2380,8 +2404,12 @@ function gradeBet(b){
   const mk=MK(b.market); if(!mk) return "pending";
   const p=P[b.pid]; if(!p) return "pending";
   const played=weekPlayedFor(p.t,b.season,b.week);
+  const scheduled=!!((schedIdx[b.season]||{})[p.t]||{})[b.week];
   const row=(logOf(b.pid,b.season)||[]).find(r=>r[C.wk]===b.week);
-  if(!row) return played?"void":"pending";      // played but no stats = inactive
+  if(!row){
+    if(!scheduled) return "void";               // bye week — no game to settle against
+    return played?"void":"pending";             // played but no stats = inactive
+  }
   const actual=mk.get(row);
   if(mk.kind==="td"){
     const hit=actual>=1;
@@ -2472,7 +2500,9 @@ function renderBetSlip(){
     +'</div>';
   // what our model says — context only
   h+='<div class="betmodel">';
-  if(pj&&pj.gate===0){
+  if(pj&&pj.status==="BYE"){
+    h+='<div class="bmrow warn"><b>On a bye</b><span>'+p.t+' have no game in week '+b.week+'. There is nothing to bet here — pick another week.</span></div>';
+  } else if(pj&&pj.gate===0){
     h+='<div class="bmrow warn"><b>Not expected to play</b><span>'+(pj.status||"ruled out")+' — most books void yardage props if he is inactive.</span></div>';
   } else if(pr){
     h+='<div class="bmrow"><b>'+Math.round(pr.p*100)+'%</b>'
