@@ -39,6 +39,14 @@ jobs:
           FORCE_REFRESH: ${{ inputs.force && '1' || '0' }}
         run: python build_data.py
 
+      - name: Check the site still works with the new data
+        run: |
+          if [ -f test-suite.js ]; then
+            node test-suite.js
+          else
+            echo "No test suite present — skipping."
+          fi
+
       - name: Commit only if something actually changed
         run: |
           git config user.name  "snap-count-bot"
