@@ -399,6 +399,13 @@ button.lslot:hover{border-color:var(--chalk);color:var(--chalk)}
 .sflag.q{color:var(--te);border-color:color-mix(in srgb,var(--te) 50%,transparent);background:color-mix(in srgb,var(--te) 12%,transparent)}
 .sflag.prac{color:var(--mid);border-color:var(--rule2)}
 .sflag.bkp{color:var(--dim);border-color:var(--rule2);background:var(--surface2);font-size:8.5px}
+.t-news{margin-top:6px;font-size:10.5px;line-height:1.3;padding:3px 5px;border-radius:5px;background:var(--surface2);color:var(--mid)}
+.t-news.out{color:var(--qb);background:color-mix(in srgb,var(--qb) 10%,transparent)}
+.t-news.warn{color:var(--te);background:color-mix(in srgb,var(--te) 10%,transparent)}
+.rownews{font-size:11px;color:var(--mid);margin-top:2px}
+.rownews.out{color:var(--qb)} .rownews.warn{color:var(--te)}
+.inl{font-weight:600}
+.inl.out{color:var(--qb)} .inl.warn{color:var(--te)} .inl.ok{color:var(--mid)}
 .sflag.bye{color:var(--k);border-color:color-mix(in srgb,var(--k) 50%,transparent);background:color-mix(in srgb,var(--k) 10%,transparent)}
 .injbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid var(--rule);background:color-mix(in srgb,var(--te) 7%,transparent)}
 .injbar>b{font-size:11.5px;font-weight:600;color:var(--mid);margin-right:2px}
@@ -802,8 +809,9 @@ function renderPlayers(){
       const p=P[id], t=seasonTotals(id);
       h+='<div class="tile" data-id="'+id+'" style="--pc:'+(PC[p.p]||'var(--rule2)')+'">'
         +por(id,"")
-        +'<div class="t-name">'+p.n+'</div>'
+        +'<div class="t-name">'+p.n+statusTag(id)+'</div>'
         +'<div class="t-meta"><span class="pos">'+p.p+'</span><span>'+p.t+(p.j?' · '+p.j:'')+'</span></div>'
+        +(()=>{const nw=injNews(id); return nw?'<div class="t-news '+nw.tone+'" title="'+(nw.week?'From the week '+nw.week+' injury report':'Roster status')+'">'+nw.text+'</div>':'';})()
         +stripHtml(id)
         +'<div class="t-line">'+(t.g?'<b>'+t.ppg.toFixed(1)+'</b> ppg · '+t.g+' gm · '+t.td+' TD':'no games yet')+'</div>'
         +'</div>';
@@ -935,7 +943,7 @@ function renderFinder(){
     for(const r of rows.slice(0,150)){
       const p=P[r[C.id]];
       h+='<tr data-id="'+r[C.id]+'"><td class="l"><div class="who-cell">'+por(r[C.id],"sm")
-        +'<div><b>'+p.n+'</b><div class="sub">'+p.p+' · '+r[C.tm]+' vs '+r[C.opp]+'</div></div></div></td>'
+        +'<div><b>'+p.n+statusTag(r[C.id])+'</b><div class="sub">'+p.p+' · '+r[C.tm]+' vs '+r[C.opp]+'</div></div></div></td>'
         +COLS.map(c=>{ const v=c.get(r); const big=(c.k==="td"&&v>=2)||(c.k==="fp"&&v>=25)||((c.k==="ryd"||c.k==="cyd")&&v>=100)||(c.k==="pyd"&&v>=300);
           return '<td class="'+(big?'hot':(v?'':'zero'))+'">'+(v?(c.fx?v.toFixed(1):v):'–')+'</td>'; }).join('')
         +'</tr>';
@@ -989,7 +997,8 @@ function statusTag(pid,wk){
   if(!s) return "";
   const map={Out:["out","O","Ruled out"],Doubtful:["out","D","Doubtful"],Questionable:["q","Q","Questionable"]};
   const m=map[s.status];
-  const detail=(s.part?" · "+s.part:"")+(s.practice?" · "+s.practice+" practice":"");
+  const detail=(s.part?" · "+s.part:"")+(s.practice?" · "+s.practice+" practice":"")
+    +(s.current?"":" (week "+s.week+" report, not yet updated)");
   if(m) return ' <span class="sflag '+m[0]+'" title="'+m[2]+detail+'">'+m[1]+'</span>';
   if(s.practice==="DNP") return ' <span class="sflag prac" title="Did not practise'+detail+'">DNP</span>';
   if(s.practice==="Limited") return ' <span class="sflag prac" title="Limited in practice'+detail+'">LTD</span>';
@@ -1338,7 +1347,8 @@ function renderLeagues(){
         h+='<div class="lrow'+(armed?' armed':'')+(eligible?' elig':'')+'">'
           +'<button class="lslot '+(s.slot==="FLEX"?"flex":"")+(armed?' on':'')+'" data-slot-swap="'+lg.id+'|'+i+'" title="Swap this spot">'+s.slot+'</button>'
           +(s.pid?por(s.pid,"sm")
-                 +'<span class="lnm" data-open="'+s.pid+'">'+P[s.pid].n+statusTag(s.pid)+'<em>'+P[s.pid].p+' · '+P[s.pid].t+(s.manual?' · <b class="mnl">set</b>':'')+'</em></span>'
+                 +'<span class="lnm" data-open="'+s.pid+'">'+P[s.pid].n+statusTag(s.pid,wk)+'<em>'+P[s.pid].p+' · '+P[s.pid].t+(s.manual?' · <b class="mnl">set</b>':'')
+                   +(()=>{const nw=injNews(s.pid,wk);return nw?' · <b class="inl '+nw.tone+'">'+nw.text+'</b>':'';})()+'</em></span>'
                  +lptsHtml(s,live)
                  +(eligible?'<button class="swapin" data-swap-to="'+lg.id+'|'+sw.slotIdx+'|'+s.pid+'">swap</button>'
                            :'<button class="ltr" data-trade="'+lg.id+'|'+s.pid+'" title="Trade value">⇄</button>'
@@ -1500,19 +1510,50 @@ function actualPts(hist,sc){
    [week, game-day designation, practice participation, body part] */
 const INJ_I={wk:0,st:1,prac:2,part:3};
 function injRows(pid){ return INJ[pid]||[]; }
+/* An injury designation belongs to the week it was issued. Falling back to
+   "most recent entry ever" meant a week-2 Questionable would still be on a
+   player's card in week 17. It carries one week forward — the current week's
+   report often is not published until midweek — and expires after that. */
+const INJ_CARRY=1;
 function injFor(pid,wk){
   const rows=injRows(pid);
   if(!rows.length) return null;
-  if(wk){ const hit=rows.filter(r=>r[INJ_I.wk]===wk); if(hit.length) return hit[hit.length-1]; }
-  return rows[rows.length-1];
+  const target=wk||nextWeek();
+  const exact=rows.filter(r=>r[INJ_I.wk]===target);
+  if(exact.length) return exact[exact.length-1];
+  const recent=rows.filter(r=>r[INJ_I.wk]>=target-INJ_CARRY&&r[INJ_I.wk]<target);
+  return recent.length?recent[recent.length-1]:null;
 }
+const injLatest=pid=>{ const r=injRows(pid); return r.length?r[r.length-1]:null; };
 /* What the app acts on: a designation, or a red flag from practice alone.
    A player with no designation who hasn't practised all week is a real risk
    even though the league hasn't labelled him yet. */
 function injStatus(pid,wk){
   const r=injFor(pid,wk);
   if(!r) return null;
-  return {week:r[INJ_I.wk],status:r[INJ_I.st]||"",practice:r[INJ_I.prac]||"",part:r[INJ_I.part]||""};
+  const target=wk||nextWeek();
+  return {week:r[INJ_I.wk],status:r[INJ_I.st]||"",practice:r[INJ_I.prac]||"",part:r[INJ_I.part]||"",
+          current:r[INJ_I.wk]===target};
+}
+/* A one-line read of where a player stands, for cards and lists. */
+function injNews(pid,wk){
+  const p=P[pid]; if(!p) return null;
+  if(p.s) return {text:"On "+p.s,tone:"out",week:null};
+  const s=injStatus(pid,wk);
+  if(!s) return null;
+  /* Only report something that is actually a concern. A player listed with a
+     clean full practice and no designation is healthy — surfacing that as
+     "news" on every card would bury the entries that matter. */
+  const concern=!!s.status||s.practice==="DNP"||s.practice==="Limited";
+  if(!concern) return null;
+  const bits=[];
+  if(s.status) bits.push(s.status);
+  if(s.part) bits.push(s.part.toLowerCase());
+  if(s.practice) bits.push(s.practice==="DNP"?"did not practice":s.practice.toLowerCase()+" practice");
+  if(!bits.length) return null;
+  const tone=["Out","Doubtful"].includes(s.status)?"out":
+             (s.status==="Questionable"||s.practice==="DNP")?"warn":"ok";
+  return {text:bits.join(" · "),tone,week:s.week,current:s.current};
 }
 function injLabel(pid,wk){
   const s=injStatus(pid,wk);
@@ -2220,7 +2261,7 @@ function renderWeek(){
     const cf=pj.conf>=.75?"hi":pj.conf>=.5?"mid":"lo";
     h+='<tr data-id="'+pj.pid+'" class="'+(compare.includes(pj.pid)?'picked':'')+'">'
       +'<td class="pickcell"><button class="pick '+(compare.includes(pj.pid)?'on':'')+'" data-pick="'+pj.pid+'" title="Add to comparison">'+(compare.includes(pj.pid)?'✓':'+')+'</button></td>'
-      +'<td class="l"><div class="who-cell">'+por(pj.pid,"sm")+'<div><b>'+p.n+statusTag(pj.pid,pj.wk)+(pj.status==="BYE"?' <span class="sflag bye" title="'+(pj.why[0]||"")+'">BYE</span>':pj.status==="Backup"?' <span class="sflag bkp" title="'+(pj.why[0]||"")+'">BACKUP</span>':'')+'</b><div class="sub">'+p.p+' · '+p.t+(injStatus(pj.pid,pj.wk)&&injStatus(pj.pid,pj.wk).part?' · '+injStatus(pj.pid,pj.wk).part.toLowerCase():'')+'</div></div></div></td>'
+      +'<td class="l"><div class="who-cell">'+por(pj.pid,"sm")+'<div><b>'+p.n+statusTag(pj.pid,pj.wk)+(pj.status==="BYE"?' <span class="sflag bye" title="'+(pj.why[0]||"")+'">BYE</span>':pj.status==="Backup"?' <span class="sflag bkp" title="'+(pj.why[0]||"")+'">BACKUP</span>':'')+'</b><div class="sub">'+p.p+' · '+p.t+'</div>'+(()=>{const nw=injNews(pj.pid,pj.wk);return nw?'<div class="rownews '+nw.tone+'">'+nw.text+(nw.week&&!nw.current?' (wk '+nw.week+')':'')+'</div>':'';})()+'</div></div></td>'
       +'<td class="sub">'+(pj.opp||'—')+'</td>'
       +'<td style="font-size:15px;font-weight:600">'+pj.pts.toFixed(1)+'</td>'
       +'<td class="sub">'+pj.floor.toFixed(1)+'</td>'
@@ -2852,7 +2893,7 @@ function renderTrends(){
     for(const x of rows){
       const p=P[x.id];
       h+='<tr data-id="'+x.id+'"><td class="l"><div class="who-cell">'+por(x.id,"sm")
-        +'<div><b>'+p.n+'</b><div class="sub">'+p.p+' · '+p.t+'</div></div></div></td>'
+        +'<div><b>'+p.n+statusTag(x.id)+'</b><div class="sub">'+p.p+' · '+p.t+'</div></div></div></td>'
         +'<td>'+(x.r.tshare*100).toFixed(1)+'%</td><td>'+(x.r.ayshare*100).toFixed(1)+'%</td>'
         +'<td style="font-weight:600">'+x.r.wopr.toFixed(2)+'</td><td>'+x.r.adot.toFixed(1)+'</td>'
         +'<td class="'+(x.r.epaPlay>0?'up':'dn')+'">'+x.r.epaPlay.toFixed(3)+'</td>'
@@ -2871,7 +2912,7 @@ function tdTable(title,rows,cls){
   for(const x of rows){
     const p=P[x.pid];
     h+='<tr data-id="'+x.pid+'"><td class="l"><div class="who-cell">'+por(x.pid,"sm")
-      +'<div><b>'+p.n+'</b><div class="sub">'+p.p+' · '+p.t+'</div></div></div></td>'
+      +'<div><b>'+p.n+statusTag(x.pid)+'</b><div class="sub">'+p.p+' · '+p.t+'</div></div></div></td>'
       +'<td>'+x.act+'</td><td class="sub">'+x.exp.toFixed(1)+'</td>'
       +'<td class="'+(x.diff>0?'up':'dn')+'" style="font-weight:600">'+(x.diff>0?'+':'')+x.diff.toFixed(1)+'</td></tr>';
   }
