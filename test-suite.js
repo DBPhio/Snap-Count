@@ -6,15 +6,15 @@ if(!fs.existsSync(INDEX)){ console.error('Could not find index.html next to test
 const s=fs.readFileSync(INDEX,'utf8').match(/<script>([\s\S]*)<\/script>/)[1];
 const store={};
 const mk=id=>({id,textContent:'',value:'',style:{},className:'',dataset:{},classList:{add(){},remove(){},toggle(){}},
- addEventListener(){},set innerHTML(v){store[id]=v;},get innerHTML(){return store[id]||'';},querySelectorAll:()=>[],focus(){},setAttribute(){}});
+ addEventListener(){},click(){},querySelector:()=>mk('q'),set innerHTML(v){store[id]=v;},get innerHTML(){return store[id]||'';},querySelectorAll:()=>[],focus(){},setAttribute(){}});
 const els={};
 global.document={getElementById:id=>els[id]||(els[id]=mk(id)),querySelectorAll:()=>[],addEventListener(){},createElement:()=>mk('t'),documentElement:mk('h')};
 global.localStorage={getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=v;}};
 global.fetch=()=>Promise.reject('x');global.window={scrollTo(){}};
 const body=s.replace('boot();','')+`;module.exports={PLAYERS,WK,reindex,project,logOf,nextWeek,PRESETS_SC,C,
- gradeBet,betProfit,betSummary,propProb,MK,payout,lineupFor,setBestLineup,placeIn,clearWeek,migrate,gameOf,statusTag,SCHED,G,weekPlayed,injStatus,injRows,injNews,openSheet,renderLeagues,setLeagues:v=>{leagues=v;},
- renderHome,renderWeek,renderFinder,renderPlayers,renderTrends,renderBets,injStatus,scoreRow,finderRows,seasonTotals,
- setBets:v=>{bets=v;},getBets:()=>bets,set:(k,v)=>{if(k==='P')P=v;if(k==='W')W=v;if(k==='season')season=v;if(k==='filters')filters=v;if(k==='sortKey')sortKey=v;if(k==='weekF')weekF=v;if(k==='posF')posF=v;},get:()=>P};`;
+ lineupFor,setBestLineup,placeIn,clearWeek,migrate,gameOf,statusTag,SCHED,G,weekPlayed,injStatus,injRows,injNews,openSheet,renderLeagues,setLeagues:v=>{leagues=v;},
+ renderHome,renderWeek,renderFinder,renderPlayers,renderTrends,injStatus,scoreRow,finderRows,seasonTotals,
+ set:(k,v)=>{if(k==='P')P=v;if(k==='W')W=v;if(k==='season')season=v;if(k==='filters')filters=v;if(k==='sortKey')sortKey=v;if(k==='weekF')weekF=v;if(k==='posF')posF=v;},get:()=>P};`;
 const m={exports:{}};new Function('module','document','localStorage','fetch',body)(m,global.document,global.localStorage,global.fetch);
 const A=m.exports;A.set('P',A.PLAYERS);A.set('W',A.WK);A.reindex();A.set('season',2026);
 const P=A.get(),C=A.C,by=n=>Object.keys(P).find(k=>P[k].n===n);
@@ -43,24 +43,6 @@ else ok('backup QB near zero',true);
 const irGuy=Object.keys(P).find(id=>P[id].s==='IR');
 ok('IR gated to zero',A.project(irGuy,{wk,score:sc}).pts===0);
 
-// prop probabilities
-const jsn=by('Jaxon Smith-Njigba');
-const lo=A.propProb(jsn,wk,A.MK('rec_yds'),20,'over',sc), hi=A.propProb(jsn,wk,A.MK('rec_yds'),150,'over',sc);
-ok('probabilities ordered correctly',lo.p>hi.p);
-ok('probabilities bounded away from certainty',lo.p<=0.97&&hi.p>=0.03);
-ok('over + under = 1',Math.abs(lo.p+A.propProb(jsn,wk,A.MK('rec_yds'),20,'under',sc).p-1)<1e-9);
-
-// bet grading
-const row=A.logOf(jsn,2026).find(r=>r[C.wk]===1); const ry=row[C.cyd];
-const b=o=>Object.assign({id:'t',pid:jsn,season:2026,week:1,market:'rec_yds',side:'over',line:ry-10,odds:-110,stake:10},o);
-ok('win grades',A.gradeBet(b({}))==='win');
-ok('loss grades',A.gradeBet(b({line:ry+10}))==='loss');
-ok('push grades',A.gradeBet(b({line:ry}))==='push');
-ok('manual override honoured',A.gradeBet(b({manual:'void'}))==='void');
-ok('payout maths',Math.abs(A.betProfit(b({}))-9.0909)<0.001);
-A.setBets([b({id:'1'}),b({id:'2',line:ry+10})]);
-const sm=A.betSummary(A.getBets());
-ok('summary records 1-1',sm.w===1&&sm.l===1);
 
 // lineups
 const roster=['Josh Allen','Christian McCaffrey','Jonathan Taylor','Puka Nacua','Jaxon Smith-Njigba','Trey McBride','Nico Collins'].map(by).filter(Boolean).concat(['DST_DEN']);
@@ -116,11 +98,6 @@ lu.start.forEach(x=>console.log('   ',x.slot.padEnd(5),(x.pid?P[x.pid].n:'—').
 ok('bye player not auto-started',!lu.start.some(x=>x.pid===kw));
 ok('bye player sits on the bench',lu.bench.some(b=>b.pid===kw));
 
-// bets on a bye settle void, not pending forever
-const b={id:'t',pid:kw,season:2026,week:BYE,market:'rush_yds',side:'over',line:50,odds:-110,stake:10};
-ok('bet on a bye week voids',A.gradeBet(b)==='void');
-const pr=A.propProb(kw,BYE,A.MK('rush_yds'),50,'over',sc);
-ok('prop probability is zero on a bye',pr&&pr.p===0,JSON.stringify(pr));
 
 }
 // week rollover (own scope)
@@ -186,11 +163,10 @@ const flagged=Object.keys(P).filter(id=>A.injNews(id,wk)&&!id.startsWith('DST_')
   &&A.project(id,{wk,score:sc}).gate>0).slice(0,8);
 A.setLeagues([A.migrate({id:'L',name:'T',slots:{QB:1,RB:2,WR:2,TE:1,FLEX:1,K:1,DST:1},teams:12,
   roster:flagged.length?flagged:injured.slice(0,8),lineup:{}})]);
-A.setBets(injured.slice(0,3).map((pid,i)=>({id:'b'+i,pid,season:2026,week:wk,market:'rec_yds',side:'over',line:40,odds:-110,stake:10})));
-const views={players:A.renderPlayers,week:A.renderWeek,finder:A.renderFinder,trends:A.renderTrends,bets:A.renderBets,leagues:A.renderLeagues};
+const views={players:A.renderPlayers,week:A.renderWeek,finder:A.renderFinder,trends:A.renderTrends,leagues:A.renderLeagues};
 for(const [name,fn] of Object.entries(views)){ try{fn();}catch(e){console.log('  render error in '+name+': '+e.message);} }
 const html=Object.fromEntries(Object.keys(views).map(v=>[v,store['view-'+v]||'']));
-for(const v of ['players','week','finder','trends','bets','leagues']){
+for(const v of ['players','week','finder','trends','leagues']){
   const found=injured.filter(id=>{const nm=P[id].n; const i=html[v].indexOf(nm); if(i<0) return null;
     return html[v].slice(i,i+400).includes('sflag');}).length;
   const present=injured.filter(id=>html[v].includes(P[id].n)).length;
@@ -212,8 +188,49 @@ const outGuys=Object.keys(P).filter(id=>{const s2=A.injStatus(id,wk);return s2&&
 ok('every "Out" player projects zero',outGuys.every(id=>A.project(id,{wk,score:A.PRESETS_SC.ppr}).pts===0),
   outGuys.filter(id=>A.project(id,{wk,score:A.PRESETS_SC.ppr}).pts>0).map(id=>P[id].n).join(','));
 }
-// views render
-const views=[['home',A.renderHome],['week',A.renderWeek],['finder',A.renderFinder],['players',A.renderPlayers],['trends',A.renderTrends],['bets',A.renderBets]];
-views.forEach(([n,fn])=>{try{fn();ok(n+' renders',(store['view-'+n]||'').length>300);}catch(e){ok(n+' renders',false,e.message);}});
+// --- every view renders, with nothing leaking into the markup ---
+const views=[['home',A.renderHome],['week',A.renderWeek],['finder',A.renderFinder],
+  ['players',A.renderPlayers],['trends',A.renderTrends],['leagues',A.renderLeagues]];
+views.forEach(([n,fn])=>{
+  let e=null; try{ fn(); }catch(x){ e=x.message; }
+  const out=store['view-'+n]||'';
+  ok(n+' renders',!e&&out.length>300,e||out.length+' chars');
+  ok(n+' markup is clean',!/undefined|NaN|\[object/.test(out),(out.match(/undefined|NaN|\[object \w+/)||[''])[0]);
+});
+
+// --- the player sheet opens for every kind of player, not just the common case ---
+{
+const pick=t=>Object.keys(P).find(t);
+const kinds=[['starting QB',pick(id=>P[id].p==='QB'&&P[id].dc===1&&A.gameOf(P[id].t,2026,wk)&&!P[id].s)],
+ ['backup QB',pick(id=>P[id].p==='QB'&&P[id].dc>2)],['kicker',pick(id=>P[id].p==='K')],
+ ['defense',pick(id=>P[id].p==='DST')],['IR player',pick(id=>P[id].s==='IR')],
+ ['player on a bye',pick(id=>P[id].dc===1&&!A.gameOf(P[id].t,2026,wk))]];
+for(const [label,id] of kinds){
+  if(!id){ ok('sheet opens for a '+label+' (none in data)',true); continue; }
+  store['sheet']=''; let e=null;
+  try{ A.openSheet(id); }catch(x){ e=x.message; }
+  const out=store['sheet']||'';
+  ok('sheet opens for a '+label,!e&&out.length>500&&out.includes(P[id].n),e||P[id].n+' / '+out.length+' chars');
+}
+}
+
+// --- the bet tracker is gone, and nothing it shared is collateral damage ---
+{
+const src=require('fs').readFileSync(INDEX,'utf8');
+const dead=['betDraft','betsFor','betSummary','gradeBet','propProb','openBetSlip','renderBets',
+  'MARKETS','fmtOdds','snapcount.bets','data-slip','view-bets','data-v="bets"'];
+const left=dead.filter(d=>src.includes(d));
+ok('no bet-tracker code remains',left.length===0,left.join(', '));
+ok('start/sit comparator survived',/function compareBar/.test(src));
+ok('CSV export survived',/function exportTable/.test(src));
+// every export handler needs a button that actually renders
+['csvWeek','csvTrends','csvFinder'].forEach(k=>
+  ok(k+' button exists for its handler',src.includes('id="'+k+'"')));
+// saved-view whitelist must match the tabs that exist
+const tabs=[...new Set([...src.matchAll(/data-v="([a-z]+)"/g)].map(m=>m[1]))];
+const wl=(src.match(/\[([^\]]*)\]\.includes\(s\.view\)/)||[,''])[1].match(/"([a-z]+)"/g)||[];
+ok('saved-view whitelist matches the tabs',wl.length===tabs.length&&wl.every(w=>tabs.includes(w.replace(/"/g,''))),
+  'tabs='+tabs.join(',')+' whitelist='+wl.join(','));
+}
 console.log('\n'+pass+' passed, '+fail+' failed');
 if(fail>0) process.exit(1);
