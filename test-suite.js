@@ -14,6 +14,7 @@ global.fetch=()=>Promise.reject('x');global.window={scrollTo(){}};
 const body=s.replace('boot();','')+`;module.exports={PLAYERS,WK,reindex,project,logOf,nextWeek,PRESETS_SC,C,
  lineupFor,setBestLineup,placeIn,clearWeek,migrate,gameOf,statusTag,SCHED,G,weekPlayed,injStatus,injRows,injNews,openSheet,renderLeagues,setLeagues:v=>{leagues=v;},
  renderHome,renderWeek,renderFinder,renderPlayers,renderTrends,injStatus,scoreRow,finderRows,seasonTotals,
+ renderCompare,cmpTable,cmpExport,cmpTier,setCmp:(a,b,m)=>{cmpA=a;cmpB=b;if(m)cmpMode=m;},getCmp:()=>({a:cmpA,b:cmpB,m:cmpMode}),
  set:(k,v)=>{if(k==='P')P=v;if(k==='W')W=v;if(k==='season')season=v;if(k==='filters')filters=v;if(k==='sortKey')sortKey=v;if(k==='weekF')weekF=v;if(k==='posF')posF=v;},get:()=>P};`;
 const m={exports:{}};new Function('module','document','localStorage','fetch',body)(m,global.document,global.localStorage,global.fetch);
 const A=m.exports;A.set('P',A.PLAYERS);A.set('W',A.WK);A.reindex();A.set('season',2026);
@@ -190,7 +191,8 @@ ok('every "Out" player projects zero',outGuys.every(id=>A.project(id,{wk,score:A
 }
 // --- every view renders, with nothing leaking into the markup ---
 const views=[['home',A.renderHome],['week',A.renderWeek],['finder',A.renderFinder],
-  ['players',A.renderPlayers],['trends',A.renderTrends],['leagues',A.renderLeagues]];
+  ['players',A.renderPlayers],['trends',A.renderTrends],['leagues',A.renderLeagues],
+  ['compare',A.renderCompare]];
 views.forEach(([n,fn])=>{
   let e=null; try{ fn(); }catch(x){ e=x.message; }
   const out=store['view-'+n]||'';
@@ -214,6 +216,85 @@ for(const [label,id] of kinds){
 }
 }
 
+// --- compare tab: three modes, and pairings that stress the row logic ---
+{
+const rank=pos=>Object.keys(P).filter(id=>P[id].p===pos)
+  .sort((x,y)=>A.project(y,{wk,score:A.PRESETS_SC.ppr}).pts-A.project(x,{wk,score:A.PRESETS_SC.ppr}).pts);
+const wrs=rank('WR'), rbs=rank('RB'), qbs=rank('QB');
+const pick=t=>Object.keys(P).find(t);
+
+A.setCmp(null,null,'week'); store['view-compare']='';
+let ce=null; try{ A.renderCompare(); }catch(x){ ce=x.message; }
+ok('compare empty state renders',!ce&&(store['view-compare']||'').length>500,ce);
+
+for(const mode of ['week','ros','trade']){
+  A.setCmp(wrs[0],wrs[1],mode); store['view-compare']='';
+  let e2=null; try{ A.renderCompare(); }catch(x){ e2=x.message; }
+  const out=store['view-compare']||'';
+  ok('compare/'+mode+' renders with a verdict',!e2&&out.length>3000&&/class="cverd"/.test(out),
+     e2||out.length+' chars');
+  ok('compare/'+mode+' markup is clean',!/undefined|NaN|\[object|Infinity/.test(out),
+     (out.match(/undefined|NaN|\[object \w+|Infinity/)||[''])[0]);
+}
+const pairs=[['cross-position',wrs[0],rbs[0]],
+ ['kickers',pick(id=>P[id].p==='K'),Object.keys(P).filter(id=>P[id].p==='K')[1]],
+ ['defenses',pick(id=>P[id].p==='DST'),Object.keys(P).filter(id=>P[id].p==='DST')[1]],
+ ['one on IR',wrs[0],pick(id=>P[id].s==='IR')],
+ ['one on a bye',wrs[0],pick(id=>P[id].dc===1&&!A.gameOf(P[id].t,2026,wk))],
+ ['starter vs backup',qbs[0],pick(id=>P[id].p==='QB'&&P[id].dc>2)]];
+for(const [label,x,y] of pairs){
+  if(!x||!y||x===y){ ok('compare handles '+label+' (not in data)',true); continue; }
+  A.setCmp(x,y,'week'); store['view-compare']='';
+  let e3=null; try{ A.renderCompare(); }catch(z){ e3=z.message; }
+  const out=store['view-compare']||'';
+  ok('compare handles '+label,!e3&&out.length>1500&&!/undefined|NaN|\[object|Infinity/.test(out),
+     e3||(out.match(/undefined|NaN|\[object \w+|Infinity/)||['short: '+out.length])[0]);
+}
+// a player cut since the link was saved must not take the view down with him
+A.setCmp('NOT_A_REAL_ID','ALSO_FAKE','week'); store['view-compare']='';
+let e4=null; try{ A.renderCompare(); }catch(x){ e4=x.message; }
+ok('compare survives stale player ids',!e4&&/Put two players/.test(store['view-compare']||''),e4);
+
+// winner marking
+ok('winner tally follows the better value',(()=>{const r=A.cmpTable([{label:'x',a:10,b:5},{label:'y',a:1,b:9}]);
+  return r.winA===1&&r.winB===1;})());
+ok('hi:false inverts which side wins',(()=>{const r=A.cmpTable([{label:'x',a:2,b:8,hi:false}]);
+  return r.winA===1&&r.winB===0;})());
+ok('rows empty on both sides are dropped',A.cmpTable([{label:'x',a:null,b:null}]).html==='');
+ok('one-sided rows score for neither',(()=>{const r=A.cmpTable([{label:'x',a:5,b:null}]);
+  return r.winA===0&&r.winB===0&&/–/.test(r.html);})());
+ok('matchup tiers stay in range',[0,1,2,3].includes(A.cmpTier(1.2))&&A.cmpTier(null)===-1);
+
+// a gated player must not carry encouraging reasons next to a real projection
+{
+const ir=pick(id=>P[id].s==='IR');
+if(ir){
+  A.setCmp(wrs[0],ir,'week'); store['view-compare']='';
+  A.renderCompare();
+  const out=store['view-compare']||'';
+  const bHalf=out.slice(out.indexOf('chside b'));
+  ok('gated side shows only the reason he cannot play',
+     (bHalf.match(/<li>/g)||[]).length<=1,(bHalf.match(/<li>[^<]*/g)||[]).join(' | '));
+} else ok('gated side shows only the reason he cannot play (no IR player)',true);
+}
+// the verdict must not case-fold a reason that starts with a team code
+{
+const bye=pick(id=>P[id].dc===1&&!A.gameOf(P[id].t,2026,wk));
+if(bye){
+  A.setCmp(wrs[0],bye,'week'); store['view-compare']='';
+  A.renderCompare();
+  const out=store['view-compare']||'';
+  ok('bye reason keeps the team code upper case',!/\b[a-z]{2,3} are on a bye/.test(out),
+     (out.match(/\b[a-z]{2,3} are on a bye/)||[''])[0]);
+} else ok('bye reason keeps the team code upper case (nobody on a bye)',true);
+}
+// export
+A.setCmp(wrs[0],rbs[0],'week');
+let e5=null; try{ A.cmpExport(A.PRESETS_SC.ppr); }catch(x){ e5=x.message; }
+ok('compare CSV export runs',!e5,e5);
+A.setCmp(null,null,'week');
+}
+
 // --- the bet tracker is gone, and nothing it shared is collateral damage ---
 {
 const src=require('fs').readFileSync(INDEX,'utf8');
@@ -224,6 +305,7 @@ ok('no bet-tracker code remains',left.length===0,left.join(', '));
 ok('start/sit comparator survived',/function compareBar/.test(src));
 ok('CSV export survived',/function exportTable/.test(src));
 // every export handler needs a button that actually renders
+ok('compare tab survived',/function renderCompare/.test(src)&&/data-v="compare"/.test(src));
 ['csvWeek','csvTrends','csvFinder'].forEach(k=>
   ok(k+' button exists for its handler',src.includes('id="'+k+'"')));
 // saved-view whitelist must match the tabs that exist
