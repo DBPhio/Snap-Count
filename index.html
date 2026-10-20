@@ -19,6 +19,7 @@
   --qb:#C33646; --rb:#12795A; --wr:#1F62B8; --te:#A66412; --k:#6B45B0; --dst:#56665C;
   --h0:#E8ECE9; --h1:#7AA6C2; --h2:#3E8DA8; --h3:#D97B28; --h4:#C6402A;
   --good:#12795A; --warn:#A66412;
+  --cA:#12795A; --cB:#D97B28;
   --shadow:0 1px 2px rgba(22,32,26,.06),0 1px 1px rgba(22,32,26,.04);
   --cardbg:#FFFFFF;
 }
@@ -29,6 +30,7 @@
   --qb:#F4646E; --rb:#3FD0A0; --wr:#4C9AFF; --te:#FFB03A; --k:#B98CFF; --dst:#95A3B8;
   --h0:#1C2531; --h1:#274C63; --h2:#2C6A8C; --h3:#D98A32; --h4:#FF5A36;
   --good:#3FD0A0; --warn:#FFB03A;
+  --cA:#1A9A72; --cB:#C2701C;
   --shadow:none; --cardbg:#171C22;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -215,7 +217,6 @@ td.up{color:var(--good);font-weight:600} td.dn{color:var(--qb)}
 .pick:hover{border-color:var(--turf);color:var(--turf)}
 .pick.on{background:var(--turf);border-color:var(--turf);color:#fff}
 tbody tr.picked td{background:color-mix(in srgb,var(--turf) 7%,transparent)}
-.lx.edit:hover{color:var(--turf)}
 tbody tr:hover .lx{color:var(--mid)}
 .cmp{margin-top:18px;background:var(--cardbg);border:1px solid var(--rule2);border-radius:12px;box-shadow:var(--shadow)}
 .cmph{display:flex;align-items:baseline;gap:12px;padding:14px 16px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
@@ -440,6 +441,146 @@ button.lslot:hover{border-color:var(--chalk);color:var(--chalk)}
 .empty{padding:34px 20px;text-align:center;color:var(--dim);font-size:13px}
 footer{max-width:1560px;margin:0 auto;padding:22px 20px 40px;color:var(--dim);font-size:11.5px;border-top:1px solid var(--rule);margin-top:30px;line-height:1.7}
 footer a{color:var(--mid)}
+/* ---------- Compare ---------- */
+/* Side A and side B get one hue each, fixed to the side and never to who is
+   winning, so a swap repaints identity rather than rank. Both pairs were
+   checked for colorblind separation against their own surface; the dark steps
+   are chosen for the dark background, not lightened from the light ones. */
+.cmpgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.cpick{position:relative;display:flex;align-items:center;gap:9px;background:var(--cardbg);
+  border:1px solid var(--rule);border-radius:10px;padding:10px 11px;box-shadow:var(--shadow)}
+.cpick.on{border-color:var(--rule2)}
+.cside{flex:0 0 auto;width:20px;height:20px;border-radius:5px;display:grid;place-items:center;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#fff}
+.cside[data-s="a"]{background:var(--cA)} .cside[data-s="b"]{background:var(--cB)}
+.cpi{flex:1;min-width:0}
+.cpn{flex:1;min-width:0}
+.cpn b{display:block;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cpn span{display:block;font-size:12px;color:var(--mid)}
+.cpx{flex:0 0 auto;width:26px;height:26px;border-radius:6px;color:var(--dim);font-size:18px;line-height:1}
+.cpx:hover{background:var(--surface2);color:var(--chalk)}
+.cdrop{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:30;background:var(--cardbg);
+  border:1px solid var(--rule2);border-radius:10px;overflow:hidden;box-shadow:0 8px 24px rgba(22,32,26,.14)}
+.cdrop button{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;text-align:left}
+.cdrop button+button{border-top:1px solid var(--rule)}
+.cdrop button:hover{background:var(--surface2)}
+.cdn{font-size:14px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cdm{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mid)}
+.cdnone{padding:11px;font-size:13px;color:var(--mid)}
+
+.cverd{background:var(--cardbg);border:1px solid var(--rule);border-left:3px solid var(--turf);
+  border-radius:10px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.cverd b{display:block;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:600;
+  letter-spacing:.01em;margin-bottom:4px}
+.cverd p{font-size:14px;color:var(--mid);line-height:1.5}
+.cverd .cvx{margin-top:7px;padding-top:7px;border-top:1px solid var(--rule);font-size:13px;color:var(--dim)}
+
+.chrow{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule)}
+.chside{background:var(--cardbg);padding:14px 16px;border-top:2px solid transparent}
+.chside.a{border-top-color:var(--cA)} .chside.b{border-top-color:var(--cB)}
+.chside>b{display:block;font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;line-height:1.1}
+.chside>span{display:block;font-size:12px;color:var(--mid);margin-top:2px}
+.chside.cstat,.chrow.cstat .chside{padding:10px 16px}
+.chbar{margin-top:10px}
+.chtrack{display:block;position:relative;height:8px;border-radius:5px;background:var(--h0)}
+.chtrack i{position:absolute;top:0;height:8px;border-radius:5px;background:var(--rule2)}
+.chside.a .chtrack i{background:color-mix(in srgb,var(--cA) 42%,transparent)}
+.chside.b .chtrack i{background:color-mix(in srgb,var(--cB) 42%,transparent)}
+.chtrack u{position:absolute;top:-3px;width:3px;height:14px;border-radius:2px;background:var(--chalk)}
+.chnum{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mid);margin-top:5px}
+.cwhy{list-style:none;margin-top:9px}
+.cwhy li{font-size:12.5px;color:var(--mid);padding-left:11px;position:relative;line-height:1.45}
+.cwhy li:before{content:"·";position:absolute;left:2px;color:var(--dim)}
+.csig{display:inline-block;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;
+  font-weight:600;border:1px solid var(--rule2);border-radius:4px;padding:1px 6px;color:var(--mid)}
+.csig.sell{color:var(--te);border-color:color-mix(in srgb,var(--te) 50%,transparent)}
+.csig.buy{color:var(--good);border-color:color-mix(in srgb,var(--good) 50%,transparent)}
+.csig.volatile{color:var(--qb);border-color:color-mix(in srgb,var(--qb) 45%,transparent)}
+
+/* The three-column row: each number sits beside the label it belongs to, so
+   the eye travels a short distance rather than across the panel. */
+.ctable{border-top:1px solid var(--rule)}
+.crow{display:grid;grid-template-columns:1fr minmax(0,1.35fr) 1fr;align-items:center;
+  border-bottom:1px solid var(--rule)}
+.crow:last-child{border-bottom:none}
+.cv{font-family:'IBM Plex Mono',monospace;font-size:14px;padding:8px 12px;text-align:right}
+.crow>.cv:last-child{text-align:left}
+.cv small{font-size:10px;color:var(--dim);margin-left:5px}
+.crow>.cv.w{font-weight:600;color:var(--chalk)}
+.crow>.cv:first-child.w{background:color-mix(in srgb,var(--cA) 9%,transparent);
+  box-shadow:inset 2px 0 0 var(--cA)}
+.crow>.cv:last-child.w{background:color-mix(in srgb,var(--cB) 9%,transparent);
+  box-shadow:inset -2px 0 0 var(--cB)}
+.cl{font-size:13px;color:var(--mid);text-align:center;padding:8px;line-height:1.35}
+.cq{font-style:normal;font-size:9px;font-weight:600;color:var(--dim);border:1px solid var(--rule2);
+  border-radius:50%;width:13px;height:13px;display:inline-grid;place-items:center;margin-left:4px;
+  vertical-align:1px;cursor:help}
+.csub{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em;
+  text-transform:uppercase;color:var(--dim);padding:11px 14px 6px;background:var(--surface2);
+  border-bottom:1px solid var(--rule)}
+.crow.chd{background:var(--surface2)}
+.crow.chd .cv{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;color:var(--chalk)}
+.crow.chd .cl{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--dim)}
+.crow.cfoot{background:var(--surface2)}
+.crow.cfoot .cv{font-weight:600}
+.crow.cfoot .cl{font-size:12px}
+
+.cmcell{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.crow>.cv:last-child.cmcell{justify-content:flex-start;flex-direction:row-reverse}
+.cmopp{font-size:13px}
+.cmsym{font-style:normal;font-size:12px;line-height:1}
+.cmsym[data-m="0"]{color:var(--h1)} .cmsym[data-m="1"]{color:var(--h2)}
+.cmsym[data-m="2"]{color:var(--h3)} .cmsym[data-m="3"]{color:var(--h4);font-size:13px}
+.cmbye{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--k);
+  border:1px solid color-mix(in srgb,var(--k) 45%,transparent);border-radius:3px;padding:0 4px}
+.cmlegend{display:inline-flex;align-items:center;gap:4px;margin-right:7px}
+.cmlegend i{font-style:normal;font-size:12px}
+.cmlegend i[data-m="0"]{color:var(--h1)} .cmlegend i[data-m="1"]{color:var(--h2)}
+.cmlegend i[data-m="2"]{color:var(--h3)} .cmlegend i[data-m="3"]{color:var(--h4)}
+.cmlegend span{font-size:11px;color:var(--dim);margin-left:2px}
+
+/* One points axis, two series, both named in the legend — identity never
+   rests on hue alone. */
+.cchart{padding:13px 14px 4px;border-top:1px solid var(--rule)}
+.cleg{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.cleg span{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mid)}
+.cleg i{width:9px;height:9px;border-radius:2px;display:block}
+.cleg .cba{background:var(--cA)} .cleg .cbb{background:var(--cB)}
+.cleg .cscale{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim)}
+.cbars{display:flex;align-items:flex-end;gap:13px;overflow-x:auto}
+.cbgrp{flex:1 1 0;min-width:22px;max-width:76px;display:flex;flex-direction:column;align-items:center;gap:5px}
+.cbw{display:flex;align-items:flex-end;gap:2px;height:108px;width:100%}
+.cbw i{flex:1;min-width:3px;border-radius:4px 4px 0 0;display:block}
+.cbw .cba{background:var(--cA)} .cbw .cbb{background:var(--cB)}
+.cbk{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim)}
+
+.cnews{font-size:12.5px;color:var(--mid)}
+.cnews.out{color:var(--qb);font-weight:600}
+.cnews.warn{color:var(--te)}
+.cnews.ok{color:var(--dim)}
+
+.cmpempty{padding:22px 20px}
+.cmpempty h3{font-family:'Barlow Condensed',sans-serif;font-size:25px;font-weight:600;letter-spacing:.01em}
+.cmpempty p{font-size:14.5px;color:var(--mid);margin-top:6px;max-width:62ch;line-height:1.55}
+.cmpempty dl{margin-top:15px;display:grid;grid-template-columns:auto 1fr;gap:5px 14px;align-items:baseline}
+.cmpempty dt{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:600;white-space:nowrap}
+.cmpempty dd{font-size:13.5px;color:var(--mid);line-height:1.5}
+.csug{margin-top:18px;padding-top:15px;border-top:1px solid var(--rule)}
+.csug>span{display:block;font-size:12.5px;color:var(--dim);margin-bottom:8px}
+.csugr{display:flex;gap:8px;flex-wrap:wrap}
+.csugb{display:inline-flex;align-items:baseline;gap:7px}
+.csugb small{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim)}
+
+@media(max-width:620px){
+  .cmpgrid{grid-template-columns:1fr}
+  .chrow{grid-template-columns:1fr}
+  .crow{grid-template-columns:1fr minmax(0,1.1fr) 1fr}
+  .cv{font-size:13px;padding:7px 8px}
+  .cl{font-size:12px}
+  .chside>b{font-size:25px}
+  .cmpempty dl{grid-template-columns:1fr;gap:2px}
+  .cmpempty dd{margin-bottom:8px}
+}
 </style>
 </head>
 <body>
@@ -452,6 +593,7 @@ footer a{color:var(--mid)}
     <nav class="seg" id="viewSeg" aria-label="Sections">
       <button data-v="home" class="on">Home</button>
       <button data-v="week">This week</button>
+      <button data-v="compare">Compare</button>
       <button data-v="trends">Trends</button>
       <button data-v="players">Players</button>
       <button data-v="finder">Stat finder</button>
@@ -476,6 +618,7 @@ footer a{color:var(--mid)}
   <div id="view-leagues" style="display:none"></div>
   <div id="view-week" style="display:none"></div>
   <div id="view-trends" style="display:none"></div>
+  <div id="view-compare" style="display:none"></div>
 </main>
 <footer>
   <div>Snap Count — active-roster offensive players and kickers, every week of the season.</div>
@@ -2252,6 +2395,11 @@ function renderWeek(){
   });
   const cc=document.getElementById("clearCompare");
   if(cc) cc.onclick=()=>{ compare=[]; renderWeek(); };
+  /* The quick picker stays for a glance across up to four players; this hands
+     the first two to the Compare tab for the deep look rather than growing a
+     second comparison engine here. */
+  const tc=document.getElementById("toCompare");
+  if(tc) tc.onclick=()=>{ cmpA=compare[0]; cmpB=compare[1]; goTo("compare"); };
   const ce=document.getElementById("csvWeek");
   if(ce) ce.onclick=()=>exportTable(host.querySelector("table"),"snapcount-week"+wk);
 }
@@ -2264,6 +2412,7 @@ function compareBar(wk,sc){
   const top=Math.max(...ps.map(p=>p.ceil),1);
   let h='<div class="cmp"><div class="cmph"><b>Start or sit</b>'
     +'<span>Bar runs floor to ceiling; the line is the projection.</span>'
+    +(compare.length>=2?'<button class="ctl" id="toCompare">Open in Compare</button>':'')
     +'<button class="ctl" id="clearCompare">Clear</button></div><div class="cmprows">';
   for(const p of ps){
     const pl=P[p.pid], win=p.pts===best&&ps.length>1;
@@ -2429,6 +2578,589 @@ function openTrade(lgId,pid){
   document.querySelectorAll(".tgt[data-open]").forEach(el=>el.onclick=()=>openSheet(el.dataset.open));
 }
 
+/* =================== Compare =================== */
+/* Two players, side by side. The mode doesn't change what gets measured — it
+   changes which question the verdict answers, because "who do I start on
+   Sunday" and "who's worth more in a trade" genuinely point at different
+   players: one is a single-week projection, the other a body of work measured
+   against replacement level. Everything here comes from the same engine that
+   drives This Week, so none of it is a second opinion.
+
+   Rows are built as data, then rendered, tallied and exported from the same
+   list, so the CSV can never drift from what's on screen. */
+let cmpA=null, cmpB=null, cmpMode="week", cmpQ={a:"",b:""};
+const CMP_MODES=[["week","This week"],["ros","Rest of season"],["trade","Trade value"]];
+/* Boom and bust lines, per position — fantasy convention, not derived from
+   the data. Fifteen points means something different for a TE than a QB. */
+const BOOM={QB:[25,15],RB:[20,8],WR:[20,8],TE:[15,5],K:[12,5],DST:[12,3]};
+const MATCH_SYM=["○","◐","●","★"];
+const MATCH_WORD=["tough","below average","favorable","one of the softest"];
+
+/* Trade value is measured against replacement level, which only means
+   something inside a league's scoring and roster shape. Use the first saved
+   league if there is one, otherwise a plain 12-team PPR so the tab still
+   works before anyone has set a league up. */
+function cmpLeague(){
+  return leagues[0]||{id:"_cmp",name:"a 12-team PPR league",score:PRESETS_SC.ppr,
+    slots:{QB:1,RB:2,WR:2,TE:1,FLEX:1,K:1,DST:1},teams:12,roster:[],lineup:{}};
+}
+/* How much a defense has given up to this position relative to the league.
+   Above 1.00 is a soft matchup. These are the same rates the projection
+   engine already applies — surfaced so you can see where a schedule gets
+   easier or harder instead of just trusting the total. */
+function cmpMatch(pos,team,tbl){
+  if(!team||!tbl) return null;
+  if(pos==="QB") return dvpRate(tbl,team,"pyd","att");
+  if(pos==="RB") return (dvpRate(tbl,team,"ryd","car")*2+dvpRate(tbl,team,"cyd","tgt"))/3;
+  if(pos==="WR"||pos==="TE") return dvpRate(tbl,team,"cyd","tgt");
+  return null;
+}
+function cmpTier(rate){
+  if(rate===null||!isFinite(rate)) return -1;
+  return rate<0.95?0:rate<1.02?1:rate<1.10?2:3;
+}
+function cmpMatchCell(pos,team,tbl,prefix){
+  if(!team) return '<span class="cmbye">BYE</span>';
+  const r=cmpMatch(pos,team,tbl), t=cmpTier(r);
+  const lab='<span class="cmopp">'+(prefix||"")+team+'</span>';
+  if(t<0) return lab;
+  return lab+'<i class="cmsym" data-m="'+t+'" title="'+team+' have been '+MATCH_WORD[t]
+    +' against '+pos+'s — '+(r>=1?Math.round((r-1)*100)+'% above':Math.round((1-r)*100)+'% below')
+    +' league average">'+MATCH_SYM[t]+'</i>';
+}
+
+/* ---------- comparison table ---------- */
+/* A row only earns its place if at least one side clears `tiny` (default: it
+   must be non-zero). Without this a WR-vs-WR comparison prints a Passing
+   section of zeros and a yards-a-carry built on one carry, which reads like
+   data but is noise. Section headings are held back until a row under them
+   actually renders, so no heading is left standing over nothing. */
+function cmpTable(rows){
+  let wa=0,wb=0,h='',pend=null;
+  for(const r of rows){
+    if(r.head){ pend=r.head; continue; }
+    const na=typeof r.a==="number"&&isFinite(r.a), nb=typeof r.b==="number"&&isFinite(r.b);
+    if(!na&&!nb) continue;
+    const big=Math.max(na?Math.abs(r.a):0,nb?Math.abs(r.b):0);
+    if(big<=(r.tiny||0)) continue;
+    if(pend!==null){ h+='<div class="csub">'+pend+'</div>'; pend=null; }
+    const hi=r.hi!==false;
+    let la=false,lb=false;
+    if(na&&nb&&Math.abs(r.a-r.b)>1e-9){
+      if(hi?r.a>r.b:r.a<r.b){ la=true; wa++; } else { lb=true; wb++; }
+    }
+    const f=r.fmt||(v=>v.toFixed(r.dp===0?0:1));
+    h+='<div class="crow">'
+      +'<div class="cv'+(la?' w':'')+'">'+(na?f(r.a):'–')+'</div>'
+      +'<div class="cl">'+r.label+(r.note?'<i class="cq" title="'+r.note+'">?</i>':'')+'</div>'
+      +'<div class="cv'+(lb?' w':'')+'">'+(nb?f(r.b):'–')+'</div></div>';
+  }
+  return {html:h,winA:wa,winB:wb};
+}
+function cmpPanel(title,sub,inner){
+  return '<div class="panel"><div class="panel-h">'+title+(sub?'<small>'+sub+'</small>':'')+'</div>'+inner+'</div>';
+}
+
+/* ---------- pickers ---------- */
+function cmpPicker(side){
+  const cur=side==="a"?cmpA:cmpB, other=side==="a"?cmpB:cmpA, qq=cmpQ[side]||"";
+  const tag=side==="a"?"A":"B";
+  if(cur){
+    const p=P[cur], t=seasonTotals(cur);
+    return '<div class="cpick on"><span class="cside" data-s="'+side+'">'+tag+'</span>'+por(cur,"sm")
+      +'<div class="cpn"><b>'+p.n+statusTag(cur)+byeTag(cur)+roleTag(cur)+'</b>'
+      +'<span>'+p.p+' · '+p.t+' · '+(t.g?t.ppg.toFixed(1)+' a game in '+season:'no '+season+' games yet')+'</span></div>'
+      +'<button class="cpx" data-cclear="'+side+'" title="Clear this side">×</button></div>';
+  }
+  let h='<div class="cpick"><span class="cside" data-s="'+side+'">'+tag+'</span>'
+    +'<input class="search cpi" data-cq="'+side+'" placeholder="Search a player for side '+tag+'" value="'+qq.replace(/"/g,"&quot;")+'">';
+  if(qq.length>=2){
+    const s=qq.toLowerCase();
+    const hits=Object.keys(P).filter(id=>id!==other&&(P[id].n.toLowerCase().includes(s)||P[id].t.toLowerCase().includes(s)))
+      .sort((x,y)=>seasonTotals(y).fp-seasonTotals(x).fp).slice(0,8);
+    h+='<div class="cdrop">'+(hits.length
+      ? hits.map(id=>'<button data-cset="'+side+'" data-id="'+id+'">'+por(id,"sm")
+          +'<span class="cdn">'+P[id].n+'</span><span class="cdm">'+P[id].p+' · '+P[id].t+'</span></button>').join('')
+      : '<div class="cdnone">Nobody by that name on an active roster.</div>')+'</div>';
+  }
+  return h+'</div>';
+}
+
+/* ---------- verdict ---------- */
+/* The framing matters more than the pick. Backtested weekly error is about
+   5 points, so a one-point edge is not an edge, and saying so plainly is
+   more useful than manufacturing confidence. */
+function cmpVerdict(wk,sc){
+  const A=P[cmpA], B=P[cmpB];
+  let head="", body="", extra="";
+  if(cmpMode==="week"){
+    const pa=project(cmpA,{wk,score:sc}), pb=project(cmpB,{wk,score:sc});
+    const outA=pa.gate===0, outB=pb.gate===0, gap=pa.pts-pb.pts;
+    if(outA&&outB){
+      head="Neither one is playable";
+      body=(pa.why&&pa.why[0]||pa.status||"Not available")+". "+(pb.why&&pb.why[0]||pb.status||"Not available")+".";
+    } else if(outA||outB){
+      const good=outA?B:A, bad=outA?A:B, badpj=outA?pa:pb;
+      head="Start "+good.n;
+      /* Don't case-fold the reason — it routinely starts with a team code,
+         and "kc are on a bye" reads like a typo. */
+      body=bad.n+" is not playable this week. "+((badpj.why&&badpj.why[0])||badpj.status||"He is ruled out")
+        +". That settles it whatever the stats below say.";
+    } else if(Math.abs(gap)<1.5){
+      head="Too close to separate";
+      body="These two project within "+Math.abs(gap).toFixed(1)+" points of each other. Weekly projection error averages about 5 points, so a gap this size sits inside the noise — decide on something other than the number.";
+    } else {
+      head="Start "+(gap>0?A:B).n;
+      body="Projected "+Math.abs(gap).toFixed(1)+" points higher"
+        +(Math.abs(gap)<3?", though average weekly error is around 5 points, so treat this as a lean rather than a lock":"")+".";
+    }
+    if(!outA&&!outB){
+      const safe=pa.floor>pb.floor?A:B, ceil=pa.ceil>pb.ceil?A:B;
+      if(safe!==ceil) extra="It depends what you need: "+safe.n+" carries the higher floor ("
+        +Math.max(pa.floor,pb.floor).toFixed(1)+" against "+Math.min(pa.floor,pb.floor).toFixed(1)+"), "
+        +ceil.n+" the higher ceiling ("+Math.max(pa.ceil,pb.ceil).toFixed(1)+" against "+Math.min(pa.ceil,pb.ceil).toFixed(1)
+        +"). Chase the ceiling when you need points and take the floor when you're protecting a lead.";
+    }
+  } else if(cmpMode==="ros"){
+    const ra=restOfSeason(cmpA,sc), rb=restOfSeason(cmpB,sc);
+    if(!ra||!rb){
+      head="No schedule left to project";
+      body="One of these two has no remaining games on the schedule, so there is nothing to total up from here.";
+    } else {
+      const gap=ra.total-rb.total, games=Math.max(ra.weeks.length,rb.weeks.length,1);
+      head=Math.abs(gap)<6?"Effectively even from here":(gap>0?A:B).n+" is the better hold";
+      body=Math.abs(gap)<6
+        ? "Projected within "+Math.abs(gap).toFixed(1)+" points of each other across every remaining week — well under a point a game, which is smaller than the error on any single projection."
+        : "Projected "+Math.abs(gap).toFixed(1)+" more points over the rest of the schedule, around "+(Math.abs(gap)/games).toFixed(1)+" a week.";
+      if(ra.weeks.length!==rb.weeks.length){
+        const d=Math.abs(ra.weeks.length-rb.weeks.length);
+        extra=(ra.weeks.length>rb.weeks.length?A:B).n+" has "+d+" more game"+(d===1?"":"s")
+          +" still to play — the bye weeks are marked in the schedule below.";
+      }
+    }
+  } else {
+    const lg=cmpLeague(), mv=valueModel(lg);
+    const va=mv.vals[cmpA], vb=mv.vals[cmpB];
+    const thin=va.games<3||vb.games<3;
+    const gap=(va.vor||0)-(vb.vor||0);
+    head=thin?"Not enough games to value this"
+      :Math.abs(gap)<1?"Close to an even swap":(gap>0?A:B).n+" is worth more";
+    body=thin
+      ? "One of these two has fewer than three games on record. Value here is built out of production, and there isn't enough of it yet to compare them honestly."
+      : Math.abs(gap)<1
+        ? "Once measured against replacement level at their own positions they sit within a point a game of each other. Straight across, this is close to a wash — decide it on roster fit rather than value."
+        : "Worth about "+Math.abs(gap).toFixed(1)+" more points a game above replacement at his position, scored in "+lg.name+".";
+    if(!thin) extra=A.n+": "+signalOf(va).note+" "+B.n+": "+signalOf(vb).note;
+  }
+  return '<div class="cverd"><b>'+head+'</b><p>'+body+'</p>'+(extra?'<p class="cvx">'+extra+'</p>':'')+'</div>';
+}
+
+/* ---------- headline, per mode ---------- */
+function cmpHeadline(wk,sc){
+  if(cmpMode==="week"){
+    const pa=project(cmpA,{wk,score:sc}), pb=project(cmpB,{wk,score:sc});
+    const top=Math.max(pa.ceil,pb.ceil,1);
+    const bar=pj=>'<div class="chbar"><span class="chtrack"><i style="left:'+Math.max(0,pj.floor/top*100)
+      +'%;width:'+Math.max(2,(pj.ceil-pj.floor)/top*100)+'%"></i>'
+      +'<u style="left:'+Math.min(99,Math.max(0,pj.pts/top*100))+'%"></u></span></div>';
+    /* When a player is gated to zero the engine still lists whatever looked
+       good about him underneath, which beside a real projection reads as an
+       argument for starting someone who cannot play. Show the gate alone. */
+    const side=(pj,cls)=>{
+      const why=pj.gate===0?(pj.why||[]).slice(0,1):(pj.why||[]).slice(0,3);
+      return '<div class="chside '+cls+'"><b>'+pj.pts.toFixed(1)+'</b>'
+        +'<span>'+pj.floor.toFixed(1)+' to '+pj.ceil.toFixed(1)+(pj.opp&&pj.gate!==0?' · vs '+pj.opp:'')+'</span>'+bar(pj)
+        +(why.length?'<ul class="cwhy">'+why.map(w=>'<li>'+w+'</li>').join('')+'</ul>':'')+'</div>';
+    };
+    return cmpPanel("Week "+wk+" projection","the bar runs floor to ceiling; the tick is the projection",
+      '<div class="chrow">'+side(pa,"a")+side(pb,"b")+'</div>');
+  }
+  if(cmpMode==="ros"){
+    const ra=restOfSeason(cmpA,sc), rb=restOfSeason(cmpB,sc);
+    const side=(r,cls)=>'<div class="chside '+cls+'">'+(r
+      ? '<b>'+r.total.toFixed(1)+'</b><span>'+r.weeks.length+' games left · '+r.perWeek.toFixed(1)+' a week</span>'
+      : '<b>–</b><span>no games left</span>')+'</div>';
+    return cmpPanel("Projected rest of season","weekly projections summed; byes contribute nothing",
+      '<div class="chrow">'+side(ra,"a")+side(rb,"b")+'</div>');
+  }
+  const lg=cmpLeague(), mv=valueModel(lg);
+  const side=(pid,cls)=>{
+    const v=mv.vals[pid], s=signalOf(v);
+    return '<div class="chside '+cls+'"><b>'+(v.vor>=0?"+":"")+v.vor.toFixed(1)+'</b>'
+      +'<span>'+v.wppg.toFixed(1)+' weighted a game · replacement '+(mv.repl[P[pid].p]||0).toFixed(1)+'</span>'
+      +'<span class="csig '+s.k+'">'+s.label+'</span></div>';
+  };
+  return cmpPanel("Value over replacement","scored in "+lg.name+", recent games weighted heavier",
+    '<div class="chrow">'+side(cmpA,"a")+side(cmpB,"b")+'</div>');
+}
+
+/* ---------- block: remaining schedule ---------- */
+function cmpSchedule(sc){
+  const wk=nextWeek(), tbl=dvp(sc,wk);
+  const A=P[cmpA], B=P[cmpB];
+  const wks=[...new Set((SCHED[2026]||[]).filter(r=>!r[G.played]).map(r=>r[G.wk]))].sort((a,b)=>a-b);
+  if(!wks.length) return "";
+  let rows='', softA=0, softB=0, byeA=0, byeB=0;
+  for(const w of wks){
+    const ga=gameOf(A.t,2026,w), gb=gameOf(B.t,2026,w);
+    const oa=ga?ga[G.opp]:null, ob=gb?gb[G.opp]:null;
+    if(!oa) byeA++; else if(cmpTier(cmpMatch(A.p,oa,tbl))>=2) softA++;
+    if(!ob) byeB++; else if(cmpTier(cmpMatch(B.p,ob,tbl))>=2) softB++;
+    rows+='<div class="crow"><div class="cv cmcell">'+cmpMatchCell(A.p,oa,tbl,ga&&ga[G.home]?'vs ':'@ ')+'</div>'
+      +'<div class="cl">Wk '+w+'</div>'
+      +'<div class="cv cmcell">'+cmpMatchCell(B.p,ob,tbl,gb&&gb[G.home]?'vs ':'@ ')+'</div></div>';
+  }
+  const legend='<span class="cmlegend">'+MATCH_SYM.map((s,i)=>'<i data-m="'+i+'" title="'+MATCH_WORD[i]+'">'+s+'</i>').join('')
+    +'<span>tough to softest</span></span>';
+  return cmpPanel("Remaining schedule","each defense graded against that player's position",
+    '<div class="ctable">'
+    +'<div class="crow chd"><div class="cv">'+A.n+'</div><div class="cl">Week</div><div class="cv">'+B.n+'</div></div>'
+    +rows
+    +'<div class="crow cfoot"><div class="cv">'+softA+'</div><div class="cl">favorable matchups left</div><div class="cv">'+softB+'</div></div>'
+    +(byeA||byeB?'<div class="crow cfoot"><div class="cv">'+(byeA?"yes":"no")+'</div><div class="cl">bye still to come</div><div class="cv">'+(byeB?"yes":"no")+'</div></div>':'')
+    +'</div><div class="lnote">'+legend
+    +' Grades come from what each defense has allowed to '+(A.p===B.p?A.p+"s":A.p+"s and "+B.p+"s")
+    +' this season and last. They move a projection by a few percent, not a few points — a soft schedule is a tiebreaker, not a reason to start someone with no role.</div>');
+}
+
+/* ---------- block: risk profile ---------- */
+function cmpRiskStat(pid,sc){
+  const arr=gameStream(pid,sc).map(x=>x.pts);
+  if(!arr.length) return null;
+  const n=arr.length, mean=arr.reduce((a,b)=>a+b,0)/n;
+  const sd=Math.sqrt(arr.reduce((a,b)=>a+(b-mean)*(b-mean),0)/n);
+  const sorted=[...arr].sort((x,y)=>x-y);
+  const th=BOOM[P[pid].p]||BOOM.WR;
+  return {n,mean,sd,cv:mean>0?sd/mean:1,
+    p25:pct(sorted,.25),med:pct(sorted,.5),p90:pct(sorted,.9),
+    boom:arr.filter(v=>v>=th[0]).length/n*100,
+    bust:arr.filter(v=>v<=th[1]).length/n*100,
+    best:Math.max(...arr),worst:Math.min(...arr)};
+}
+function cmpRiskRows(sc){
+  const sa=cmpRiskStat(cmpA,sc), sb=cmpRiskStat(cmpB,sc);
+  const tha=BOOM[P[cmpA].p]||BOOM.WR, thb=BOOM[P[cmpB].p]||BOOM.WR;
+  const two=(x,y)=>x===y?String(x):x+" / "+y;
+  return [
+    {label:"Median game",a:sa&&sa.med,b:sb&&sb.med},
+    {label:"Typical floor",a:sa&&sa.p25,b:sb&&sb.p25,note:"25th percentile — one game in four lands below this."},
+    {label:"Typical ceiling",a:sa&&sa.p90,b:sb&&sb.p90,note:"90th percentile — a realistic good week, not his single best."},
+    {label:"Best week",a:sa&&sa.best,b:sb&&sb.best},
+    {label:"Worst week",a:sa&&sa.worst,b:sb&&sb.worst},
+    {label:"Boom rate",a:sa&&sa.boom,b:sb&&sb.boom,fmt:v=>Math.round(v)+"%",
+     note:"Share of games at or above "+two(tha[0],thb[0])+" points."},
+    {label:"Bust rate",a:sa&&sa.bust,b:sb&&sb.bust,hi:false,fmt:v=>Math.round(v)+"%",
+     note:"Share of games at or below "+two(tha[1],thb[1])+" points. Lower is better."},
+    {label:"Week-to-week swing",a:sa&&sa.cv*100,b:sb&&sb.cv*100,hi:false,fmt:v=>Math.round(v)+"%",
+     note:"Standard deviation as a share of his own average. Lower means more predictable."},
+    {label:"Games in sample",a:sa&&sa.n,b:sb&&sb.n,dp:0}
+  ];
+}
+function cmpRisk(sc){
+  const sa=cmpRiskStat(cmpA,sc), sb=cmpRiskStat(cmpB,sc);
+  if(!sa&&!sb) return "";
+  const top=Math.max(sa?sa.p90:0,sb?sb.p90:0,1);
+  const bar=(s,nm)=>s?'<div class="chbar"><span class="chtrack" title="'+nm+': '+s.p25.toFixed(1)
+    +' to '+s.p90.toFixed(1)+', median '+s.med.toFixed(1)+'"><i style="left:'+Math.max(0,s.p25/top*100)
+    +'%;width:'+Math.max(2,(s.p90-s.p25)/top*100)+'%"></i>'
+    +'<u style="left:'+Math.min(99,s.med/top*100)+'%"></u></span>'
+    +'<span class="chnum">'+s.p25.toFixed(1)+' – '+s.p90.toFixed(1)+'</span></div>':'';
+  const t=cmpTable(cmpRiskRows(sc));
+  return cmpPanel("Risk profile",(sa&&sa.n)+" and "+(sb&&sb.n)+" games on record",
+    '<div class="chrow"><div class="chside a">'+bar(sa,P[cmpA].n)+'</div>'
+    +'<div class="chside b">'+bar(sb,P[cmpB].n)+'</div></div>'
+    +'<div class="ctable">'+t.html+'</div>'
+    +'<div class="lnote">Two players with the same average are not the same player. The bar runs from a typical bad week to a typical good one and the tick is the median. A wide bar wins you weeks you were losing and loses weeks you were winning — which one you want depends on whether you are favored.</div>');
+}
+
+/* ---------- block: opportunity vs efficiency ---------- */
+function cmpRoleRows(){
+  const A=P[cmpA], B=P[cmpB];
+  const ra=roleOf(cmpA,season), rb=roleOf(cmpB,season);
+  const la=logOf(cmpA,season), lb=logOf(cmpB,season);
+  const aa=advTotals(cmpA,season), ab=advTotals(cmpB,season);
+  const td=tdBoard(season);
+  const ta=td.find(x=>x.pid===cmpA), tb=td.find(x=>x.pid===cmpB);
+  const per=(log,f)=>log.length?log.reduce((a,r)=>a+f(r),0)/log.length:null;
+  const sum=(log,f)=>log.length?log.reduce((a,r)=>a+f(r),0):null;
+  /* Per-attempt rates need enough attempts to mean anything. A receiver with
+     one carry on a jet sweep would otherwise post a yards-before-contact
+     figure that looks like a stat and is pure accident. */
+  const rate=(adv,key,log,f,minDen)=>{
+    if(!adv||!adv[key]) return null;
+    const d=sum(log,f);
+    return d&&d>=(minDen||1)?adv[key]/d:null;
+  };
+  const gated=(val,log,f,minDen)=>{ const d=sum(log,f); return d&&d>=minDen?val:null; };
+  const snapNow=r=>r&&r.snapNow!==null&&r.snapNow!==undefined?r.snapNow*100:null;
+  const CARRY_MIN=20, ATT_MIN=15, TGT_MIN=10, TOUCH_MIN=20;
+  return [
+    {head:"Opportunity — the part that carries week to week"},
+    {label:"Snap share",a:snapNow(ra),b:snapNow(rb),fmt:v=>Math.round(v)+"%",
+     note:"Share of his team's offensive snaps in recent games. The best single sign that a role is real."},
+    {label:"Snap share trend",a:ra&&ra.snapTrend!==null?ra.snapTrend*100:null,
+     b:rb&&rb.snapTrend!==null?rb.snapTrend*100:null,fmt:v=>(v>=0?"+":"")+Math.round(v)+"%",
+     note:"The back half of his games against the front half. Rising means the staff is giving him more."},
+    {label:"Touches a game",a:per(la,r=>r[C.car]+r[C.rec]),b:per(lb,r=>r[C.car]+r[C.rec])},
+    {label:"Targets a game",a:per(la,r=>r[C.tgt]),b:per(lb,r=>r[C.tgt])},
+    {label:"Target share",a:ra&&ra.tshare*100,b:rb&&rb.tshare*100,fmt:v=>v.toFixed(1)+"%"},
+    {label:"Air yards share",a:ra&&ra.ayshare*100,b:rb&&rb.ayshare*100,fmt:v=>v.toFixed(1)+"%",
+     note:"His share of the yards his team threw at, caught or not. Captures role in a way catches don't."},
+    {label:"WOPR",a:ra&&ra.wopr,b:rb&&rb.wopr,fmt:v=>v.toFixed(2),
+     note:"Target share and air-yards share combined — the standard single measure of a receiver's role."},
+    {label:"Pass attempts a game",a:per(la,r=>r[C.att]),b:per(lb,r=>r[C.att]),tiny:1},
+    {label:"First downs a game",a:ra&&ra.fdG,b:rb&&rb.fdG},
+    {head:"Efficiency — the part that regresses"},
+    {label:"Yards a touch",a:gated(sum(la,r=>r[C.ryd]+r[C.cyd])/(sum(la,r=>r[C.car]+r[C.rec])||1),la,r=>r[C.car]+r[C.rec],TOUCH_MIN),
+     b:gated(sum(lb,r=>r[C.ryd]+r[C.cyd])/(sum(lb,r=>r[C.car]+r[C.rec])||1),lb,r=>r[C.car]+r[C.rec],TOUCH_MIN),
+     fmt:v=>v.toFixed(2)},
+    {label:"Yards before contact a carry",a:rate(aa,"ybc",la,r=>r[C.car],CARRY_MIN),
+     b:rate(ab,"ybc",lb,r=>r[C.car],CARRY_MIN),fmt:v=>v.toFixed(2),
+     note:"Credit to the blocking more than the runner. Shown once he has "+CARRY_MIN+" carries."},
+    {label:"Yards after contact a carry",a:rate(aa,"yac",la,r=>r[C.car],CARRY_MIN),
+     b:rate(ab,"yac",lb,r=>r[C.car],CARRY_MIN),fmt:v=>v.toFixed(2),
+     note:"Credit to the runner more than the blocking. Shown once he has "+CARRY_MIN+" carries."},
+    {label:"Broken tackles",a:aa&&aa.brk,b:ab&&ab.brk,dp:0},
+    {label:"Drops",a:aa&&aa.drp,b:ab&&ab.drp,hi:false,dp:0},
+    {label:"Average depth of target",a:gated(ra&&ra.adot,la,r=>r[C.tgt],TGT_MIN),
+     b:gated(rb&&rb.adot,lb,r=>r[C.tgt],TGT_MIN),fmt:v=>v.toFixed(1)},
+    {label:"Passer rating when targeted",a:gated(aa&&aa.rat,la,r=>r[C.tgt],TGT_MIN),
+     b:gated(ab&&ab.rat,lb,r=>r[C.tgt],TGT_MIN),fmt:v=>Math.round(v),
+     note:"How well his quarterback has played throwing in his direction."},
+    {label:"EPA a play",a:ra&&ra.epaPlay,b:rb&&rb.epaPlay,fmt:v=>v.toFixed(3),
+     note:"Expected points added on plays he was involved in."},
+    {label:"Completion over expected",a:gated(ra&&ra.cpoe,la,r=>r[C.att],ATT_MIN),
+     b:gated(rb&&rb.cpoe,lb,r=>r[C.att],ATT_MIN),fmt:v=>(v>=0?"+":"")+v.toFixed(1)+"%",
+     note:"Quarterbacks only — shown once he has "+ATT_MIN+" attempts."},
+    {label:"Times pressured",a:gated(aa&&aa.prs,la,r=>r[C.att],ATT_MIN),
+     b:gated(ab&&ab.prs,lb,r=>r[C.att],ATT_MIN),hi:false,dp:0},
+    {label:"Sacks taken",a:gated(aa&&aa.sk,la,r=>r[C.att],ATT_MIN),
+     b:gated(ab&&ab.sk,lb,r=>r[C.att],ATT_MIN),hi:false,dp:0},
+    {head:"Touchdown luck"},
+    {label:"Touchdowns scored",a:ta&&ta.act,b:tb&&tb.act,dp:0},
+    {label:"Expected from his usage",a:ta&&ta.exp,b:tb&&tb.exp},
+    {label:"Over or under expected",a:ta&&ta.diff,b:tb&&tb.diff,fmt:v=>(v>=0?"+":"")+v.toFixed(1),
+     note:"Touchdowns are the noisiest part of a fantasy line. Well above expected means he has been finishing drives at a rate his carries and targets don't support, and that usually cools off."}
+  ];
+}
+function cmpRole(){
+  const A=P[cmpA], B=P[cmpB];
+  const t=cmpTable(cmpRoleRows());
+  if(!t.html) return "";
+  const td=tdBoard(season);
+  const ta=td.find(x=>x.pid===cmpA), tb=td.find(x=>x.pid===cmpB);
+  let luck="";
+  if(ta&&tb){
+    const hot=Math.abs(ta.diff)>Math.abs(tb.diff)?{x:ta,p:A}:{x:tb,p:B};
+    if(Math.abs(hot.x.diff)>=1.5)
+      luck=" "+hot.p.n+" has scored "+Math.abs(hot.x.diff).toFixed(1)+" touchdowns "
+        +(hot.x.diff>0?"more":"fewer")+" than his carries and targets predict, and that gap usually closes — which argues for expecting "
+        +(hot.x.diff>0?"less":"more")+" from him going forward than his points a game suggest.";
+  }
+  return cmpPanel("Opportunity and efficiency",season+" season",
+    '<div class="ctable">'+t.html+'</div>'
+    +'<div class="lnote">Volume is sticky; efficiency is not. Someone holding snaps and targets keeps producing, while someone carried by yards a touch or a touchdown rate above his usage is a worse bet than his average suggests.'+luck+'</div>');
+}
+
+/* ---------- block: week by week + shared opponents ---------- */
+function cmpH2H(sc){
+  const A=P[cmpA], B=P[cmpB];
+  const sa=gameStream(cmpA,sc).filter(x=>x.season===season);
+  const sb=gameStream(cmpB,sc).filter(x=>x.season===season);
+  if(!sa.length||!sb.length) return "";
+  const ma=new Map(sa.map(x=>[x.wk,x.pts])), mb=new Map(sb.map(x=>[x.wk,x.pts]));
+  const wks=[...new Set([...ma.keys(),...mb.keys()])].sort((a,b)=>a-b);
+  const top=Math.max(...[...ma.values(),...mb.values()],1);
+  let winA=0,winB=0;
+  for(const w of wks) if(ma.has(w)&&mb.has(w)){ if(ma.get(w)>mb.get(w)) winA++; else if(mb.get(w)>ma.get(w)) winB++; }
+  /* Two series, one points axis, both named in the legend so identity never
+     rests on color alone. */
+  const bars=wks.map(w=>{
+    const va=ma.get(w), vb=mb.get(w);
+    const col=(v,cls,nm)=>'<i class="'+cls+'" style="height:'+(v===undefined?0:Math.max(2,v/top*100))+'%"'
+      +' title="Week '+w+' · '+nm+': '+(v===undefined?"did not play":v.toFixed(1)+" pts")+'"></i>';
+    return '<div class="cbgrp"><span class="cbw">'+col(va,"cba",A.n)+col(vb,"cbb",B.n)+'</span>'
+      +'<span class="cbk">'+w+'</span></div>';
+  }).join('');
+  const oppWk=(p,w)=>{ const g=gameOf(p.t,season,w); return g?g[G.opp]:null; };
+  const oa=new Map(), ob=new Map();
+  for(const w of ma.keys()){ const o=oppWk(A,w); if(o) oa.set(o,{wk:w,pts:ma.get(w)}); }
+  for(const w of mb.keys()){ const o=oppWk(B,w); if(o) ob.set(o,{wk:w,pts:mb.get(w)}); }
+  const shared=[...oa.keys()].filter(o=>ob.has(o)).sort();
+  let shHtml='', shA=0, shB=0;
+  for(const o of shared){
+    const x=oa.get(o), y=ob.get(o);
+    const la=x.pts>y.pts, lb=y.pts>x.pts;
+    if(la) shA++; if(lb) shB++;
+    shHtml+='<div class="crow"><div class="cv'+(la?' w':'')+'">'+x.pts.toFixed(1)+'<small>wk '+x.wk+'</small></div>'
+      +'<div class="cl">vs '+o+'</div>'
+      +'<div class="cv'+(lb?' w':'')+'">'+y.pts.toFixed(1)+'<small>wk '+y.wk+'</small></div></div>';
+  }
+  let h='<div class="cchart">'
+    +'<div class="cleg"><span><i class="cba"></i>'+A.n+'</span><span><i class="cbb"></i>'+B.n+'</span>'
+    +'<span class="cscale">0 to '+top.toFixed(0)+' pts</span></div>'
+    +'<div class="cbars">'+bars+'</div></div>'
+    +'<div class="ctable"><div class="crow cfoot"><div class="cv">'+winA+'</div>'
+    +'<div class="cl">weeks he outscored the other</div><div class="cv">'+winB+'</div></div></div>';
+  if(shared.length){
+    h+='<div class="csub">Same opponent, same season</div><div class="ctable">'+shHtml
+      +'<div class="crow cfoot"><div class="cv">'+shA+'</div><div class="cl">of '+shared.length+' shared matchups</div><div class="cv">'+shB+'</div></div></div>'
+      +'<div class="lnote">Both have faced '+shared.length+' of the same defense'+(shared.length===1?'':'s')
+      +' this season. It is the closest thing to a controlled comparison here, though a handful of games is still a handful of games.</div>';
+  } else {
+    h+='<div class="lnote">These two have not faced any of the same defenses this season, so there is no like-for-like matchup to put side by side.</div>';
+  }
+  return cmpPanel("Week by week",season+" · "+(shared.length?shared.length+" shared opponents":"no shared opponents"),h);
+}
+
+/* ---------- block: every measure ---------- */
+function cmpStatRows(){
+  const A=P[cmpA], B=P[cmpB];
+  const la=logOf(cmpA,season), lb=logOf(cmpB,season);
+  const ta=seasonTotals(cmpA), tb=seasonTotals(cmpB);
+  const per=(log,f)=>log.length?log.reduce((a,r)=>a+f(r),0)/log.length:null;
+  const sum=(log,f)=>log.length?log.reduce((a,r)=>a+f(r),0):null;
+  const div=(log,n,d)=>sum(log,d)?sum(log,n)/sum(log,d):null;
+  /* Hold back a rate until its denominator is big enough to carry meaning. */
+  const minDen=(log,f,min,val)=>{ const d=sum(log,f); return d&&d>=min?val:null; };
+  const CARRY_MIN=20, REC_MIN=8;
+  return [
+    {head:"Fantasy"},
+    {label:"Points a game",a:ta.g?ta.ppg:null,b:tb.g?tb.ppg:null},
+    {label:"Total points",a:ta.g?ta.fp:null,b:tb.g?tb.fp:null},
+    {label:"Games played",a:ta.g||null,b:tb.g||null,dp:0},
+    {head:"Passing"},
+    {label:"Yards a game",a:per(la,r=>r[C.pyd]),b:per(lb,r=>r[C.pyd]),tiny:5},
+    {label:"Touchdowns",a:sum(la,r=>r[C.ptd]),b:sum(lb,r=>r[C.ptd]),dp:0},
+    {label:"Interceptions",a:sum(la,r=>r[C.int]),b:sum(lb,r=>r[C.int]),hi:false,dp:0},
+    {head:"Rushing"},
+    {label:"Yards a game",a:per(la,r=>r[C.ryd]),b:per(lb,r=>r[C.ryd]),tiny:2},
+    {label:"Carries a game",a:per(la,r=>r[C.car]),b:per(lb,r=>r[C.car]),tiny:.5},
+    /* A yards-a-carry built on a handful of carries is an accident, not a rate. */
+    {label:"Yards a carry",a:minDen(la,r=>r[C.car],CARRY_MIN,div(la,r=>r[C.ryd],r=>r[C.car])),
+     b:minDen(lb,r=>r[C.car],CARRY_MIN,div(lb,r=>r[C.ryd],r=>r[C.car])),fmt:v=>v.toFixed(2)},
+    {label:"Touchdowns",a:sum(la,r=>r[C.rtd]),b:sum(lb,r=>r[C.rtd]),dp:0},
+    {head:"Receiving"},
+    {label:"Yards a game",a:per(la,r=>r[C.cyd]),b:per(lb,r=>r[C.cyd]),tiny:2},
+    {label:"Catches a game",a:per(la,r=>r[C.rec]),b:per(lb,r=>r[C.rec]),tiny:.3},
+    {label:"Yards a catch",a:minDen(la,r=>r[C.rec],REC_MIN,div(la,r=>r[C.cyd],r=>r[C.rec])),
+     b:minDen(lb,r=>r[C.rec],REC_MIN,div(lb,r=>r[C.cyd],r=>r[C.rec])),fmt:v=>v.toFixed(2)},
+    {label:"Catch rate",a:minDen(la,r=>r[C.tgt],REC_MIN,div(la,r=>r[C.rec],r=>r[C.tgt])*100||null),
+     b:minDen(lb,r=>r[C.tgt],REC_MIN,div(lb,r=>r[C.rec],r=>r[C.tgt])*100||null),fmt:v=>Math.round(v)+"%"},
+    {label:"Touchdowns",a:sum(la,r=>r[C.ctd]),b:sum(lb,r=>r[C.ctd]),dp:0},
+    {head:"Other"},
+    {label:"Fumbles lost",a:sum(la,r=>r[C.fum]),b:sum(lb,r=>r[C.fum]),hi:false,dp:0},
+    {label:"Return and special touchdowns",a:sum(la,r=>r[C.sptd]),b:sum(lb,r=>r[C.sptd]),dp:0},
+    {head:"Context"},
+    {label:"Age",a:ageOf(cmpA),b:ageOf(cmpB),hi:false,dp:0,
+     note:"Younger is the better bet over a long horizon, not necessarily this Sunday."},
+    {label:"Depth chart rank",a:A.dc||null,b:B.dc||null,hi:false,dp:0,note:"1 is the starter at his position."},
+    {label:"Seasons in the league",a:A.dy?Math.max(0,2026-A.dy):null,b:B.dy?Math.max(0,2026-B.dy):null,hi:false,dp:0}
+  ];
+}
+function cmpStats(){
+  const A=P[cmpA], B=P[cmpB];
+  const t=cmpTable(cmpStatRows());
+  const tally=t.winA===t.winB
+    ? "Dead even at "+t.winA+" measures each."
+    : (t.winA>t.winB?A.n:B.n)+" leads "+Math.max(t.winA,t.winB)+" of "+(t.winA+t.winB)
+      +" measures to "+Math.min(t.winA,t.winB)+".";
+  const status=s=>s?'<span class="cnews '+s.tone+'">'+s.text+'</span>':'<span class="cnews ok">No injury designation</span>';
+  return cmpPanel("Every measure",season+" · "+(scoring==="ppr"?"full PPR":scoring==="std"?"standard":"half PPR"),
+    '<div class="chrow cstat"><div class="chside a">'+status(injNews(cmpA))+'</div>'
+    +'<div class="chside b">'+status(injNews(cmpB))+'</div></div>'
+    +'<div class="ctable">'
+    +'<div class="crow chd"><div class="cv">'+A.n+'</div><div class="cl">Measure</div><div class="cv">'+B.n+'</div></div>'
+    +t.html+'</div>'
+    +'<div class="lnote"><b>'+tally+'</b> Counting measures is a rough guide rather than a verdict — a lead in points a game is worth more than a lead in catch rate. The call at the top of the page is the one to go by.</div>');
+}
+
+/* ---------- export ---------- */
+/* Exports every block, not just the one table on screen, since the whole
+   point of taking it out of the browser is to have all of it. */
+function cmpExport(sc){
+  const A=P[cmpA], B=P[cmpB];
+  const q=s=>/[",]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+  const lines=[["Measure",A.n+" ("+A.p+" "+A.t+")",B.n+" ("+B.p+" "+B.t+")"].map(q).join(",")];
+  const push=rows=>{
+    for(const r of rows){
+      if(r.head){ lines.push(q("— "+r.head+" —")+",,"); continue; }
+      const na=typeof r.a==="number"&&isFinite(r.a), nb=typeof r.b==="number"&&isFinite(r.b);
+      if(!na&&!nb) continue;
+      const f=r.fmt||(v=>v.toFixed(r.dp===0?0:1));
+      lines.push([r.label,na?f(r.a):"",nb?f(r.b):""].map(q).join(","));
+    }
+  };
+  push(cmpStatRows());
+  push(cmpRiskRows(sc));
+  push(cmpRoleRows());
+  csvDownload(lines,"snapcount-compare-"+A.n.replace(/\W+/g,"")+"-vs-"+B.n.replace(/\W+/g,""));
+}
+
+/* ---------- the view ---------- */
+function renderCompare(){
+  const host=document.getElementById("view-compare");
+  /* A saved link or stored preference can name someone who has since been cut,
+     and every block below assumes the player exists. Drop him rather than
+     throwing on the whole view. */
+  if(cmpA&&!P[cmpA]) cmpA=null;
+  if(cmpB&&!P[cmpB]) cmpB=null;
+  const wk=nextWeek(), sc=projScore();
+  let h='<div class="bar">'
+    +'<div class="seg" id="cmpSeg">'+CMP_MODES.map(([v,l])=>
+      '<button data-cm="'+v+'" class="'+(cmpMode===v?'on':'')+'">'+l+'</button>').join('')+'</div>'
+    +'<div class="grow"></div>'
+    +(cmpA&&cmpB?'<button class="ctl" id="cmpSwap">Swap sides</button><button class="ctl" id="cmpCsv">Export CSV</button>':'')
+    +(cmpA||cmpB?'<button class="ctl" id="cmpClear">Clear</button>':'')+'</div>';
+  h+='<div class="cmpgrid">'+cmpPicker("a")+cmpPicker("b")+'</div>';
+  if(!cmpA||!cmpB){
+    const tops=pos=>Object.keys(P).filter(id=>P[id].p===pos)
+      .sort((x,y)=>seasonTotals(y).fp-seasonTotals(x).fp).slice(0,2);
+    const sug=["RB","WR","QB","TE"].map(pos=>{
+      const t=tops(pos); if(t.length<2) return "";
+      const last=id=>P[id].n.split(" ").slice(-1)[0];
+      return '<button class="ctl csugb" data-csug="'+t[0]+'|'+t[1]+'">'+last(t[0])+' vs '+last(t[1])
+        +'<small>top '+pos+'s</small></button>';
+    }).join('');
+    h+='<div class="panel"><div class="cmpempty">'
+      +'<h3>Put two players head to head</h3>'
+      +'<p>Pick one on each side. Everything below comes from the same projection engine the rest of the site runs on, so nothing here is a second opinion.</p>'
+      +'<dl><dt>This week</dt><dd>Who to start on Sunday, with the floor and ceiling either way and the reasons the engine used.</dd>'
+      +'<dt>Rest of season</dt><dd>Who to hold, with every remaining opponent graded against that player&rsquo;s position and byes flagged.</dd>'
+      +'<dt>Trade value</dt><dd>Who is worth more measured against replacement level at his own position, in your league&rsquo;s scoring.</dd></dl>'
+      +(sug?'<div class="csug"><span>Or start from one worth arguing about:</span><div class="csugr">'+sug+'</div></div>':'')
+      +'</div></div>';
+    host.innerHTML=h; wireCompare(); return;
+  }
+  h+=cmpVerdict(wk,sc)+cmpHeadline(wk,sc)+cmpSchedule(sc)+cmpRisk(sc)+cmpRole()+cmpH2H(sc)+cmpStats();
+  host.innerHTML=h;
+  wireCompare();
+}
+function wireCompare(){
+  const host=document.getElementById("view-compare");
+  const re=()=>{ renderCompare(); savePrefs(); };
+  host.querySelectorAll("[data-cm]").forEach(b=>b.onclick=()=>{ cmpMode=b.dataset.cm; re(); });
+  host.querySelectorAll("[data-cclear]").forEach(b=>b.onclick=()=>{
+    const s=b.dataset.cclear; if(s==="a") cmpA=null; else cmpB=null; cmpQ[s]=""; re(); });
+  host.querySelectorAll("[data-cset]").forEach(b=>b.onclick=()=>{
+    const s=b.dataset.cset; if(s==="a") cmpA=b.dataset.id; else cmpB=b.dataset.id; cmpQ[s]=""; re(); });
+  host.querySelectorAll("[data-csug]").forEach(b=>b.onclick=()=>{
+    const [x,y]=b.dataset.csug.split("|"); cmpA=x; cmpB=y; cmpQ.a=cmpQ.b=""; re(); });
+  host.querySelectorAll("[data-cq]").forEach(el=>{
+    el.oninput=()=>{
+      const s=el.dataset.cq; cmpQ[s]=el.value;
+      renderCompare();
+      const n=document.querySelector('[data-cq="'+s+'"]');
+      if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); }
+    };
+  });
+  const sw=document.getElementById("cmpSwap");
+  if(sw) sw.onclick=()=>{ const t=cmpA; cmpA=cmpB; cmpB=t; re(); };
+  const cl=document.getElementById("cmpClear");
+  if(cl) cl.onclick=()=>{ cmpA=cmpB=null; cmpQ.a=cmpQ.b=""; re(); };
+  const cv=document.getElementById("cmpCsv");
+  if(cv) cv.onclick=()=>cmpExport(projScore());
+}
 /* =================== Trends =================== */
 let trendTab="regression";
 function renderTrends(){
@@ -2505,7 +3237,12 @@ function exportTable(table,name){
       const t=(td.innerText||td.textContent||"").replace(/\s+/g," ").trim();
       return /[",]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;
     }).join(","));
-  const blob=new Blob([rows.join("\n")],{type:"text/csv;charset=utf-8"});
+  csvDownload(rows,name);
+}
+/* Shared with the compare tab, which builds its lines from row data rather
+   than from the DOM so the export can carry blocks that aren't tables. */
+function csvDownload(lines,name){
+  const blob=new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
   a.download=name+"-"+new Date().toISOString().slice(0,10)+".csv";
@@ -2539,7 +3276,11 @@ function openSheet(pid){
       +'<span class="ptrack"><i style="left:'+Math.max(0,Math.min(100,((pj.pts-pj.floor)/Math.max(pj.ceil-pj.floor,.1))*100))+'%"></i></span>'
       +'<span class="pc">'+pj.ceil.toFixed(1)+'</span></div>'
       +'<div class="projmain"><b>'+pj.pts.toFixed(1)+'</b><span>projected · '+probOver(pj,15)+'% chance of 15+ · '+Math.round(pj.conf*100)+'% confidence</span></div></div>'
-      +(pj.why.length?'<ul class="whylist">'+pj.why.map(w=>'<li>'+w+'</li>').join('')+'</ul>':'')
+      /* A gated player keeps whatever looked good about him in the reason
+         list, which under a 0.0 projection reads as a case for starting him.
+         Show the reason he can't play and stop there. */
+      +(()=>{ const why=pj.gate===0?pj.why.slice(0,1):pj.why;
+              return why.length?'<ul class="whylist">'+why.map(w=>'<li>'+w+'</li>').join('')+'</ul>':''; })()
       +statLineHtml(pj)
       +'</div>';
   }
@@ -2686,7 +3427,8 @@ const LS="snapcount.prefs";
 function savePrefs(){
   if(!loaded) return;
   const dot=document.getElementById("saveDot"); dot.className="savedot busy";
-  try{ localStorage.setItem(LS,JSON.stringify({season,scoring,view,posF,teamF,weekF,filters,sortKey,sortDir,theme}));
+  try{ localStorage.setItem(LS,JSON.stringify({season,scoring,view,posF,teamF,weekF,filters,sortKey,sortDir,theme,
+         cmpA,cmpB,cmpMode}));
        dot.className="savedot on"; dot.title="Preferences saved in this browser";
   }catch(e){ dot.className="savedot err"; dot.title="Couldn't save preferences"; }
 }
@@ -2695,11 +3437,13 @@ function loadPrefs(){
     const s=JSON.parse(localStorage.getItem(LS)||"{}");
     if(s.season&&[2026,2025].includes(+s.season)) season=+s.season;
     if(["ppr","half","std"].includes(s.scoring)) scoring=s.scoring;
-    if(["home","players","finder","leagues","week","trends"].includes(s.view)) view=s.view;
+    if(["home","players","finder","leagues","week","trends","compare"].includes(s.view)) view=s.view;
     if(s.theme==="dark"||s.theme==="light") theme=s.theme;
     if(s.posF) posF=s.posF; if(s.teamF) teamF=s.teamF; if(s.weekF) weekF=s.weekF;
     if(Array.isArray(s.filters)) filters=s.filters;
     if(s.sortKey) sortKey=s.sortKey; if(s.sortDir) sortDir=s.sortDir;
+    if(s.cmpA) cmpA=s.cmpA; if(s.cmpB) cmpB=s.cmpB;
+    if(["week","ros","trade"].includes(s.cmpMode)) cmpMode=s.cmpMode;
     document.getElementById("saveDot").className="savedot on";
   }catch(e){}
   applyTheme(theme);
@@ -2713,7 +3457,8 @@ function loadPrefs(){
    them. Anyone opening the link lands on exactly what you were looking at. */
 function writeUrl(){
   if(!loaded) return;
-  const st={v:view,s:season,p:posF,t:teamF,q,w:weekF,k:sortKey,d:sortDir,f:filters,tr:trendTab,th:weekThresh};
+  const st={v:view,s:season,p:posF,t:teamF,q,w:weekF,k:sortKey,d:sortDir,f:filters,tr:trendTab,th:weekThresh,
+            ca:cmpA,cb:cmpB,cm:cmpMode==="week"?null:cmpMode};
   const clean={};
   for(const k in st){
     const v=st[k];
@@ -2738,6 +3483,8 @@ function readUrl(){
     if(Array.isArray(st.f)) filters=st.f;
     if(st.tr) trendTab=st.tr;
     if(st.th) weekThresh=+st.th;
+    if(st.ca) cmpA=st.ca; if(st.cb) cmpB=st.cb;
+    if(["week","ros","trade"].includes(st.cm)) cmpMode=st.cm;
     return true;
   }catch(e){ return false; }
 }
@@ -2769,11 +3516,13 @@ function render(){
   document.getElementById("view-leagues").style.display=view==="leagues"?"":"none";
   document.getElementById("view-week").style.display=view==="week"?"":"none";
   document.getElementById("view-trends").style.display=view==="trends"?"":"none";
+  document.getElementById("view-compare").style.display=view==="compare"?"":"none";
   if(view==="home") renderHome();
   else if(view==="players") renderPlayers();
   else if(view==="finder") renderFinder();
   else if(view==="leagues") renderLeagues();
   else if(view==="trends") renderTrends();
+  else if(view==="compare") renderCompare();
   else renderWeek();
 }
 document.getElementById("viewSeg").addEventListener("click",e=>{
