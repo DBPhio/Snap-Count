@@ -815,6 +815,27 @@ function computeStrip(pid){
 }
 
 /* =================== Home =================== */
+/* Every one of these search boxes re-renders its whole view on each keystroke,
+   which throws the <input> away and builds a new one. The caret has to be put
+   back by hand: focus() alone drops it at position 0, which is why typing a
+   name jumped to the front of the box. Restore the selection the user actually
+   had rather than the end of the string, so fixing a typo mid-word works too. */
+function keepCaret(sel,fn){
+  const el=document.querySelector(sel);
+  let a=null,b=null;
+  if(el){ try{ a=el.selectionStart; b=el.selectionEnd; }catch(e){} }
+  fn();
+  const n=document.querySelector(sel);
+  if(!n) return;
+  try{ n.focus(); }catch(e){}
+  if(a!==null){ try{ n.setSelectionRange(a,b); }catch(e){} }
+}
+/* Values go into an attribute, so a name with a quote or an ampersand would
+   otherwise break out of it. */
+function attr(v){
+  return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
 function goTo(v){
   view=v;
   document.querySelectorAll("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
@@ -895,7 +916,7 @@ function playerList(){
     const p=P[id];
     if(posF!=="ALL"&&p.p!==posF) return false;
     if(teamF!=="ALL"&&p.t!==teamF) return false;
-    if(q){ const s=q.toLowerCase(); if(!(p.n.toLowerCase().includes(s)||p.t.toLowerCase().includes(s))) return false; }
+    if(q.trim()){ const s=q.trim().toLowerCase(); if(!(p.n.toLowerCase().includes(s)||p.t.toLowerCase().includes(s))) return false; }
     return true;
   });
 }
@@ -914,7 +935,7 @@ function renderPlayers(){
   const fpOf=new Map(all.map(id=>[id,seasonTotals(id).fp]));
   const ids=all.sort((a,b)=>fpOf.get(b)-fpOf.get(a)||P[a].n.localeCompare(P[b].n));
   let h='<div class="bar">'
-    +'<input class="search" id="q" placeholder="Search player or team" value="'+q.replace(/"/g,"&quot;")+'">'
+    +'<input class="search" id="q" placeholder="Search player or team" value="'+attr(q)+'">'
     +['ALL','QB','RB','WR','TE','K'].map(x=>'<button class="chip '+(posF===x?'on':'')+'" data-p="'+x+'">'+(x==='ALL'?'All':x)+'</button>').join('')
     +'<select class="ctl" id="teamF"><option value="ALL">All teams</option>'+_teamOpts+'</select>'
     +'<span class="count">'+ids.length+' players</span></div>';
@@ -941,8 +962,8 @@ function renderPlayers(){
   qi.value=q;
   document.getElementById("teamF").value=teamF;
   let qt;
-  qi.oninput=e=>{ const v=e.target.value.trim(); clearTimeout(qt);
-    qt=setTimeout(()=>{ q=v; shown=PAGE; renderPlayers(); document.getElementById("q").focus(); savePrefs(); },180); };
+  qi.oninput=e=>{ const v=e.target.value; clearTimeout(qt);
+    qt=setTimeout(()=>{ q=v; shown=PAGE; keepCaret("#q",renderPlayers); savePrefs(); },180); };
   document.getElementById("teamF").onchange=e=>{ teamF=e.target.value; shown=PAGE; renderPlayers(); savePrefs(); };
   const more=document.getElementById("more");
   if(more) more.onclick=()=>{ shown+=PAGE; renderPlayers(); };
@@ -993,7 +1014,7 @@ function finderRows(){
     const p=P[r[C.id]];
     if(posF!=="ALL"&&p.p!==posF) continue;
     if(teamF!=="ALL"&&p.t!==teamF) continue;
-    if(q){ const s=q.toLowerCase(); if(!(p.n.toLowerCase().includes(s)||p.t.toLowerCase().includes(s))) continue; }
+    if(q.trim()){ const s=q.trim().toLowerCase(); if(!(p.n.toLowerCase().includes(s)||p.t.toLowerCase().includes(s))) continue; }
     let ok=true;
     for(const f of filters){
       const fd=F(f.k); if(!fd) continue;
@@ -1029,7 +1050,7 @@ function renderFinder(){
   const teams=[...new Set(Object.values(P).map(p=>p.t))].sort();
   const rows=finderRows();
   let h='<div class="bar">'
-    +'<input class="search" id="fq" placeholder="Search player or team" value="'+q.replace(/"/g,"&quot;")+'">'
+    +'<input class="search" id="fq" placeholder="Search player or team" value="'+attr(q)+'">'
     +['ALL','QB','RB','WR','TE','K'].map(x=>'<button class="chip '+(posF===x?'on':'')+'" data-p="'+x+'">'+(x==='ALL'?'All':x)+'</button>').join('')
     +'<select class="ctl" id="fteam"><option value="ALL">All teams</option>'+teams.map(t=>'<option '+(teamF===t?'selected':'')+'>'+t+'</option>').join('')+'</select>'
     +'<span class="count">'+rows.length+' stat line'+(rows.length===1?'':'s')+'</span></div>';
@@ -1075,8 +1096,8 @@ function renderFinder(){
   const fq=document.getElementById("fq");
   fq.value=q;
   let ft;
-  fq.oninput=e=>{ const v=e.target.value.trim(); clearTimeout(ft);
-    ft=setTimeout(()=>{ q=v; renderFinder(); const n=document.getElementById("fq"); n.focus(); n.setSelectionRange(n.value.length,n.value.length); savePrefs(); },180); };
+  fq.oninput=e=>{ const v=e.target.value; clearTimeout(ft);
+    ft=setTimeout(()=>{ q=v; keepCaret("#fq",renderFinder); savePrefs(); },180); };
   host.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{ posF=c.dataset.p; renderFinder(); savePrefs(); });
   document.getElementById("fteam").onchange=e=>{ teamF=e.target.value; renderFinder(); savePrefs(); };
   document.getElementById("weekF").onchange=e=>{ weekF=e.target.value; renderFinder(); savePrefs(); };
@@ -2331,14 +2352,14 @@ function renderWeek(){
     const p=P[id];
     if(posF!=="ALL"&&p.p!==posF) return false;
     if(teamF!=="ALL"&&p.t!==teamF) return false;
-    if(q){ const s=q.toLowerCase(); if(!(p.n.toLowerCase().includes(s)||p.t.toLowerCase().includes(s))) return false; }
+    if(q.trim()){ const s=q.trim().toLowerCase(); if(!(p.n.toLowerCase().includes(s)||p.t.toLowerCase().includes(s))) return false; }
     return true;
   }).map(id=>project(id,{wk,score:sc})).filter(x=>x&&(x.games>0));
   list.sort((a,b)=> weekSort==="ceil"?b.ceil-a.ceil : weekSort==="floor"?b.floor-a.floor
                    : weekSort==="prob"?probOver(b,weekThresh)-probOver(a,weekThresh) : b.pts-a.pts);
   const bt=backtest(sc);
   let h='<div class="bar">'
-    +'<input class="search" id="wq" placeholder="Search player or team" value="'+q.replace(/"/g,"&quot;")+'">'
+    +'<input class="search" id="wq" placeholder="Search player or team" value="'+attr(q)+'">'
     +['ALL','QB','RB','WR','TE','K','DST'].map(x=>'<button class="chip '+(posF===x?'on':'')+'" data-p="'+x+'">'+(x==='ALL'?'All':x)+'</button>').join('')
     +'<select class="ctl" id="wteam"><option value="ALL">All teams</option>'+teams.map(t=>'<option '+(teamF===t?'selected':'')+'>'+t+'</option>').join('')+'</select>'
     +'<button class="ctl" id="csvWeek">Export CSV</button>'
@@ -2379,7 +2400,8 @@ function renderWeek(){
   host.innerHTML=h;
   let t;
   const qi=document.getElementById("wq"); qi.value=q;
-  qi.oninput=e=>{const v=e.target.value.trim();clearTimeout(t);t=setTimeout(()=>{q=v;weekShown=60;renderWeek();document.getElementById("wq").focus();savePrefs();},200);};
+  qi.oninput=e=>{const v=e.target.value;clearTimeout(t);
+    t=setTimeout(()=>{q=v;weekShown=60;keepCaret("#wq",renderWeek);savePrefs();},200);};
   document.getElementById("wteam").onchange=e=>{teamF=e.target.value;renderWeek();savePrefs();};
   document.getElementById("wsort").onchange=e=>{weekSort=e.target.value;renderWeek();};
   document.getElementById("wth").onchange=e=>{weekThresh=Math.max(0,+e.target.value||15);renderWeek();};
@@ -2588,7 +2610,7 @@ function openTrade(lgId,pid){
 
    Rows are built as data, then rendered, tallied and exported from the same
    list, so the CSV can never drift from what's on screen. */
-let cmpA=null, cmpB=null, cmpMode="week", cmpQ={a:"",b:""};
+let cmpA=null, cmpB=null, cmpMode="week", cmpQ={a:"",b:""}, cmpT=null;
 const CMP_MODES=[["week","This week"],["ros","Rest of season"],["trade","Trade value"]];
 /* Boom and bust lines, per position — fantasy convention, not derived from
    the data. Fifteen points means something different for a TE than a QB. */
@@ -2673,9 +2695,10 @@ function cmpPicker(side){
       +'<button class="cpx" data-cclear="'+side+'" title="Clear this side">×</button></div>';
   }
   let h='<div class="cpick"><span class="cside" data-s="'+side+'">'+tag+'</span>'
-    +'<input class="search cpi" data-cq="'+side+'" placeholder="Search a player for side '+tag+'" value="'+qq.replace(/"/g,"&quot;")+'">';
-  if(qq.length>=2){
-    const s=qq.toLowerCase();
+    +'<input class="search cpi" data-cq="'+side+'" placeholder="Search a player for side '+tag+'" value="'+attr(qq)+'">';
+  const qs=qq.trim();
+  if(qs.length>=2){
+    const s=qs.toLowerCase();
     const hits=Object.keys(P).filter(id=>id!==other&&(P[id].n.toLowerCase().includes(s)||P[id].t.toLowerCase().includes(s)))
       .sort((x,y)=>seasonTotals(y).fp-seasonTotals(x).fp).slice(0,8);
     h+='<div class="cdrop">'+(hits.length
@@ -3148,10 +3171,9 @@ function wireCompare(){
     const [x,y]=b.dataset.csug.split("|"); cmpA=x; cmpB=y; cmpQ.a=cmpQ.b=""; re(); });
   host.querySelectorAll("[data-cq]").forEach(el=>{
     el.oninput=()=>{
-      const s=el.dataset.cq; cmpQ[s]=el.value;
-      renderCompare();
-      const n=document.querySelector('[data-cq="'+s+'"]');
-      if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); }
+      const s=el.dataset.cq, v=el.value;
+      clearTimeout(cmpT);
+      cmpT=setTimeout(()=>{ cmpQ[s]=v; keepCaret('[data-cq="'+s+'"]',renderCompare); },160);
     };
   });
   const sw=document.getElementById("cmpSwap");
