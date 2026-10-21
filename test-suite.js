@@ -14,7 +14,7 @@ global.fetch=()=>Promise.reject('x');global.window={scrollTo(){}};
 const body=s.replace('boot();','')+`;module.exports={PLAYERS,WK,reindex,project,logOf,nextWeek,PRESETS_SC,C,
  lineupFor,setBestLineup,placeIn,clearWeek,migrate,gameOf,statusTag,SCHED,G,weekPlayed,injStatus,injRows,injNews,openSheet,renderLeagues,setLeagues:v=>{leagues=v;},
  renderHome,renderWeek,renderFinder,renderPlayers,renderTrends,injStatus,scoreRow,finderRows,seasonTotals,
- renderCompare,cmpTable,cmpExport,cmpTier,setCmp:(a,b,m)=>{cmpA=a;cmpB=b;if(m)cmpMode=m;},getCmp:()=>({a:cmpA,b:cmpB,m:cmpMode}),
+ renderCompare,cmpTable,cmpExport,cmpTier,keepCaret,attr,setCmp:(a,b,m)=>{cmpA=a;cmpB=b;if(m)cmpMode=m;},getCmp:()=>({a:cmpA,b:cmpB,m:cmpMode}),
  set:(k,v)=>{if(k==='P')P=v;if(k==='W')W=v;if(k==='season')season=v;if(k==='filters')filters=v;if(k==='sortKey')sortKey=v;if(k==='weekF')weekF=v;if(k==='posF')posF=v;},get:()=>P};`;
 const m={exports:{}};new Function('module','document','localStorage','fetch',body)(m,global.document,global.localStorage,global.fetch);
 const A=m.exports;A.set('P',A.PLAYERS);A.set('W',A.WK);A.reindex();A.set('season',2026);
@@ -293,6 +293,53 @@ A.setCmp(wrs[0],rbs[0],'week');
 let e5=null; try{ A.cmpExport(A.PRESETS_SC.ppr); }catch(x){ e5=x.message; }
 ok('compare CSV export runs',!e5,e5);
 A.setCmp(null,null,'week');
+}
+
+// --- search boxes: the caret must survive the re-render ---
+/* Each of these re-renders its whole view on a debounce, which replaces the
+   <input>. focus() alone leaves the caret at 0, so every keystroke landed in
+   front of the last one and "St. Brown" came out "nworB.tS". These are source
+   guards; the real caret behaviour is checked in a browser. */
+{
+const src=require('fs').readFileSync(INDEX,'utf8');
+ok('keepCaret helper exists',/function keepCaret\(/.test(src));
+ok('keepCaret restores the real selection, not the end of the string',
+   /selectionStart/.test(src)&&/setSelectionRange\(a,b\)/.test(src));
+// no search handler may trim the live value — that eats the space mid-name
+const liveTrim=(src.match(/\.value\.trim\(\)\s*;?\s*clearTimeout/g)||[]).length
+  +(src.match(/const v=e\.target\.value\.trim\(\)/g)||[]).length;
+ok('no search handler trims the value being typed',liveTrim===0,liveTrim+' found');
+// every view-rerendering search routes through keepCaret
+[['#q','players'],['#wq','this week'],['#fq','stat finder']].forEach(([sel,name])=>
+  ok(name+' search uses keepCaret',new RegExp('keepCaret\\("'+sel+'"').test(src)));
+ok('compare picker uses keepCaret',/keepCaret\('\[data-cq=/.test(src));
+ok('compare picker is debounced',/clearTimeout\(cmpT\)/.test(src));
+// and the match sites trim instead
+ok('matching trims the query',(src.match(/q\.trim\(\)\.toLowerCase\(\)/g)||[]).length>=3,
+   (src.match(/q\.trim\(\)\.toLowerCase\(\)/g)||[]).length+' sites');
+ok('compare picker trims before matching',/const qs=qq\.trim\(\)/.test(src));
+// input values are attribute-escaped
+ok('search values are escaped into the attribute',(src.match(/value="'\+attr\(/g)||[]).length>=4,
+   (src.match(/value="'\+attr\(/g)||[]).length+' inputs');
+ok('attr escapes ampersand and angle brackets',/function attr\(/.test(src)&&/&amp;/.test(src)&&/&lt;/.test(src));
+// the league roster search is the one that never re-renders itself; keep it that way
+const ladd=src.slice(src.indexOf('querySelectorAll("[data-add]")'));
+ok('league roster search still writes only to its results box',
+   /res\.innerHTML=/.test(ladd.slice(0,900))&&!/renderLeagues\(\)/.test(ladd.slice(0,700)));
+}
+
+// --- keepCaret actually puts the selection back ---
+{
+let sel=null;
+const fake={value:'St. Brown',selectionStart:3,selectionEnd:3,
+  focus(){},setSelectionRange(a,b){ sel=[a,b]; }};
+const realQS=global.document.querySelector;
+global.document.querySelector=()=>fake;
+let ran=false;
+A.keepCaret('#q',()=>{ ran=true; });
+global.document.querySelector=realQS;
+ok('keepCaret runs the render',ran);
+ok('keepCaret puts the caret back where it was',sel&&sel[0]===3&&sel[1]===3,JSON.stringify(sel));
 }
 
 // --- the bet tracker is gone, and nothing it shared is collateral damage ---
