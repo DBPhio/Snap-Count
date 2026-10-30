@@ -1,10 +1,10 @@
 {
 "https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_2026.csv": "\"0x8DF35C6B5F9CCEA\"",
-"https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_2026.csv": "\"0x8DF35D6956B57D4\"",
+"https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_2026.csv": "\"0x8DF363F7DEABC56\"",
 "https://github.com/nflverse/nflverse-data/releases/download/snap_counts/snap_counts_2026.csv": "\"0x8DF341AA391E828\"",
 "https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_2026.csv": "\"0x8DF35C5EACF4A82\"",
-"https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv": "\"6860b167ca51033afcc60fcc5284ba9518bbc50ff88bcb1ab3614e04a41f5153\"",
-"https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_2026.csv": "\"0x8DF35D6980CB525\"",
+"https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv": "\"e44a0226087b438d943a02a48d95ec71b9461a94c9390d664bb38f1e6aea8163\"",
+"https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_2026.csv": "\"0x8DF363F7FF55E1A\"",
 "https://github.com/nflverse/nflverse-data/releases/download/pfr_advstats/advstats_week_rush_2026.csv": "\"0x8DF35AC44D521C1\"",
 "https://github.com/nflverse/nflverse-data/releases/download/pfr_advstats/advstats_week_rec_2026.csv": "\"0x8DF35AC474D5875\"",
 "https://github.com/nflverse/nflverse-data/releases/download/pfr_advstats/advstats_week_pass_2026.csv": "\"0x8DF35AC4280ED65\"",
