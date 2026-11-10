@@ -14,7 +14,9 @@ global.fetch=()=>Promise.reject('x');global.window={scrollTo(){}};
 const body=s.replace('boot();','')+`;module.exports={PLAYERS,WK,reindex,project,logOf,nextWeek,PRESETS_SC,C,
  lineupFor,setBestLineup,placeIn,clearWeek,migrate,gameOf,statusTag,SCHED,G,weekPlayed,injStatus,injRows,injNews,openSheet,renderLeagues,setLeagues:v=>{leagues=v;},
  renderHome,renderWeek,renderFinder,renderPlayers,renderTrends,injStatus,scoreRow,finderRows,seasonTotals,
- renderCompare,cmpTable,cmpExport,cmpTier,keepCaret,attr,setCmp:(a,b,m)=>{cmpA=a;cmpB=b;if(m)cmpMode=m;},getCmp:()=>({a:cmpA,b:cmpB,m:cmpMode}),
+ renderCompare,cmpTable,cmpExport,cmpTier,keepCaret,attr,
+ renderCharts,chTrajectory,chQuadrant,chRedZone,chDepth,chDefGrid,pbpTotals,PBP,PB,pbpIdx:()=>pbpIdx,
+ setCh:(p2,m,g)=>{if(p2)chPos=p2;if(m)chMetric=m;if(g)chMinG=g;chPicked=[];},setCmp:(a,b,m)=>{cmpA=a;cmpB=b;if(m)cmpMode=m;},getCmp:()=>({a:cmpA,b:cmpB,m:cmpMode}),
  set:(k,v)=>{if(k==='P')P=v;if(k==='W')W=v;if(k==='season')season=v;if(k==='filters')filters=v;if(k==='sortKey')sortKey=v;if(k==='weekF')weekF=v;if(k==='posF')posF=v;},get:()=>P};`;
 const m={exports:{}};new Function('module','document','localStorage','fetch',body)(m,global.document,global.localStorage,global.fetch);
 const A=m.exports;A.set('P',A.PLAYERS);A.set('W',A.WK);A.reindex();A.set('season',2026);
@@ -192,7 +194,7 @@ ok('every "Out" player projects zero',outGuys.every(id=>A.project(id,{wk,score:A
 // --- every view renders, with nothing leaking into the markup ---
 const views=[['home',A.renderHome],['week',A.renderWeek],['finder',A.renderFinder],
   ['players',A.renderPlayers],['trends',A.renderTrends],['leagues',A.renderLeagues],
-  ['compare',A.renderCompare]];
+  ['compare',A.renderCompare],['charts',A.renderCharts]];
 views.forEach(([n,fn])=>{
   let e=null; try{ fn(); }catch(x){ e=x.message; }
   const out=store['view-'+n]||'';
@@ -342,6 +344,76 @@ ok('keepCaret runs the render',ran);
 ok('keepCaret puts the caret back where it was',sel&&sel[0]===3&&sel[1]===3,JSON.stringify(sel));
 }
 
+// --- charts tab ---
+{
+A.set('view','charts');
+for(const pos of ['WR','RB','QB','TE']){
+  A.setCh(pos,'tsh',3); store['view-charts']='';
+  let e2=null; try{ A.renderCharts(); }catch(x){ e2=x.message; }
+  const out=store['view-charts']||'';
+  ok('charts render for '+pos,!e2&&out.length>4000,e2||out.length+' chars');
+  ok('charts markup clean for '+pos,!/undefined|NaN|\[object|Infinity/.test(out),
+     (out.match(/undefined|NaN|\[object \w+|Infinity/)||[''])[0]);
+  /* A quarterback is never the targeted receiver, so the target-depth card
+     is correctly absent for QB rather than rendering empty. */
+  const want=pos==='QB'?4:5;
+  ok('all '+want+' cards present for '+pos,(out.match(/class="panel chcard"/g)||[]).length===want,
+     (out.match(/class="panel chcard"/g)||[]).length+' cards');
+  ok('every card offers a table view for '+pos,(out.match(/data-chtable=/g)||[]).length===want);
+  if(pos==='QB') ok('no empty target-depth card for QB',!/Where he is targeted/.test(out));
+}
+for(const m of ['tsh','wopr','snap','tgt']){
+  A.setCh('WR',m,3); store['view-charts']='';
+  let e3=null; try{ A.renderCharts(); }catch(x){ e3=x.message; }
+  ok('trajectory metric '+m+' renders',!e3&&/class="chline"/.test(store['view-charts']||''),e3);
+}
+A.setCh('WR','tsh',3);
+// a line chart must never silently drop to a single series
+{
+const t=A.chTrajectory();
+ok('trajectory draws more than one series',(t.match(/class="chline"/g)||[]).length>1,
+   (t.match(/class="chline"/g)||[]).length+' lines');
+ok('trajectory always carries a legend',/class="chleg"/.test(t));
+ok('trajectory direct-labels the endpoints',(t.match(/class="chend"/g)||[]).length>1);
+ok('trajectory hit areas are bigger than the dots',/class="chhit"[^>]*r="1[0-9]"/.test(t));
+}
+// the defense grid must print the number, never rely on colour alone
+{
+const g=A.chDefGrid();
+ok('defense grid prints a value in every cell',(g.match(/class="dgv"/g)||[]).length>=60,
+   (g.match(/class="dgv"/g)||[]).length+' cells');
+ok('defense grid ships a scale legend',/class="dgscale"/.test(g));
+ok('defense grid steps stay inside the ramp',
+   [...g.matchAll(/data-d="(\d)"/g)].every(m=>+m[1]>=0&&+m[1]<=6));
+}
+// play-by-play aggregates
+{
+ok('play-by-play data is embedded for both seasons',
+   Array.isArray(A.PBP[2026])&&Array.isArray(A.PBP[2025])&&A.PBP[2026].length>0,
+   JSON.stringify(Object.keys(A.PBP||{})));
+ok('every pbp row has the full schema',A.PBP[2026].every(r=>r.length===15),'expected 15 columns');
+ok('pbp counts are non-negative whole numbers',
+   A.PBP[2026].slice(0,400).every(r=>r.slice(2).every(v=>Number.isInteger(v)&&v>=0)));
+const anyId=A.PBP[2026][0][0];
+const tot=A.pbpTotals(anyId,2026);
+ok('pbpTotals adds the air-yards bands up to the charted count',
+   tot.charted===tot.a0+tot.a1+tot.a2+tot.a3+tot.a4);
+ok('inside the 10 is a subset of inside the 20',(()=>
+   A.PBP[2026].every(r=>r[A.PB.rzt10]<=r[A.PB.rzt]&&r[A.PB.rzc10]<=r[A.PB.rzc]))(),
+   'a count inside the 10 exceeded the count inside the 20');
+}
+// the two colour ramps must exist in both themes
+{
+const src=require('fs').readFileSync(INDEX,'utf8');
+for(const t of ['--s1','--s4','--dv0','--dv3','--dv6','--sq0','--sq4']){
+  const n=(src.match(new RegExp(t+':','g'))||[]).length;
+  ok('token '+t+' defined for light and dark',n===2,'found '+n);
+}
+ok('the diverging midpoint is a neutral grey',/--dv3:#E8E8E6/.test(src)&&/--dv3:#262E38/.test(src));
+}
+A.setCh('WR','tsh',3); A.set('view','home');
+}
+
 // --- the bet tracker is gone, and nothing it shared is collateral damage ---
 {
 const src=require('fs').readFileSync(INDEX,'utf8');
@@ -353,6 +425,7 @@ ok('start/sit comparator survived',/function compareBar/.test(src));
 ok('CSV export survived',/function exportTable/.test(src));
 // every export handler needs a button that actually renders
 ok('compare tab survived',/function renderCompare/.test(src)&&/data-v="compare"/.test(src));
+ok('charts tab wired',/function renderCharts/.test(src)&&/data-v="charts"/.test(src));
 ['csvWeek','csvTrends','csvFinder'].forEach(k=>
   ok(k+' button exists for its handler',src.includes('id="'+k+'"')));
 // saved-view whitelist must match the tabs that exist
