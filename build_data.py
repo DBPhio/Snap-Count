@@ -165,9 +165,84 @@ def build_adv(seasons, pfr2gsis):
                 for (g,w),a in sorted(acc.items())]
     return out
 
+def build_pbp(seasons, players):
+    """Per-player, per-week aggregates that only play-by-play can give:
+    red-zone opportunity and where a receiver is targeted.
+
+    Everything here is a COUNT, deliberately. Split-half reliability measured
+    on the 2025 season: target share .87, targets a game .85, air-yards share
+    .84 — against yards a target .18 and catch rate .32. Volume and role
+    repeat themselves; per-play efficiency does not. So this ships opportunity
+    and lets the app derive rates where it wants them.
+
+    The season file is ~48 MB of CSV, so it is fetched conditionally and
+    completed seasons are never re-fetched. A parquet copy is a quarter of the
+    size but would add a pyarrow dependency to the Action; the pipeline is
+    deliberately standard-library only.
+
+    Rows: [gsis, week, rz_tgt, rz10_tgt, rz_car, rz10_car, rz_td,
+           ay_behind, ay_0_4, ay_5_9, ay_10_19, ay_20plus, dir_L, dir_M, dir_R]"""
+    out={}
+    for s in seasons:
+        if not is_current_season(s) and have(f"pbp_{s}.json") and not FORCE:
+            print(f"  reusing pbp_{s}.json (season complete)",file=sys.stderr); out[s]=None; continue
+        try: rows=csv.DictReader(get(f"{BASE}/pbp/play_by_play_{s}.csv",conditional=True))
+        except NotModified: out[s]=None; continue
+        except Exception as e:
+            print(f"  skip pbp {s}:",e,file=sys.stderr); out[s]=None; continue
+        acc={}
+        def slot(gid,wk):
+            return acc.setdefault((gid,wk),{'rzt':0,'rzt10':0,'rzc':0,'rzc10':0,'rztd':0,
+                                            'a0':0,'a1':0,'a2':0,'a3':0,'a4':0,'dL':0,'dM':0,'dR':0})
+        seen=0
+        for r in rows:
+            if r.get('season_type')!='REG': continue
+            if r.get('two_point_attempt')=='1': continue   # not a scrimmage opportunity
+            wk=i(r.get('week',0))
+            if not wk: continue
+            y100=r.get('yardline_100','')
+            try: y=float(y100)
+            except: y=None
+            rec=r.get('receiver_player_id') or ''
+            rush=r.get('rusher_player_id') or ''
+            if rec and rec in players:
+                seen+=1
+                a=slot(rec,wk)
+                if y is not None and y<=20: a['rzt']+=1
+                if y is not None and y<=10: a['rzt10']+=1
+                if r.get('pass_touchdown')=='1': a['rztd']+=1 if (y is not None and y<=20) else 0
+                ay=r.get('air_yards','')
+                try: v=float(ay)
+                except: v=None
+                if v is not None:
+                    if   v<0:  a['a0']+=1
+                    elif v<5:  a['a1']+=1
+                    elif v<10: a['a2']+=1
+                    elif v<20: a['a3']+=1
+                    else:      a['a4']+=1
+                loc=r.get('pass_location','')
+                if   loc=='left':   a['dL']+=1
+                elif loc=='middle': a['dM']+=1
+                elif loc=='right':  a['dR']+=1
+            if rush and rush in players:
+                a=slot(rush,wk)
+                if y is not None and y<=20: a['rzc']+=1
+                if y is not None and y<=10: a['rzc10']+=1
+                if r.get('rush_touchdown')=='1': a['rztd']+=1 if (y is not None and y<=20) else 0
+        if not acc: out[s]=None; continue
+        out[s]=[[g,w,a['rzt'],a['rzt10'],a['rzc'],a['rzc10'],a['rztd'],
+                 a['a0'],a['a1'],a['a2'],a['a3'],a['a4'],a['dL'],a['dM'],a['dR']]
+                for (g,w),a in sorted(acc.items())]
+        print(f"  {s}: {seen} targets charted",file=sys.stderr)
+    return out
+
 def build_defprofile(seasons):
     """Team defensive profile per week, aggregated from defender-level PFR data.
-    Coverage scheme (man vs zone) is not in open data, but completion rate,
+    Coverage scheme (man vs zone) does exist in nflverse participation data,
+    but FTN only publishes it after the postseason, so there is none for the
+    current season; per-receiver samples are a median of 14 man-coverage
+    targets a year and split-half reliability is 0.14, i.e. noise. Completion
+    rate,
     yards per target, passer rating and depth of target allowed describe
     coverage quality well enough to test against.
     Rows: [team, week, tgts, cmp_pct, ypt, rating, adot, missed_tkl_pct, pressures, blitzes]"""
@@ -436,6 +511,12 @@ if __name__=="__main__":
         if adv.get(s) is None: continue
         json.dump({"season":s,"rows":adv[s]},open(f"{OUT}/adv_{s}.json","w"),separators=(',',':'))
         print(f"  {s}: {len(adv[s])} advanced lines",file=sys.stderr)
+    print("building play-by-play aggregates…",file=sys.stderr)
+    pb=build_pbp(SEASONS,players)
+    for s in SEASONS:
+        if pb.get(s) is None: continue
+        json.dump({"season":s,"rows":pb[s]},open(f"{OUT}/pbp_{s}.json","w"),separators=(',',':'))
+        print(f"  {s}: {len(pb[s])} player-weeks",file=sys.stderr)
     print("building defensive profiles…",file=sys.stderr)
     dp=build_defprofile(SEASONS)
     for s in SEASONS:
